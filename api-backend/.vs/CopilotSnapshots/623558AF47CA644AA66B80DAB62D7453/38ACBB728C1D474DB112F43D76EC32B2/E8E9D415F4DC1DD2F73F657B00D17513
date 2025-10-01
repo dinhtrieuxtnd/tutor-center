@@ -1,0 +1,27 @@
+﻿using api_backend.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace api_backend.Configurations
+{
+    public class LessonConfiguration : IEntityTypeConfiguration<Lesson>
+    {
+        public void Configure(EntityTypeBuilder<Lesson> builder)
+        {
+            builder.HasKey(e => e.LessonId).HasName("PK__Lessons__B084ACD0E02CB47A");
+
+            builder.Property(e => e.LessonType)
+                .HasMaxLength(30)
+                .IsUnicode(false)
+                .HasDefaultValue("lesson");
+            
+            builder.Property(e => e.PublishedAt).HasPrecision(0);
+            builder.Property(e => e.Title).HasMaxLength(200);
+
+            builder.HasOne(d => d.Classroom).WithMany(p => p.Lessons)
+                .HasForeignKey(d => d.ClassroomId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Lessons__Classro__68487DD7");
+        }
+    }
+}

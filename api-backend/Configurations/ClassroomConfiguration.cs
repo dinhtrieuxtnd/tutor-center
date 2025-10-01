@@ -1,0 +1,44 @@
+using api_backend.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace api_backend.Configurations
+{
+    public class ClassroomConfiguration : IEntityTypeConfiguration<Classroom>
+    {
+        public void Configure(EntityTypeBuilder<Classroom> builder)
+        {
+            builder.HasKey(e => e.ClassroomId).HasName("PK__Classroo__11618EAAE44031F3");
+
+            builder.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysutcdatetime())");
+            
+            builder.Property(e => e.Title).HasMaxLength(200);
+            
+            builder.Property(e => e.TuitionAmount)
+                .HasDefaultValue(0m)
+                .HasColumnType("money");
+            
+            builder.Property(e => e.TuitionDueAt).HasPrecision(0);
+            
+            builder.Property(e => e.UpdatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysutcdatetime())");
+
+            builder.HasOne(d => d.CoverMedia).WithMany(p => p.Classrooms)
+                .HasForeignKey(d => d.CoverMediaId)
+                .HasConstraintName("FK__Classroom__Cover__5535A963");
+
+            builder.HasOne(d => d.CreatedByNavigation).WithMany(p => p.ClassroomCreatedByNavigations)
+                .HasForeignKey(d => d.CreatedBy)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Classroom__Creat__5441852A");
+
+            builder.HasOne(d => d.Teacher).WithMany(p => p.ClassroomTeachers)
+                .HasForeignKey(d => d.TeacherId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Classroom__Teach__534D60F1");
+        }
+    }
+}

@@ -1,0 +1,83 @@
+﻿# Tutor Center API Backend
+
+## C?u trúc Entity Framework
+
+D? án này ???c t? ch?c theo mô hình clean architecture v?i vi?c tách bi?t các Fluent API configurations.
+
+### Th? m?c c?u trúc:
+- **Entities/**: Ch?a t?t c? các entity classes ???c t?o t? ??ng t? database
+- **DbContexts/**: Ch?a DbContext classes
+- **Configurations/**: Ch?a các IEntityTypeConfiguration cho t?ng entity
+- **Extensions/**: Ch?a extension methods h?u ích
+
+### Cách s? d?ng:
+
+#### 1. Entity Framework Setup
+```csharp
+// Program.cs
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+```
+
+#### 2. T?o Configuration cho Entity m?i
+Khi b?n c?n t?o configuration cho m?t entity m?i, hãy t?o file trong th? m?c `Configurations/`:
+
+```csharp
+// Configurations/YourEntityConfiguration.cs
+using api_backend.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace api_backend.Configurations
+{
+    public class YourEntityConfiguration : IEntityTypeConfiguration<YourEntity>
+    {
+        public void Configure(EntityTypeBuilder<YourEntity> builder)
+        {
+            builder.HasKey(e => e.Id);
+            builder.Property(e => e.Name).HasMaxLength(100);
+            // ... các c?u hình khác
+        }
+    }
+}
+```
+
+#### 3. C?u hình t? ??ng
+T?t c? các configuration s? ???c áp d?ng t? ??ng thông qua `ApplyConfigurationsFromAssembly()` trong `TutorCenterDbContext`.
+
+### Scaffold Entity t? Database
+
+?? c?p nh?t entities t? database:
+
+```bash
+dotnet ef dbcontext scaffold "Server=.;Database=TutorCenterDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=true" Microsoft.EntityFrameworkCore.SqlServer -o Entities -c TutorCenterDbContext -f --context-dir DbContexts
+```
+
+### Các Configuration ?ã ???c t?o:
+- ? UserConfiguration
+- ? ClassroomConfiguration  
+- ? RoleConfiguration
+- ? PermissionConfiguration
+- ? MediumConfiguration
+- ? QuizConfiguration
+- ? LessonConfiguration
+- ? ExerciseConfiguration
+- ? PaymentTransactionConfiguration
+
+### Entities ch?a có Configuration riêng:
+Các entity sau v?n ???c c?u hình trong `ConfigureRemainingEntities()`:
+- Aiagent, Aiconversation, Aimessage, AimessageMedia
+- Announcement
+- ClassroomChatMessage, ClassroomChatMessageMedia, ClassroomStudent
+- ExerciseSubmission
+- JoinRequest
+- Material
+- QuizAnswer, QuizAttempt, QuizOption, QuizQuestion, QuizSection, etc.
+- Report
+
+B?n có th? t?o configuration riêng cho b?t k? entity nào trong danh sách này b?ng cách t?o file configuration m?i trong th? m?c `Configurations/`.
+
+### L?u ý:
+- Connection string ???c c?u hình trong `appsettings.json`
+- `AppDbContext` k? th?a t? `TutorCenterDbContext` ?? d? dàng customize
+- S? d?ng `ApplyConfigurationsFromAssembly()` ?? t? ??ng load t?t c? configurations

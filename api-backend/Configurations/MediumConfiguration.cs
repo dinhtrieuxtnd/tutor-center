@@ -1,0 +1,48 @@
+using api_backend.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace api_backend.Configurations
+{
+    public class MediumConfiguration : IEntityTypeConfiguration<Medium>
+    {
+        public void Configure(EntityTypeBuilder<Medium> builder)
+        {
+            builder.HasKey(e => e.MediaId).HasName("PK__Media__B2C2B5CFA29FD21B");
+
+            builder.HasIndex(e => new { e.Bucket, e.ObjectKey }, "UQ_Media_Bucket_Key").IsUnique();
+
+            builder.Property(e => e.Bucket)
+                .HasMaxLength(100)
+                .IsUnicode(false);
+            
+            builder.Property(e => e.ChecksumSha256)
+                .HasMaxLength(64)
+                .IsUnicode(false)
+                .IsFixedLength();
+            
+            builder.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysutcdatetime())");
+            
+            builder.Property(e => e.Disk)
+                .HasMaxLength(30)
+                .IsUnicode(false);
+            
+            builder.Property(e => e.MimeType)
+                .HasMaxLength(100)
+                .IsUnicode(false);
+            
+            builder.Property(e => e.ObjectKey).HasMaxLength(700);
+            
+            builder.Property(e => e.Visibility)
+                .HasMaxLength(10)
+                .IsUnicode(false)
+                .HasDefaultValue("private");
+
+            builder.HasOne(d => d.UploadedByNavigation).WithMany(p => p.Media)
+                .HasForeignKey(d => d.UploadedBy)
+                .HasConstraintName("FK_Media_UploadedBy");
+        }
+    }
+}

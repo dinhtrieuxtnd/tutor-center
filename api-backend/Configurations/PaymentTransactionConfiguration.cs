@@ -1,0 +1,59 @@
+using api_backend.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace api_backend.Configurations
+{
+    public class PaymentTransactionConfiguration : IEntityTypeConfiguration<PaymentTransaction>
+    {
+        public void Configure(EntityTypeBuilder<PaymentTransaction> builder)
+        {
+            builder.HasKey(e => e.TransactionId).HasName("PK__PaymentT__55433A6B75BBC6C4");
+
+            builder.HasIndex(e => new { e.ClassroomId, e.StudentId, e.CreatedAt }, "IX_PaymentTransactions_Class_Stu_Created")
+                .IsDescending(false, false, true);
+
+            builder.HasIndex(e => e.OrderCode, "UQ_PaymentTransactions_Order").IsUnique();
+
+            builder.Property(e => e.Amount).HasColumnType("decimal(18, 2)");
+            
+            builder.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysutcdatetime())");
+            
+            builder.Property(e => e.Method)
+                .HasMaxLength(30)
+                .IsUnicode(false);
+            
+            builder.Property(e => e.OrderCode)
+                .HasMaxLength(100)
+                .IsUnicode(false);
+            
+            builder.Property(e => e.PaidAt).HasPrecision(0);
+            
+            builder.Property(e => e.ProviderTxnId)
+                .HasMaxLength(200)
+                .IsUnicode(false);
+            
+            builder.Property(e => e.Status)
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasDefaultValue("pending");
+
+            builder.HasOne(d => d.Classroom).WithMany(p => p.PaymentTransactions)
+                .HasForeignKey(d => d.ClassroomId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_PaymentTransactions_Classroom");
+
+            builder.HasOne(d => d.Student).WithMany(p => p.PaymentTransactions)
+                .HasForeignKey(d => d.StudentId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_PaymentTransactions_Student");
+
+            builder.HasOne(d => d.ClassroomStudent).WithMany(p => p.PaymentTransactions)
+                .HasForeignKey(d => new { d.ClassroomId, d.StudentId })
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_PaymentTransactions_Membership");
+        }
+    }
+}
