@@ -72,15 +72,18 @@ ADD CONSTRAINT FK_Media_UploadedBy FOREIGN KEY (UploadedBy) REFERENCES Users(Use
 -- CLASSROOMS & MEMBERSHIP
 -- =========================================
 CREATE TABLE Classrooms (
-    ClassroomId   INT IDENTITY PRIMARY KEY,
-    Title         NVARCHAR(200) NOT NULL,
-    [Description] NVARCHAR(MAX) NULL,
-    TeacherId     INT NOT NULL,
-    CoverMediaId  INT NULL,
-    IsArchived    BIT NOT NULL DEFAULT 0,   -- Sau 1 năm thì khóa lớp học lại không cho phép đăng nội dung mới nhưng vẫn giữ lại tài liệu để báo cáo
-    CreatedBy     INT NOT NULL,
-    CreatedAt     DATETIME2(0) NOT NULL DEFAULT SYSUTCDATETIME(),
-    UpdatedAt     DATETIME2(0) NOT NULL DEFAULT SYSUTCDATETIME(),
+    ClassroomId         INT IDENTITY PRIMARY KEY,
+    Title               NVARCHAR(200) NOT NULL,
+    [Description]       NVARCHAR(MAX) NULL,
+    TeacherId           INT NOT NULL,
+    CoverMediaId        INT NULL,
+    IsArchived          BIT NOT NULL DEFAULT 0,     -- Sau 1 năm thì khóa lớp học lại không cho phép đăng nội dung mới nhưng vẫn giữ lại tài liệu để báo cáo
+    TuitionAmount       MONEY NULL DEFAULT 0,
+    TuitionDueAt        DATETIME2(0) NULL,          -- Hạn đóng học phí
+    IsTuitionRequired   BIT NOT NULL DEFAULT (0),   -- Thông báo yêu cầu đóng học phí
+    CreatedBy           INT NOT NULL,
+    CreatedAt           DATETIME2(0) NOT NULL DEFAULT SYSUTCDATETIME(),
+    UpdatedAt           DATETIME2(0) NOT NULL DEFAULT SYSUTCDATETIME(),
     FOREIGN KEY (TeacherId)    REFERENCES Users(UserId),
     FOREIGN KEY (CreatedBy)    REFERENCES Users(UserId),
     FOREIGN KEY (CoverMediaId) REFERENCES Media(MediaId)
@@ -92,10 +95,13 @@ CREATE TABLE ClassroomStudents (
     StudentId   INT NOT NULL,
     JoinedAt    DATETIME2(0) NOT NULL DEFAULT SYSUTCDATETIME(),
     [Status]    TINYINT NOT NULL DEFAULT 1,
+    IsPaid      BIT NOT NULL DEFAULT (0), -- Đã đóng học phí chưa
+    PaidAt      DATETIME2(0) NULL,
     PRIMARY KEY (ClassroomId, StudentId),
     FOREIGN KEY (ClassroomId) REFERENCES Classrooms(ClassroomId),
     FOREIGN KEY (StudentId)   REFERENCES Users(UserId)
 );
+CREATE INDEX IX_ClassroomStudents_Class_IsPaid ON ClassroomStudents(ClassroomId, IsPaid DESC);
 GO
 
 CREATE TABLE JoinRequests (
@@ -305,36 +311,30 @@ GO
 -- =========================================
 -- PAYMENTS
 -- =========================================
-CREATE TABLE PaymentMethods (
-    MethodId    INT IDENTITY PRIMARY KEY,
-    Code        VARCHAR(30) NOT NULL UNIQUE,
-    DisplayName NVARCHAR(100) NOT NULL
-);
-GO
+CREATE TABLE dbo.PaymentTransactions (
+    TransactionId   INT IDENTITY PRIMARY KEY,
+    ClassroomId     INT NOT NULL,
+    StudentId       INT NOT NULL,
+    Amount          DECIMAL(18,2) NOT NULL CHECK (Amount >= 0),
+    Method          VARCHAR(30)   NOT NULL,  -- 'CASH' | 'MOMO' | 'VNPAY' | ...
+    [Status]        VARCHAR(20)   NOT NULL DEFAULT 'pending', -- pending|paid|failed|refunded
+    OrderCode       VARCHAR(100)  NOT NULL,  -- mã đơn nội bộ (unique tuỳ ý)
+    ProviderTxnId   VARCHAR(200)  NULL,      -- mã từ cổng thanh toán
+    MetaData        NVARCHAR(MAX) NULL,
+    CreatedAt       DATETIME2(0)  NOT NULL DEFAULT SYSUTCDATETIME(),
+    PaidAt          DATETIME2(0)  NULL,
 
-CREATE TABLE PaymentStatuses (
-    StatusId    INT IDENTITY PRIMARY KEY,
-    Code        VARCHAR(30) NOT NULL UNIQUE,
-    DisplayName NVARCHAR(100) NOT NULL
-);
-GO
+    CONSTRAINT UQ_PaymentTransactions_Order UNIQUE (OrderCode),
+    CONSTRAINT CK_PaymentTransactions_Status CHECK (Status IN ('pending','paid','failed','refunded')),
 
-CREATE TABLE Payments (
-    PaymentId     INT IDENTITY PRIMARY KEY,
-    UserId        INT NOT NULL,
-    Amount        DECIMAL(18,2) NOT NULL,
-    Currency      VARCHAR(10) NOT NULL DEFAULT 'VND',
-    MethodId      INT NOT NULL,
-    StatusId      INT NOT NULL,
-    OrderCode     VARCHAR(100) NOT NULL,
-    ProviderTxnId VARCHAR(200) NULL,
-    MetaData      NVARCHAR(MAX) NULL,
-    CreatedAt     DATETIME2(0) NOT NULL DEFAULT SYSUTCDATETIME(),
-    PaidAt        DATETIME2(0) NULL,
-    FOREIGN KEY (UserId)   REFERENCES Users(UserId),
-    FOREIGN KEY (MethodId) REFERENCES PaymentMethods(MethodId),
-    FOREIGN KEY (StatusId) REFERENCES PaymentStatuses(StatusId)
+    CONSTRAINT FK_PaymentTransactions_Classroom FOREIGN KEY (ClassroomId)
+        REFERENCES dbo.Classrooms (ClassroomId),
+    CONSTRAINT FK_PaymentTransactions_Student FOREIGN KEY (StudentId)
+        REFERENCES dbo.Users (UserId),
+    CONSTRAINT FK_PaymentTransactions_Membership FOREIGN KEY (ClassroomId, StudentId)
+        REFERENCES dbo.ClassroomStudents (ClassroomId, StudentId)
 );
+CREATE INDEX IX_PaymentTransactions_Class_Stu_Created ON dbo.PaymentTransactions (ClassroomId, StudentId, CreatedAt DESC);
 GO
 
 CREATE TABLE ClassroomChatMessages (
