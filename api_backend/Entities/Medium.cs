@@ -25,7 +25,7 @@ public partial class Medium
 
     public DateTime CreatedAt { get; set; }
 
-    public virtual ICollection<AimessageMedia> AimessageMedia { get; set; } = new List<AimessageMedia>();
+    public virtual ICollection<AIMessageMedia> AIMessageMedia { get; set; } = new List<AIMessageMedia>();
 
     public virtual ICollection<ClassroomChatMessageMedia> ClassroomChatMessageMedia { get; set; } = new List<ClassroomChatMessageMedia>();
 

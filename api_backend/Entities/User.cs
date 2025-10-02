@@ -25,9 +25,9 @@ public partial class User
 
     public DateTime UpdatedAt { get; set; }
 
-    public virtual ICollection<Aiagent> Aiagents { get; set; } = new List<Aiagent>();
+    public virtual ICollection<AIAgent> AIAgents { get; set; } = new List<AIAgent>();
 
-    public virtual ICollection<Aiconversation> Aiconversations { get; set; } = new List<Aiconversation>();
+    public virtual ICollection<AIConversation> AIConversations { get; set; } = new List<AIConversation>();
 
     public virtual ICollection<Announcement> Announcements { get; set; } = new List<Announcement>();
 
@@ -62,6 +62,8 @@ public partial class User
     public virtual ICollection<QuizAttempt> QuizAttemptStudents { get; set; } = new List<QuizAttempt>();
 
     public virtual ICollection<Quiz> Quizzes { get; set; } = new List<Quiz>();
+
+    public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
 
     public virtual ICollection<Report> ReportHandlers { get; set; } = new List<Report>();
 

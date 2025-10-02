@@ -470,3 +470,19 @@ CREATE TABLE AIMessageMedias (
 );
 CREATE INDEX IX_AIMessageMedias_Message_Order ON AIMessageMedias(MessageId, OrderIndex);
 GO
+
+CREATE TABLE dbo.RefreshTokens (
+    RefreshTokenId   BIGINT IDENTITY PRIMARY KEY,
+    UserId           INT NOT NULL,
+    TokenHash        CHAR(64) NOT NULL,           -- SHA-256 hex
+    IssuedAt         DATETIME2(0) NOT NULL DEFAULT SYSUTCDATETIME(),
+    ExpiresAt        DATETIME2(0) NOT NULL,       -- ví dụ +30 ngày
+    RevokedAt        DATETIME2(0) NULL,
+    ReplacedByHash   CHAR(64) NULL,               -- hash của token mới khi rotation
+    CONSTRAINT UQ_RefreshTokens_TokenHash UNIQUE (TokenHash),
+    CONSTRAINT FK_RefreshTokens_User FOREIGN KEY (UserId) REFERENCES dbo.Users(UserId)
+);
+-- Index phục vụ dọn dẹp & tra cứu
+CREATE INDEX IX_RefreshTokens_User_Expires ON dbo.RefreshTokens(UserId, ExpiresAt DESC);
+CREATE INDEX IX_RefreshTokens_Replaced ON dbo.RefreshTokens(ReplacedByHash);
+GO

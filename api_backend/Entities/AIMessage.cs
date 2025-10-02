@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace api_backend.Entities;
 
-public partial class Aimessage
+public partial class AIMessage
 {
     public int MessageId { get; set; }
 
@@ -17,11 +17,11 @@ public partial class Aimessage
 
     public DateTime CreatedAt { get; set; }
 
-    public virtual ICollection<AimessageMedia> AimessageMedia { get; set; } = new List<AimessageMedia>();
+    public virtual ICollection<AIMessageMedia> AIMessageMedia { get; set; } = new List<AIMessageMedia>();
 
-    public virtual Aiconversation Conversation { get; set; } = null!;
+    public virtual AIConversation Conversation { get; set; } = null!;
 
-    public virtual ICollection<Aimessage> InverseParent { get; set; } = new List<Aimessage>();
+    public virtual ICollection<AIMessage> InverseParent { get; set; } = new List<AIMessage>();
 
-    public virtual Aimessage? Parent { get; set; }
+    public virtual AIMessage? Parent { get; set; }
 }

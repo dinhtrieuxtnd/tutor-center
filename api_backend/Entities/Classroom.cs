@@ -29,7 +29,7 @@ public partial class Classroom
 
     public DateTime UpdatedAt { get; set; }
 
-    public virtual ICollection<Aiconversation> Aiconversations { get; set; } = new List<Aiconversation>();
+    public virtual ICollection<AIConversation> AIConversations { get; set; } = new List<AIConversation>();
 
     public virtual ICollection<Announcement> Announcements { get; set; } = new List<Announcement>();
 

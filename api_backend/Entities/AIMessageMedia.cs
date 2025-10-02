@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace api_backend.Entities;
 
-public partial class AimessageMedia
+public partial class AIMessageMedia
 {
     public int Id { get; set; }
 
@@ -19,5 +19,5 @@ public partial class AimessageMedia
 
     public virtual Medium Media { get; set; } = null!;
 
-    public virtual Aimessage Message { get; set; } = null!;
+    public virtual AIMessage Message { get; set; } = null!;
 }
