@@ -22,52 +22,66 @@ const initialState: StudentAuthState = {
 }
 
 export const login = createAsyncThunk<
-    ApiResponse<LoginResponse>,
-    Omit<LoginRequest, 'userAgent' | 'ipAddress' | 'deviceFingerprint'>
+    ApiResponse<any> & { user?: any },
+    LoginRequest
 >(
     'auth/login',
-    createAuthThunkHandler(
-        async (credentials: Omit<LoginRequest, 'userAgent' | 'ipAddress' | 'deviceFingerprint'>) => {
-            // Thu thập thông tin device
-            const { collectDeviceInfo } = await import('@/utils');
-            const deviceInfo = await collectDeviceInfo();
-
-            // Kết hợp credentials với device info
-            const loginData: LoginRequest = {
-                ...credentials,
-                ...deviceInfo
-            };
-
-            return authApi.login(loginData);
-        },
-        'Đăng nhập học sinh thất bại',
-        {
-            successMessage: 'Đăng nhập thành công!',
-            successTitle: 'Chào mừng học sinh',
-            onSuccess: (response) => {
-                auth.setAccessToken(response.data.tokens.accessToken)
-                auth.setRefreshToken(response.data.tokens.refreshToken)
-                return response;
+    async (credentials: LoginRequest, { dispatch, rejectWithValue }) => {
+        try {
+            // 1. Đăng nhập
+            const loginResponse = await authApi.login(credentials);
+            
+            if (loginResponse.data?.accessToken) {
+                // 2. Lưu tokens - backend trả về trực tiếp AuthTokensDto
+                auth.setAccessToken(loginResponse.data.accessToken);
+                auth.setRefreshToken(loginResponse.data.refreshToken);
+                
+                // 3. Fetch user info
+                const userResponse = await authApi.getMe();
+                
+                return {
+                    ...loginResponse,
+                    user: userResponse.data
+                };
             }
+            
+            return loginResponse;
+        } catch (error: any) {
+            return rejectWithValue(error.message || 'Đăng nhập thất bại');
         }
-    )
+    }
 );
 
 
 export const register = createAsyncThunk<
-    Student,
+    ApiResponse<any> & { user?: any },
     RegisterStudentRequest
 >(
     'auth/register',
-    createAuthThunkHandler(
-        (userData: RegisterStudentRequest) => authApi.register(userData),
-        'Đăng ký học sinh thất bại',
-        {
-            successMessage: 'Đăng ký thành công!',
-            successTitle: 'Đăng nhập ngay',
-            onSuccess: (response) => response
+    async (userData: RegisterStudentRequest, { dispatch, rejectWithValue }) => {
+        try {
+            // 1. Đăng ký
+            const registerResponse = await authApi.register(userData);
+            
+            if (registerResponse.data?.accessToken) {
+                // 2. Lưu tokens
+                auth.setAccessToken(registerResponse.data.accessToken);
+                auth.setRefreshToken(registerResponse.data.refreshToken);
+                
+                // 3. Fetch user info
+                const userResponse = await authApi.getMe();
+                
+                return {
+                    ...registerResponse,
+                    user: userResponse.data
+                };
+            }
+            
+            return registerResponse;
+        } catch (error: any) {
+            return rejectWithValue(error.message || 'Đăng ký thất bại');
         }
-    )
+    }
 );
 
 export const logout = createAsyncThunk<void>(
@@ -105,6 +119,16 @@ export const resetPasswordWithToken = createAsyncThunk<
     ({ token, newPassword }) =>
         authApi.resetPasswordWithToken(token, newPassword),
     "Đặt lại mật khẩu thất bại"    
+    )
+);
+
+export const fetchUserInfo = createAsyncThunk<
+    ApiResponse<any>
+>(
+    'auth/fetchUserInfo',
+    createAsyncThunkHandler(
+        () => authApi.getMe(),
+        'Lấy thông tin người dùng thất bại'
     )
 );
 
@@ -169,11 +193,14 @@ const authSlice = createSlice({
             })
             .addCase(login.fulfilled, (state, action) => {
                 const data = action.payload.data
+                const user = action.payload.user
                 if (!data) return
                 state.isLoading = false;
-                state.student = data.user;
-                state.accessToken = data.tokens.accessToken;
-                state.refreshToken = data.tokens.refreshToken;
+                if (user) {
+                    state.student = user;
+                }
+                state.accessToken = data.accessToken;
+                state.refreshToken = data.refreshToken;
                 state.isAuthenticated = true;
                 state.error = null;
             })
@@ -190,8 +217,15 @@ const authSlice = createSlice({
                 state.error = null;
             })
             .addCase(register.fulfilled, (state, action) => {
+                const data = action.payload.data
+                const user = action.payload.user
+                if (!data) return
                 state.isLoading = false;
-                state.student = action.payload;
+                state.accessToken = data.accessToken;
+                state.refreshToken = data.refreshToken;
+                if (user) {
+                    state.student = user;
+                }
                 state.isAuthenticated = true;
                 state.error = null;
             })

@@ -50,36 +50,36 @@ export default function ResetPasswordConfirmPage() {
   };
 
   return (
-    <div className="flex w-full justify-center items-center flex-col md:gap-6 gap-3">
-      <div className="flex w-full flex-col justify-center items-center 2xl:gap-15 md:gap-12 gap-6">
+    <div className="flex w-full justify-center items-center flex-col gap-4 sm:gap-6 md:gap-8 lg:gap-10">
+      <div className="flex w-full flex-col justify-center items-center gap-4 sm:gap-6 md:gap-8 lg:gap-10 xl:gap-12 2xl:gap-15">
         <Logo />
-        <p className="text-primary text-3xl md:text-4xl font-bold font-open-sans">
+        <p className="text-primary text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold font-open-sans text-center">
           Đặt lại mật khẩu
         </p>
       </div>
 
       <form
-        className="space-y-3 md:space-y-6 w-full flex flex-col items-center"
+        className="space-y-4 sm:space-y-6 md:space-y-8 w-full flex flex-col items-center"
         onSubmit={handleSubmit}
       >
         {success ? (
-          <div className="flex flex-col justify-center items-center gap-6">
+          <div className="flex flex-col justify-center items-center gap-4 sm:gap-6 md:gap-8 w-full">
             <SuccessCircle />
             <AuthButton
               onClick={() => router.push("/auth/login")}
               variant="outline"
             >
-              <div className="text-primary">Đăng nhập ngay</div>
+              <div className="text-primary text-sm sm:text-base md:text-lg">Đăng nhập ngay</div>
             </AuthButton>
           </div>
         ) : error ? (
-          <div className="flex flex-col justify-center items-center gap-6">
+          <div className="flex flex-col justify-center items-center gap-4 sm:gap-6 md:gap-8 w-full">
             <ErrorCircle />
             <AuthButton
               onClick={() => router.push("/auth/email/reset-password")}
               variant="outline"
             >
-              <div className="text-red-500">Thử lại</div>
+              <div className="text-red-500 text-sm sm:text-base md:text-lg">Thử lại</div>
             </AuthButton>
           </div>
         ) : (
@@ -119,7 +119,7 @@ export default function ResetPasswordConfirmPage() {
             />
 
             <AuthButton type="submit" variant="primary" isLoading={isLoading}>
-              <div className="text-white">Đổi mật khẩu</div>
+              <div className="text-white text-sm sm:text-base md:text-lg">Đổi mật khẩu</div>
             </AuthButton>
           </>
         )}

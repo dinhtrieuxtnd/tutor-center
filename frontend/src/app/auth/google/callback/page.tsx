@@ -67,12 +67,12 @@ const AuthCallbackPage: React.FC = () => {
     }, [searchParams, router, showSuccess, showError, isProcessed]);
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-            <div className="max-w-md w-full space-y-8 text-center">
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-sm sm:max-w-md md:max-w-lg w-full space-y-6 sm:space-y-8 text-center">
                 <div className="flex flex-col items-center font-open-sans">
                     <LoadingSpinner size="lg" />
-                    <h2 className="mt-6 text-2xl font-bold text-gray-900">Đang xử lý đăng nhập...</h2>
-                    <p className="mt-2 text-sm text-gray-600">Vui lòng chờ trong giây lát</p>
+                    <h2 className="mt-4 sm:mt-6 text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900">Đang xử lý đăng nhập...</h2>
+                    <p className="mt-2 text-base sm:text-lg md:text-xl text-gray-600">Vui lòng chờ trong giây lát</p>
                 </div>
             </div>
         </div>

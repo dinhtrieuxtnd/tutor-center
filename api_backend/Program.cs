@@ -101,6 +101,17 @@ namespace api_backend
 
             builder.Services.AddAuthorization();
 
+            // Add CORS
+            builder.Services.AddCors(options =>
+            {
+                options.AddDefaultPolicy(policy =>
+                {
+                    policy.WithOrigins("http://localhost:3000", "http://127.0.0.1:3000")
+                          .AllowAnyHeader()
+                          .AllowAnyMethod()
+                          .AllowCredentials();
+                });
+            });
 
             var app = builder.Build();
 
@@ -112,6 +123,9 @@ namespace api_backend
             }
 
             app.UseHttpsRedirection();
+
+            // Use CORS
+            app.UseCors();
 
             app.UseAuthentication();
             app.UseAuthorization();

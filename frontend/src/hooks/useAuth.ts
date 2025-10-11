@@ -25,7 +25,7 @@ export const useAuth = () => {
 
   // Action handlers
   const handleLogin = useCallback(
-    (credentials: Omit<LoginRequest, "userAgent" | "ipAddress" | "deviceFingerprint">) =>
+    (credentials: LoginRequest) =>
       dispatch(login(credentials)),
     [dispatch]
   )

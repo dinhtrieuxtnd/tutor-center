@@ -8,6 +8,9 @@ export interface LoginRequest {
     username?: string
     email?: string
     password: string
+    userAgent?: string
+    ipAddress?: string
+    deviceFingerprint?: string
 }
 
 export interface RegisterStudentRequest {

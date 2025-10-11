@@ -34,19 +34,19 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="flex w-full justify-center items-center flex-col md:gap-6 gap-3">
-      <div className="flex w-full flex-col justify-center items-center md:gap-15 gap-6">
+    <div className="flex w-full justify-center items-center flex-col gap-4 sm:gap-6 md:gap-8 lg:gap-10">
+      <div className="flex w-full flex-col justify-center items-center gap-4 sm:gap-6 md:gap-8 lg:gap-10 xl:gap-12 2xl:gap-15">
         <Logo />
-        <p className="text-primary text-3xl md:text-4xl font-bold font-open-sans">
+        <p className="text-primary text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold font-open-sans text-center">
           Quên mật khẩu
         </p>
-        <p className="text-gray-600 text-center text-base">
+        <p className="text-gray-600 text-center text-base sm:text-lg md:text-xl max-w-md">
           Nhập email đã đăng ký để nhận liên kết đặt lại mật khẩu
         </p>
       </div>
 
       <form
-        className="space-y-3 md:space-y-6 w-full"
+        className="space-y-4 sm:space-y-5 md:space-y-6 lg:space-y-8 w-full"
         onSubmit={handleSubmit}
       >
         <AuthInput
@@ -63,7 +63,7 @@ export default function ResetPasswordPage() {
           isLoading={isLoading}
           disabled={countdown > 0} // disable khi đang countdown
         >
-          <div className="text-white">
+          <div className="text-white text-sm sm:text-base md:text-lg">
             {countdown > 0 ? `Gửi lại sau ${countdown}s` : "Gửi yêu cầu"}
           </div>
         </AuthButton>
@@ -71,13 +71,13 @@ export default function ResetPasswordPage() {
 
       {/* Quay lại login */}
       <div className="w-full flex justify-center items-center">
-        <p>
-          <span className="text-black text-base font-normal font-open-sans">
+        <p className="text-center">
+          <span className="text-black text-sm sm:text-base md:text-lg font-normal font-open-sans">
             Nhớ mật khẩu rồi?{" "}
           </span>
           <Link
             href="/auth/login"
-            className="hover:underline cursor-pointer text-primary text-base font-semibold font-open-sans"
+            className="hover:underline cursor-pointer text-primary text-sm sm:text-base md:text-lg font-semibold font-open-sans"
           >
             Đăng nhập ngay
           </Link>
