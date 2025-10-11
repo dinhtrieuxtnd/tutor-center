@@ -486,3 +486,170 @@ CREATE TABLE dbo.RefreshTokens (
 CREATE INDEX IX_RefreshTokens_User_Expires ON dbo.RefreshTokens(UserId, ExpiresAt DESC);
 CREATE INDEX IX_RefreshTokens_Replaced ON dbo.RefreshTokens(ReplacedByHash);
 GO
+
+INSERT INTO Roles ([Name], [Description]) VALUES
+('Admin', N'Quản trị viên hệ thống, có quyền cao nhất'),
+('Tutor', N'Giáo viên, người tạo và quản lý lớp học'),
+('Student', N'Học sinh, người tham gia lớp học');
+GO
+
+INSERT INTO Permissions (Code, [Description]) VALUES
+-- Class management permissions
+('CLASS_CREATE', N'Tạo lớp học mới'),
+('CLASS_EDIT', N'Chỉnh sửa thông tin lớp học'),
+('CLASS_DELETE', N'Xoá lớp học'),
+('CLASS_ARCHIVE', N'Lưu trữ lớp học'),
+('CLASS_VIEW', N'Xem thông tin lớp học'),
+('CLASS_VIEW_PRIVATE', N'Xem lớp học riêng tư/đã archive'),
+('CLASS_ENROLL', N'Tham gia lớp học'),
+('CLASS_MANAGE_STUDENTS', N'Quản lý học sinh trong lớp học'),
+('CLASS_MANAGE_JOIN_REQUESTS', N'Quản lý yêu cầu tham gia lớp học'),
+('CLASS_MANAGE_PAYMENTS', N'Quản lý thanh toán của lớp học'),
+
+-- Announcement permissions
+('CLASS_POST_ANNOUNCEMENT', N'Đăng thông báo trong lớp học'),
+('ANNOUNCEMENT_EDIT', N'Chỉnh sửa thông báo'),
+('ANNOUNCEMENT_DELETE', N'Xóa thông báo'),
+
+-- Lesson management permissions
+('LESSON_CREATE', N'Tạo bài học mới'),
+('LESSON_EDIT', N'Chỉnh sửa bài học'),
+('LESSON_DELETE', N'Xoá bài học'),
+('LESSON_VIEW', N'Xem bài học và tài liệu'),
+
+-- Material management permissions
+('MATERIAL_UPLOAD', N'Tải tài liệu lên bài học'),
+('MATERIAL_DELETE', N'Xoá tài liệu khỏi bài học'),
+('MATERIAL_MANAGE', N'Quản lý tài liệu (sửa thông tin, di chuyển)'),
+
+-- Exercise permissions
+('EXERCISE_CREATE', N'Tạo bài tập mới'),
+('EXERCISE_EDIT', N'Chỉnh sửa bài tập'),
+('EXERCISE_DELETE', N'Xóa bài tập'),
+('EXERCISE_GRADE', N'Chấm điểm bài tập'),
+('EXERCISE_SUBMIT', N'Nộp bài tập'),
+('EXERCISE_VIEW', N'Xem bài tập và nộp bài'),
+
+-- Quiz permissions
+('QUIZ_CREATE', N'Tạo bài kiểm tra mới'),
+('QUIZ_EDIT', N'Chỉnh sửa bài kiểm tra'),
+('QUIZ_DELETE', N'Xoá bài kiểm tra'),
+('QUIZ_PUBLISH', N'Phát hành bài kiểm tra cho học sinh'),
+('QUIZ_GRADE', N'Chấm điểm bài kiểm tra'),
+('QUIZ_TAKE', N'Tham gia làm bài kiểm tra'),
+('QUIZ_VIEW', N'Xem bài kiểm tra và làm bài'),
+('QUIZ_VIEW_RESULTS', N'Xem kết quả bài kiểm tra của học sinh'),
+('QUIZ_RESET_ATTEMPTS', N'Reset số lần làm bài của học sinh'),
+
+-- User management permissions
+('USER_MANAGE', N'Quản lý người dùng hệ thống'),
+('USER_VIEW', N'Xem thông tin người dùng'),
+
+-- Report permissions
+('REPORT_CREATE', N'Tạo báo cáo vi phạm'),
+('REPORT_VIEW', N'Xem báo cáo vi phạm'),
+('REPORT_HANDLE', N'Xử lý báo cáo vi phạm'),
+
+-- Payment permissions
+('PAYMENT_MAKE', N'Thực hiện thanh toán cho lớp học'),
+('PAYMENT_MANAGE', N'Quản lý giao dịch thanh toán'),
+
+-- AI permissions
+('AI_AGENT_MANAGE', N'Quản lý AI Agents'),
+('AI_CONVERSATION_VIEW', N'Xem hội thoại AI của người dùng'),
+('AI_CONVERSATION_MANAGE', N'Quản lý hội thoại AI của người dùng'),
+
+-- Chat permissions
+('CHAT_VIEW', N'Xem tin nhắn trong lớp học'),
+('CHAT_MANAGE', N'Quản lý tin nhắn trong lớp học'),
+
+-- Media permissions
+('MEDIA_UPLOAD', N'Tải tệp lên hệ thống'),
+('MEDIA_VIEW', N'Xem tệp đã tải lên hệ thống'),
+('MEDIA_DELETE', N'Xoá tệp đã tải lên hệ thống'),
+('MEDIA_MANAGE', N'Quản lý tệp media (sửa thông tin, chuyển visibility)'),
+
+-- System permissions
+('REFRESH_TOKEN_MANAGE', N'Quản lý refresh token của người dùng'),
+('STATISTICS_VIEW', N'Xem thống kê hệ thống'),
+('DASHBOARD_VIEW', N'Xem dashboard quản trị'),
+('SYSTEM_SETTINGS_MANAGE', N'Quản lý cài đặt hệ thống'),
+('AUDIT_LOG_VIEW', N'Xem nhật ký hoạt động hệ thống');
+GO
+
+-- =========================================
+-- ROLE PERMISSIONS SETUP
+-- =========================================
+
+-- Admin có tất cả quyền
+INSERT INTO RolePermissions (RoleId, PermissionId)
+SELECT 1, PermissionId FROM Permissions;
+GO
+
+-- Tutor permissions
+INSERT INTO RolePermissions (RoleId, PermissionId)
+SELECT 2, PermissionId FROM Permissions 
+WHERE Code IN (
+    -- Class management
+    'CLASS_CREATE', 'CLASS_EDIT', 'CLASS_ARCHIVE', 'CLASS_VIEW', 'CLASS_MANAGE_STUDENTS',
+    'CLASS_MANAGE_JOIN_REQUESTS', 'CLASS_MANAGE_PAYMENTS',
+    
+    -- Announcements
+    'CLASS_POST_ANNOUNCEMENT', 'ANNOUNCEMENT_EDIT', 'ANNOUNCEMENT_DELETE',
+    
+    -- Lessons & Materials
+    'LESSON_CREATE', 'LESSON_EDIT', 'LESSON_DELETE', 'LESSON_VIEW',
+    'MATERIAL_UPLOAD', 'MATERIAL_DELETE', 'MATERIAL_MANAGE',
+    
+    -- Exercises
+    'EXERCISE_CREATE', 'EXERCISE_EDIT', 'EXERCISE_DELETE', 'EXERCISE_GRADE', 'EXERCISE_VIEW',
+    
+    -- Quizzes
+    'QUIZ_CREATE', 'QUIZ_EDIT', 'QUIZ_DELETE', 'QUIZ_PUBLISH', 'QUIZ_GRADE', 
+    'QUIZ_VIEW', 'QUIZ_VIEW_RESULTS', 'QUIZ_RESET_ATTEMPTS',
+    
+    -- Users & Reports
+    'USER_VIEW', 'REPORT_VIEW', 'REPORT_CREATE',
+    
+    -- Media & Chat
+    'MEDIA_UPLOAD', 'MEDIA_VIEW', 'MEDIA_DELETE', 'MEDIA_MANAGE',
+    'CHAT_VIEW', 'CHAT_MANAGE',
+    
+    -- AI (basic)
+    'AI_CONVERSATION_VIEW'
+);
+GO
+
+-- Student permissions
+INSERT INTO RolePermissions (RoleId, PermissionId)
+SELECT 3, PermissionId FROM Permissions 
+WHERE Code IN (
+    -- Class participation
+    'CLASS_ENROLL', 'CLASS_VIEW', 'LESSON_VIEW',
+    
+    -- Exercises & Quizzes
+    'EXERCISE_SUBMIT', 'EXERCISE_VIEW', 'QUIZ_TAKE', 'QUIZ_VIEW',
+    
+    -- Basic interactions
+    'PAYMENT_MAKE', 'REPORT_CREATE', 'USER_VIEW',
+    'MEDIA_UPLOAD', 'MEDIA_VIEW', 'CHAT_VIEW',
+    
+    -- AI interactions
+    'AI_CONVERSATION_VIEW'
+);
+GO
+
+-- Tạo Super Admin user (password: Admin@123456)
+-- Hash được tạo từ PBKDF2-SHA256 với 100,000 iterations, salt 16 bytes + hash 32 bytes = 48 bytes total
+INSERT INTO Users (FullName, Email, PasswordHash, Phone, RoleId, IsActive, CreatedAt, UpdatedAt)
+VALUES (
+    N'Super Administrator',
+    'admin@tutorcenter.com',
+    0x31E112645723C96AC97488E1A34A98BEEBD87C4F2FB5F3EE361E42406C16A50B6B398A24DD2C3AD55CC2A781EC20B867, -- Admin@123456
+    '+84901234567',
+    1, -- Admin role
+    1,
+    SYSUTCDATETIME(),
+    SYSUTCDATETIME()
+);
+GO
