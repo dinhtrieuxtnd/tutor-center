@@ -14,7 +14,7 @@ class ApiService {
 
     constructor() {
         this.isDevelopment = process.env.NODE_ENV === 'development';
-        this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+        this.baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5293/api';
 
         this.api = axios.create({
             baseURL: this.baseURL,

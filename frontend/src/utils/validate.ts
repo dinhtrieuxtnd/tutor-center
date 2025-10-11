@@ -31,21 +31,17 @@ export const validateEmail = (email?: string): boolean => {
 };
 
 /**
- * Validate username - chỉ cho phép chữ + số, không ký tự đặc biệt
+ * Validate email for login - sử dụng để xác thực email khi đăng nhập
  */
-export const validateUsername = (username: string): boolean => {
-    if (!username.trim()) {
-        showError("Tên đăng nhập không được để trống");
-        return false;
-    }
-    if (username.length < 4) {
-        showError("Tên đăng nhập phải có ít nhất 4 ký tự");
+export const validateUsername = (email: string): boolean => {
+    if (!email.trim()) {
+        showError("Email không được để trống");
         return false;
     }
 
-    const usernameRegex = /^[a-zA-Z0-9]+$/;
-    if (!usernameRegex.test(username)) {
-        showError("Tên đăng nhập chỉ được chứa chữ cái và số, không có ký tự đặc biệt");
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) {
+        showError("Email không hợp lệ");
         return false;
     }
 

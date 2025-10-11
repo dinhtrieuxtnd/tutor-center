@@ -1,20 +1,18 @@
 // lib/endpoints.ts
 
 // Base paths
-const AUTH_BASE = "/auth"
+const AUTH_BASE = "/Auth"
 const STUDENT_BASE = "/students"
 const ADMIN_BASE = "/admins"
 
 export const API_ENDPOINTS = {
     auth: {
-        student: {
-            login: `${AUTH_BASE}/student/login`,
-            register: `${AUTH_BASE}/student/register`,
-        },
-        reset_password_token: `${AUTH_BASE}/reset-password/token`,
-            
+        login: `${AUTH_BASE}/login`,
+        register: `${AUTH_BASE}/register`,
         refresh: `${AUTH_BASE}/refresh`,
         logout: `${AUTH_BASE}/logout`,
+        me: `${AUTH_BASE}/me`,
+        reset_password_token: `${AUTH_BASE}/reset-password/token`,
         send_email: {
             reset_password: `${AUTH_BASE}/send-reset-password`
         },

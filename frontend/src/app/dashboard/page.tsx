@@ -65,16 +65,16 @@ export default function DashboardPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-              <p className="text-gray-600">Chào mừng trở lại, {user?.name}!</p>
+              <h1 className="text-4xl font-bold text-gray-900">Dashboard</h1>
+              <p className="text-lg text-gray-600 mt-1">Chào mừng trở lại, {user?.name}!</p>
             </div>
             <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-500">
+              <div className="text-base text-gray-500">
                 {user?.email}
               </div>
               <button
                 onClick={handleLogout}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-md text-base font-medium transition-colors"
               >
                 Đăng xuất
               </button>
