@@ -1,4 +1,5 @@
 ﻿
+using Amazon.S3;
 using api_backend.Configurations;
 using api_backend.DbContexts;
 using api_backend.Repositories.Abstracts;
@@ -19,6 +20,13 @@ namespace api_backend
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
+
+            // Configure S3
+            builder.Services.Configure<S3Settings>(
+                builder.Configuration.GetSection("S3Storage"));
+
+            builder.Services.AddAWSService<IAmazonS3>();
+            builder.Services.AddScoped<IStorageService, S3StorageService>();
 
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
