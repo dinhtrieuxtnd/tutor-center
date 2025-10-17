@@ -1,5 +1,4 @@
-﻿
-using Amazon.S3;
+﻿using Amazon.S3;
 using api_backend.Configurations;
 using api_backend.DbContexts;
 using api_backend.Repositories.Abstracts;
@@ -70,6 +69,11 @@ namespace api_backend
                 opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
             // DI
+            builder.Services.AddScoped<IClassroomRepository, ClassroomRepository>();
+            builder.Services.AddScoped<IJoinRequestRepository, JoinRequestRepository>();
+            builder.Services.AddScoped<IClassroomService, ClassroomService>();
+            builder.Services.AddScoped<IJoinRequestService, JoinRequestService>();
+
             builder.Services.AddScoped<IUserService, UserService>();
             builder.Services.AddScoped<IRoleService, RoleService>();
             builder.Services.AddScoped<IAuthService, AuthService>();
@@ -123,7 +127,6 @@ namespace api_backend
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
@@ -134,11 +137,8 @@ namespace api_backend
 
             // Use CORS
             app.UseCors();
-
             app.UseAuthentication();
             app.UseAuthorization();
-
-
             app.MapControllers();
 
             app.Run();

@@ -2,7 +2,7 @@
 
 const config = {
   // Backend API configuration
-  API_BASE_URL: 'http://192.168.0.102:5293/api', // IP thật của máy để mobile có thể connect (cập nhật port từ 5000 -> 5293)
+  API_BASE_URL: 'http://192.168.1.103:5293/api', // IP thật của máy để mobile có thể connect (cập nhật port từ 5000 -> 5293)
   
   // Alternative URLs for different environments
   // Local only: 'http://localhost:5000/api' (chỉ work trên web)
