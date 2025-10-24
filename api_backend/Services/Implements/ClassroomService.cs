@@ -45,7 +45,6 @@ namespace api_backend.Services.Implements
 
         public async Task<ClassroomDto> CreateAsync(ClassroomCreateRequestDto dto, int actorUserId, CancellationToken ct)
         {
-            // IMPORTANT: CreatedBy is a NOT NULL FK to Users(UserId). Must set it.
             var entity = new Classroom
             {
                 Title = dto.Title,

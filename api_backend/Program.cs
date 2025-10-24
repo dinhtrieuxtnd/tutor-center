@@ -1,4 +1,5 @@
-﻿using Amazon.S3;
+﻿using Amazon.Runtime;
+using Amazon.S3;
 using api_backend.Configurations;
 using api_backend.DbContexts;
 using api_backend.Repositories.Abstracts;
@@ -7,6 +8,8 @@ using api_backend.Services.Abstracts;
 using api_backend.Services.Implements;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
@@ -24,7 +27,22 @@ namespace api_backend
             builder.Services.Configure<S3Settings>(
                 builder.Configuration.GetSection("S3Storage"));
 
-            builder.Services.AddAWSService<IAmazonS3>();
+            builder.Services.AddSingleton<IAmazonS3>(sp =>
+            {
+                var opt = sp.GetRequiredService<IOptions<S3Settings>>().Value;
+
+                // Nếu đang dùng MinIO (ServiceUrl có dạng http://localhost:9000)
+                var creds = new BasicAWSCredentials(opt.AccessKey, opt.SecretKey);
+                var cfg = new AmazonS3Config
+                {
+                    ServiceURL = opt.ServiceUrl,                 // ví dụ: "http://localhost:9000"
+                    ForcePathStyle = true,                       // MinIO cần true
+                    AuthenticationRegion = string.IsNullOrWhiteSpace(opt.Region) ? "us-east-1" : opt.Region
+                };
+                return new AmazonS3Client(creds, cfg);
+
+                
+            });
             builder.Services.AddScoped<IStorageService, S3StorageService>();
 
             builder.Services.AddControllers();
@@ -69,19 +87,28 @@ namespace api_backend
                 opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
             // DI
+            builder.Services.AddScoped<ILessonRepository, LessonRepository>();
+            builder.Services.AddScoped<IMaterialRepository, MaterialRepository>();
+            builder.Services.AddScoped<IMediaRepository, MediaRepository>();
+
             builder.Services.AddScoped<IClassroomRepository, ClassroomRepository>();
             builder.Services.AddScoped<IJoinRequestRepository, JoinRequestRepository>();
             builder.Services.AddScoped<IClassroomService, ClassroomService>();
             builder.Services.AddScoped<IJoinRequestService, JoinRequestService>();
 
+            builder.Services.AddScoped<IUserRepository, UserRepository>();
+            builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+            builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+
+            // Services
+            builder.Services.AddScoped<ILessonService, LessonService>();
+            builder.Services.AddScoped<IMaterialService, MaterialService>();
+            builder.Services.AddScoped<IMediaService, MediaService>();
+
             builder.Services.AddScoped<IUserService, UserService>();
             builder.Services.AddScoped<IRoleService, RoleService>();
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<IJwtService, JwtService>();
-
-            builder.Services.AddScoped<IUserRepository, UserRepository>();
-            builder.Services.AddScoped<IRoleRepository, RoleRepository>();
-            builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddSingleton<IJwtService, JwtService>();
