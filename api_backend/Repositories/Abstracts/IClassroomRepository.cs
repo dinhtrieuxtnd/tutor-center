@@ -13,6 +13,8 @@ namespace api_backend.Repositories.Abstracts
         Task<bool> UserExistsAsync(int userId, CancellationToken ct = default);
         Task<bool> IsUserRoleAsync(int userId, string roleName, CancellationToken ct = default);
         Task RemoveStudentAsync(int classroomId, int studentId, CancellationToken ct = default);
+        Task EnsureAcceptedJoinRequestAsync(int classroomId, int studentId, int handledBy, CancellationToken ct = default);
+
 
 
 

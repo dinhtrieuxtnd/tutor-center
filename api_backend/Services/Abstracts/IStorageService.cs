@@ -33,4 +33,6 @@ public interface IStorageService
     /// <param name="path">The path/key of the file to check</param>
     /// <param name="bucket">Optional bucket name, if not provided uses default bucket</param>
     Task<bool> FileExistsAsync(string path, string? bucket = null);
+    
+
 }

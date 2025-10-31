@@ -1,4 +1,4 @@
-using Amazon.S3;
+﻿using Amazon.S3;
 using Amazon.S3.Model;
 using api_backend.Configurations;
 using api_backend.Services.Abstracts;
@@ -51,20 +51,26 @@ public class S3StorageService : IStorageService
     {
         bucket ??= _settings.DefaultBucket;
 
+        var isHttp = _settings.ServiceUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase);
+
+
         if (expiry.HasValue)
         {
             var request = new GetPreSignedUrlRequest
             {
                 BucketName = bucket,
                 Key = path,
-                Expires = DateTime.UtcNow.Add(expiry.Value)
+                Expires = DateTime.UtcNow.Add(expiry.Value),
+
+                // ÉP giao thức đúng với MinIO đang chạy
+                Protocol = isHttp ? Protocol.HTTP : Protocol.HTTPS
             };
 
             return _s3Client.GetPreSignedURL(request);
         }
 
         // For public files, return direct URL
-        return $"{_settings.ServiceUrl}/{bucket}/{path}";
+        return $"{_settings.ServiceUrl.TrimEnd('/')}/{bucket}/{path}";
     }
 
     public async Task<bool> FileExistsAsync(string path, string? bucket = null)

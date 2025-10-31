@@ -57,7 +57,8 @@ namespace api_backend.Repositories.Implements
                 ClassroomId = classroomId,
                 StudentId = studentId,
                 JoinedAt = DateTime.UtcNow,
-                Status = 1
+                Status = 1,
+                IsPaid = false
             };
             await _db.ClassroomStudents.AddAsync(cs, ct);
         }
@@ -78,6 +79,36 @@ namespace api_backend.Repositories.Implements
                 .FirstOrDefaultAsync(x => x.ClassroomId == classroomId && x.StudentId == studentId, ct);
             if (cs != null)
                 _db.ClassroomStudents.Remove(cs);
+        }
+
+        public async Task EnsureAcceptedJoinRequestAsync(int classroomId, int studentId, int handledBy, CancellationToken ct = default)
+        {
+            // 1) Nếu đã có pending → chuyển sang accepted
+            var pending = await _db.JoinRequests
+                .FirstOrDefaultAsync(j => j.ClassroomId == classroomId
+                                       && j.StudentId == studentId
+                                       && j.Status == "pending", ct);
+            if (pending != null)
+            {
+                pending.Status = "accepted";
+                pending.HandledBy = handledBy;
+                pending.HandledAt = DateTime.UtcNow;
+                // giữ nguyên RequestedAt/Note nếu muốn
+                return;
+            }
+
+            // 2) Không có pending → tạo accepted mới (ghi nhận lịch sử do GV thêm trực tiếp)
+            var accepted = new JoinRequest
+            {
+                ClassroomId = classroomId,
+                StudentId = studentId,
+                Status = "accepted",
+                Note = "Enrolled by teacher",
+                RequestedAt = DateTime.UtcNow,    // coi như thời điểm phát sinh
+                HandledBy = handledBy,
+                HandledAt = DateTime.UtcNow
+            };
+            await _db.JoinRequests.AddAsync(accepted, ct);
         }
     }
 }
