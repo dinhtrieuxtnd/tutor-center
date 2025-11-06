@@ -91,6 +91,7 @@ namespace api_backend.Services.Implements
                 return "exists";
 
             await _repos.AddStudentAsync(classroomId, studentId, ct);
+            await _repos.EnsureAcceptedJoinRequestAsync(classroomId, studentId, actorUserId, ct);
             await _repos.SaveChangesAsync(ct);
             return "added";
         }

@@ -91,6 +91,10 @@ namespace api_backend
             builder.Services.AddScoped<IMaterialRepository, MaterialRepository>();
             builder.Services.AddScoped<IMediaRepository, MediaRepository>();
 
+            builder.Services.AddScoped<IExerciseRepository, ExerciseRepository>();
+            builder.Services.AddScoped<IExerciseSubmissionRepository, ExerciseSubmissionRepository>();
+            builder.Services.AddScoped<IExerciseService, ExerciseService>();
+
             builder.Services.AddScoped<IClassroomRepository, ClassroomRepository>();
             builder.Services.AddScoped<IJoinRequestRepository, JoinRequestRepository>();
             builder.Services.AddScoped<IClassroomService, ClassroomService>();
@@ -104,6 +108,8 @@ namespace api_backend
             builder.Services.AddScoped<ILessonService, LessonService>();
             builder.Services.AddScoped<IMaterialService, MaterialService>();
             builder.Services.AddScoped<IMediaService, MediaService>();
+
+            builder.Services.AddScoped<IExerciseService, ExerciseService>();
 
             builder.Services.AddScoped<IUserService, UserService>();
             builder.Services.AddScoped<IRoleService, RoleService>();
