@@ -1,305 +1,452 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
+import { AppHeader } from "@/components/layout";
+import {
+  StatCard,
+  QuickActionCard,
+  ClassroomCard,
+  ActivityCard,
+  JoinClassModal,
+  type ClassroomItem,
+  type ActivityItem,
+  type UserRole,
+} from "@/components/dashboard";
 
-interface Stats {
-  totalUsers: number;
-  totalOrders: number;
-  revenue: number;
-  growth: number;
+interface MockUser {
+  id: number;
+  fullName: string;
+  email: string;
+  role: UserRole;
+  avatar?: string;
+}
+
+interface StatsData {
+  totalClasses: number;
+  totalStudents: number;
+  totalTeachers: number;
+  totalRevenue: number;
+  pendingRequests: number;
+  activeStudents: number;
+  completedExercises: number;
+  upcomingLessons: number;
 }
 
 export default function DashboardPage() {
-  const { user, loading, isAuthenticated, logout } = useAuth();
-  const [stats, setStats] = useState<Stats>({
-    totalUsers: 0,
-    totalOrders: 0,
-    revenue: 0,
-    growth: 0
-  });
-  const [loadingStats, setLoadingStats] = useState(true);
   const router = useRouter();
+  const [isJoinClassModalOpen, setIsJoinClassModalOpen] = useState(false);
 
-  useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      router.push('/login');
-      return;
-    }
+  // Mock user data - Trong thực tế sẽ lấy từ Redux store hoặc API
+  const [currentUser] = useState<MockUser>({
+    id: 1,
+    fullName: "Nguyễn Văn A",
+    email: "admin@bee.edu.vn",
+    role: "student", // Thay đổi thành 'teacher' hoặc 'student' để xem giao diện khác
+    avatar: undefined,
+  });
 
-    if (isAuthenticated) {
-      // Simulate loading dashboard data
-      setTimeout(() => {
-        setStats({
-          totalUsers: 1234,
-          totalOrders: 567,
-          revenue: 89000,
-          growth: 12.5
-        });
-        setLoadingStats(false);
-      }, 1000);
-    }
-  }, [loading, isAuthenticated, router]);
+  const [stats, setStats] = useState<StatsData>({
+    totalClasses: 24,
+    totalStudents: 156,
+    totalTeachers: 12,
+    totalRevenue: 125000000,
+    pendingRequests: 8,
+    activeStudents: 142,
+    completedExercises: 89,
+    upcomingLessons: 5,
+  });
+
+  const [classrooms, setClassrooms] = useState<ClassroomItem[]>([
+    {
+      id: 1,
+      title: "Toán 12 - Luyện thi THPT QG",
+      teacher: "Thầy Nguyễn Văn B",
+      students: 25,
+      nextLesson: "14:00 - 16:00, Thứ 2",
+      status: "active",
+      progress: 65,
+    },
+    {
+      id: 2,
+      title: "Vật Lý 11 - Nâng cao",
+      teacher: "Cô Trần Thị C",
+      students: 18,
+      nextLesson: "18:00 - 20:00, Thứ 3",
+      status: "active",
+      progress: 45,
+    },
+    {
+      id: 3,
+      title: "Hóa học 12 - Cơ bản",
+      teacher: "Thầy Lê Văn D",
+      students: 22,
+      status: "pending",
+      progress: 0,
+    },
+  ]);
+
+  const [activities, setActivities] = useState<ActivityItem[]>([
+    {
+      id: 1,
+      type: "join_request",
+      message: "Nguyễn Thị E đã gửi yêu cầu tham gia lớp Toán 12",
+      time: "5 phút trước",
+      user: "Nguyễn Thị E",
+      icon: "user-plus",
+      color: "blue",
+    },
+    {
+      id: 2,
+      type: "new_lesson",
+      message: 'Bài giảng mới "Hàm số bậc hai" đã được đăng trong lớp Toán 12',
+      time: "15 phút trước",
+      icon: "book",
+      color: "green",
+    },
+    {
+      id: 3,
+      type: "exercise_submitted",
+      message: 'Trần Văn F đã nộp bài tập "Lượng giác"',
+      time: "30 phút trước",
+      user: "Trần Văn F",
+      icon: "file-check",
+      color: "purple",
+    },
+    {
+      id: 4,
+      type: "payment",
+      message: "Thanh toán học phí lớp Vật Lý 11 thành công",
+      time: "1 giờ trước",
+      icon: "dollar",
+      color: "yellow",
+    },
+  ]);
 
   const handleLogout = () => {
-    logout();
+    // Clear auth data
+    document.cookie =
+      "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    document.cookie =
+      "refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    router.push("/auth/login");
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-500"></div>
-      </div>
-    );
-  }
+  const handleJoinClass = async (classCode: string) => {
+    // TODO: Gọi API để tham gia lớp học
+    console.log('Joining class with code:', classCode);
+    
+    // Mock API call
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // Show success message (có thể dùng toast notification)
+    alert(`Đã gửi yêu cầu tham gia lớp học với mã: ${classCode}`);
+  };
 
-  if (!isAuthenticated) {
-    return null; // Will redirect to login
-  }
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Chào buổi sáng";
+    if (hour < 18) return "Chào buổi chiều";
+    return "Chào buổi tối";
+  };
+
+  const getRoleName = (role: UserRole) => {
+    const roles = {
+      admin: "Quản trị viên",
+      teacher: "Giáo viên",
+      student: "Học sinh",
+    };
+    return roles[role];
+  };
+
+  // Render khác nhau theo vai trò
+  const renderStats = () => {
+    if (currentUser.role === "admin") {
+      return (
+        <>
+          <StatCard
+            title="Tổng lớp học"
+            value={stats.totalClasses}
+            icon="school"
+            color="blue"
+            trend="+12%"
+          />
+          <StatCard
+            title="Tổng học sinh"
+            value={stats.totalStudents}
+            icon="users"
+            color="green"
+            trend="+8%"
+          />
+          <StatCard
+            title="Tổng giáo viên"
+            value={stats.totalTeachers}
+            icon="user-tie"
+            color="purple"
+          />
+          <StatCard
+            title="Doanh thu tháng"
+            value={`${(stats.totalRevenue / 1000000).toFixed(1)}M`}
+            icon="dollar"
+            color="yellow"
+            trend="+15%"
+          />
+        </>
+      );
+    } else if (currentUser.role === "teacher") {
+      return (
+        <>
+          <StatCard
+            title="Lớp học của tôi"
+            value={6}
+            icon="school"
+            color="blue"
+          />
+          <StatCard
+            title="Tổng học sinh"
+            value={stats.activeStudents}
+            icon="users"
+            color="green"
+          />
+          <StatCard
+            title="Yêu cầu chờ duyệt"
+            value={stats.pendingRequests}
+            icon="clock"
+            color="orange"
+            alert={stats.pendingRequests > 0}
+          />
+          <StatCard
+            title="Bài tập chờ chấm"
+            value={15}
+            icon="file-check"
+            color="purple"
+          />
+        </>
+      );
+    } else {
+      return (
+        <>
+          <StatCard title="Lớp đang học" value={3} icon="school" color="blue" />
+          <StatCard
+            title="Bài học sắp tới"
+            value={stats.upcomingLessons}
+            icon="calendar"
+            color="green"
+          />
+          <StatCard
+            title="Bài tập hoàn thành"
+            value={stats.completedExercises}
+            icon="check-circle"
+            color="purple"
+          />
+          <StatCard
+            title="Điểm trung bình"
+            value="8.5"
+            icon="star"
+            color="yellow"
+            trend="+0.5"
+          />
+        </>
+      );
+    }
+  };
+
+  const renderQuickActions = () => {
+    if (currentUser.role === "admin") {
+      return (
+        <>
+          <QuickActionCard
+            title="Tạo lớp học mới"
+            description="Thêm lớp học vào hệ thống"
+            icon="plus-circle"
+            color="blue"
+            onClick={() => {}}
+          />
+          <QuickActionCard
+            title="Quản lý giáo viên"
+            description="Thêm, sửa, xóa giáo viên"
+            icon="user-tie"
+            color="green"
+            onClick={() => {}}
+          />
+          <QuickActionCard
+            title="Báo cáo thống kê"
+            description="Xem báo cáo chi tiết"
+            icon="chart-bar"
+            color="purple"
+            onClick={() => {}}
+          />
+          <QuickActionCard
+            title="Quản lý thanh toán"
+            description="Theo dõi giao dịch"
+            icon="dollar"
+            color="yellow"
+            onClick={() => {}}
+          />
+        </>
+      );
+    } else if (currentUser.role === "teacher") {
+      return (
+        <>
+          <QuickActionCard
+            title="Tạo bài giảng"
+            description="Thêm bài giảng mới"
+            icon="book"
+            color="blue"
+            onClick={() => {}}
+          />
+          <QuickActionCard
+            title="Tạo bài tập"
+            description="Giao bài tập cho học sinh"
+            icon="file-edit"
+            color="green"
+            onClick={() => {}}
+          />
+          <QuickActionCard
+            title="Duyệt yêu cầu"
+            description={`${stats.pendingRequests} yêu cầu chờ duyệt`}
+            icon="user-check"
+            color="orange"
+            badge={stats.pendingRequests}
+            onClick={() => {}}
+          />
+          <QuickActionCard
+            title="AI Trợ giảng"
+            description="Soạn giáo án với AI"
+            icon="robot"
+            color="purple"
+            onClick={() => {}}
+          />
+        </>
+      );
+    } else {
+      return (
+        <>
+          <QuickActionCard
+            title="Tìm lớp học"
+            description="Tham gia lớp học mới"
+            icon="search"
+            color="blue"
+            onClick={() => setIsJoinClassModalOpen(true)}
+          />
+          <QuickActionCard
+            title="Làm bài tập"
+            description="Xem bài tập đã giao"
+            icon="file-edit"
+            color="green"
+            onClick={() => {}}
+          />
+          <QuickActionCard
+            title="Lịch học"
+            description="Xem lịch học tuần này"
+            icon="calendar"
+            color="purple"
+            onClick={() => {}}
+          />
+          <QuickActionCard
+            title="Thanh toán"
+            description="Thanh toán học phí"
+            icon="credit-card"
+            color="yellow"
+            onClick={() => {}}
+          />
+        </>
+      );
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-4xl font-bold text-gray-900">Dashboard</h1>
-              <p className="text-lg text-gray-600 mt-1">Chào mừng trở lại, {user?.name}!</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-base text-gray-500">
-                {user?.email}
-              </div>
-              <button
-                onClick={handleLogout}
-                className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-md text-base font-medium transition-colors"
-              >
-                Đăng xuất
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 font-open-sans">
+      {/* App Header */}
+      <AppHeader
+        currentPage="dashboard"
+        userName={currentUser.fullName}
+        userRole={getRoleName(currentUser.role)}
+        onLogout={handleLogout}
+        showTeacherLink={currentUser.role === "teacher"}
+      />
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-indigo-500 rounded-md flex items-center justify-center">
-                      <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        Tổng người dùng
-                      </dt>
-                      <dd className="text-lg font-medium text-gray-900">
-                        {loadingStats ? '...' : stats.totalUsers.toLocaleString()}
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2 font-poppins">
+            {getGreeting()}, {currentUser.fullName}! 👋
+          </h1>
+          <p className="text-gray-600 font-open-sans">
+            Đây là tổng quan về hoạt động của bạn trên hệ thống Tutor Center
+          </p>
+        </div>
 
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
-                      <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"></path>
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        Tổng đơn hàng
-                      </dt>
-                      <dd className="text-lg font-medium text-gray-900">
-                        {loadingStats ? '...' : stats.totalOrders.toLocaleString()}
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {renderStats()}
+        </div>
 
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center">
-                      <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"></path>
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd"></path>
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        Doanh thu
-                      </dt>
-                      <dd className="text-lg font-medium text-gray-900">
-                        {loadingStats ? '...' : `${stats.revenue.toLocaleString()} VNĐ`}
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
+        {/* Quick Actions */}
+        <div className="mb-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 font-poppins">
+            Thao tác nhanh
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {renderQuickActions()}
+          </div>
+        </div>
 
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
-                      <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        Tăng trưởng
-                      </dt>
-                      <dd className="text-lg font-medium text-gray-900">
-                        {loadingStats ? '...' : `+${stats.growth}%`}
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* My Classrooms / Recent Classrooms */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h2 className="text-lg font-bold text-gray-900 font-poppins">
+                  {currentUser.role === "student"
+                    ? "Lớp học của tôi"
+                    : "Lớp học gần đây"}
+                </h2>
+                <button 
+                  onClick={() => router.push('/student/classes')}
+                  className="text-sm text-primary hover:text-blue-700 font-medium font-open-sans"
+                >
+                  Xem tất cả →
+                </button>
+              </div>
+              <div className="divide-y divide-gray-200">
+                {classrooms.map((classroom) => (
+                  <ClassroomCard
+                    key={classroom.id}
+                    classroom={classroom}
+                    userRole={currentUser.role}
+                  />
+                ))}
               </div>
             </div>
           </div>
 
           {/* Recent Activity */}
-          <div className="bg-white shadow rounded-lg">
-            <div className="px-4 py-5 sm:p-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">
-                Hoạt động gần đây
-              </h3>
-              <div className="mt-5">
-                <div className="flow-root">
-                  <ul className="-mb-8">
-                    <li>
-                      <div className="relative pb-8">
-                        <div className="relative flex space-x-3">
-                          <div>
-                            <span className="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center ring-8 ring-white">
-                              <svg className="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
-                              </svg>
-                            </span>
-                          </div>
-                          <div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
-                            <div>
-                              <p className="text-sm text-gray-500">
-                                Đơn hàng mới <span className="font-medium text-gray-900">#DH001</span> đã được tạo
-                              </p>
-                            </div>
-                            <div className="text-right text-sm whitespace-nowrap text-gray-500">
-                              5 phút trước
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </li>
-                    <li>
-                      <div className="relative pb-8">
-                        <div className="relative flex space-x-3">
-                          <div>
-                            <span className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center ring-8 ring-white">
-                              <svg className="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                              </svg>
-                            </span>
-                          </div>
-                          <div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
-                            <div>
-                              <p className="text-sm text-gray-500">
-                                Người dùng mới <span className="font-medium text-gray-900">Nguyễn Văn A</span> đã đăng ký
-                              </p>
-                            </div>
-                            <div className="text-right text-sm whitespace-nowrap text-gray-500">
-                              15 phút trước
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </li>
-                  </ul>
-                </div>
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-bold text-gray-900 font-poppins">
+                  Hoạt động gần đây
+                </h2>
+              </div>
+              <div className="divide-y divide-gray-200 max-h-[600px] overflow-y-auto">
+                {activities.map((activity) => (
+                  <ActivityCard key={activity.id} activity={activity} />
+                ))}
               </div>
             </div>
           </div>
-
-          {/* Quick Actions */}
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <button className="bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow text-left">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-10 h-10 bg-indigo-500 rounded-md flex items-center justify-center">
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="ml-4">
-                  <h3 className="text-lg font-medium text-gray-900">Thêm sản phẩm</h3>
-                  <p className="text-sm text-gray-500">Tạo sản phẩm mới</p>
-                </div>
-              </div>
-            </button>
-
-            <button className="bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow text-left">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-10 h-10 bg-green-500 rounded-md flex items-center justify-center">
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="ml-4">
-                  <h3 className="text-lg font-medium text-gray-900">Xem báo cáo</h3>
-                  <p className="text-sm text-gray-500">Thống kê chi tiết</p>
-                </div>
-              </div>
-            </button>
-
-            <button className="bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow text-left">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-10 h-10 bg-yellow-500 rounded-md flex items-center justify-center">
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="ml-4">
-                  <h3 className="text-lg font-medium text-gray-900">Cài đặt</h3>
-                  <p className="text-sm text-gray-500">Quản lý hệ thống</p>
-                </div>
-              </div>
-            </button>
-          </div>
         </div>
       </main>
+
+      {/* Join Class Modal */}
+      <JoinClassModal
+        isOpen={isJoinClassModalOpen}
+        onClose={() => setIsJoinClassModalOpen(false)}
+        onSubmit={handleJoinClass}
+      />
     </div>
   );
 }

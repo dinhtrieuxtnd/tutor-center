@@ -60,9 +60,9 @@ export const LoginClient = () => {
 
     };
 
-    useEffect(() => {
-      if (isAuthenticated) router.push("/");
-    }, [isAuthenticated, router])
+    // useEffect(() => {
+    //   if (isAuthenticated) router.push("/");
+    // }, [isAuthenticated, router])
 
     useEffect(() => {
         const saved = localStorage.getItem(LOCAL_KEYS.REMEMBERME_ACCOUNT);
