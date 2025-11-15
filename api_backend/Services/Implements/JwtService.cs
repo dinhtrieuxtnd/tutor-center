@@ -27,9 +27,9 @@ namespace api_backend.Services.Implements
                 new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
                 new Claim(ClaimTypes.Name, user.FullName)
             };
-            if (user.Role != null)
+            if (!string.IsNullOrEmpty(user.Role))
             {
-                claims.Add(new Claim(ClaimTypes.Role, user.Role.Name));
+                claims.Add(new Claim(ClaimTypes.Role, user.Role));
             }
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Key));

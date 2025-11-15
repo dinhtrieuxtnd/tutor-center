@@ -5,7 +5,9 @@ namespace api_backend.Entities;
 
 public partial class ExerciseSubmission
 {
-    public int SubmissionId { get; set; }
+    public int ExerciseSubmissionId { get; set; }
+
+    public int LessonId { get; set; }
 
     public int ExerciseId { get; set; }
 
@@ -19,13 +21,11 @@ public partial class ExerciseSubmission
 
     public string? Comment { get; set; }
 
-    public int? GradedBy { get; set; }
-
     public DateTime? GradedAt { get; set; }
 
     public virtual Exercise Exercise { get; set; } = null!;
 
-    public virtual User? GradedByNavigation { get; set; }
+    public virtual Lesson Lesson { get; set; } = null!;
 
     public virtual Medium Media { get; set; } = null!;
 

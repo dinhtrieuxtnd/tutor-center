@@ -15,12 +15,12 @@ namespace api_backend.Repositories.Implements
 
         public Task<List<Exercise>> ListByLessonAsync(int lessonId, CancellationToken ct)
             => _db.Exercises.AsNoTracking()
-                .Where(x => x.LessonId == lessonId)
+                .Where(x => x.Lessons.Any(l => l.LessonId == lessonId))
                 .OrderByDescending(x => x.CreatedAt)
                 .ToListAsync(ct);
 
         public Task<bool> IsTeacherOfLessonAsync(int lessonId, int userId, CancellationToken ct)
-            => _db.Lessons.AnyAsync(l => l.LessonId == lessonId && l.Classroom != null && l.Classroom.TeacherId == userId, ct);
+            => _db.Lessons.AnyAsync(l => l.LessonId == lessonId && l.Classroom != null && l.Classroom.TutorId == userId, ct);
 
         public async Task<bool> IsStudentOfLessonAsync(int lessonId, int studentId, CancellationToken ct)
         {

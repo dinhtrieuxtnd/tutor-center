@@ -7,13 +7,11 @@ public partial class Quiz
 {
     public int QuizId { get; set; }
 
-    public int? LessonId { get; set; }
-
     public string Title { get; set; } = null!;
 
     public string? Description { get; set; }
 
-    public int? TimeLimitSec { get; set; }
+    public int TimeLimitSec { get; set; }
 
     public int MaxAttempts { get; set; }
 
@@ -23,13 +21,7 @@ public partial class Quiz
 
     public string GradingMethod { get; set; } = null!;
 
-    public string ShowAnswersAfter { get; set; } = null!;
-
-    public DateTime? DueAt { get; set; }
-
-    public bool IsPublished { get; set; }
-
-    public decimal TotalPoints { get; set; }
+    public bool ShowAnswers { get; set; }
 
     public int CreatedBy { get; set; }
 
@@ -37,9 +29,11 @@ public partial class Quiz
 
     public DateTime UpdatedAt { get; set; }
 
+    public DateTime? DeletedAt { get; set; }
+
     public virtual User CreatedByNavigation { get; set; } = null!;
 
-    public virtual Lesson? Lesson { get; set; }
+    public virtual ICollection<Lesson> Lessons { get; set; } = new List<Lesson>();
 
     public virtual ICollection<QuizAttempt> QuizAttempts { get; set; } = new List<QuizAttempt>();
 

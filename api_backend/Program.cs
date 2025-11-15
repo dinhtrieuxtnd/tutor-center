@@ -8,7 +8,6 @@ using api_backend.Services.Abstracts;
 using api_backend.Services.Implements;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -45,7 +44,12 @@ namespace api_backend
             });
             builder.Services.AddScoped<IStorageService, S3StorageService>();
 
-            builder.Services.AddControllers();
+            builder.Services.AddControllers()
+                .AddJsonOptions(options =>
+                {
+                    // Đảm bảo JSON trả về là camelCase
+                    options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+                });
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(c =>
@@ -88,38 +92,55 @@ namespace api_backend
 
             // DI
             builder.Services.AddScoped<ILessonRepository, LessonRepository>();
-            builder.Services.AddScoped<IMaterialRepository, MaterialRepository>();
             builder.Services.AddScoped<IMediaRepository, MediaRepository>();
 
             builder.Services.AddScoped<IExerciseRepository, ExerciseRepository>();
-            builder.Services.AddScoped<IExerciseSubmissionRepository, ExerciseSubmissionRepository>();
             builder.Services.AddScoped<IExerciseService, ExerciseService>();
+
+            builder.Services.AddScoped<IExerciseSubmissionRepository, ExerciseSubmissionRepository>();
+            builder.Services.AddScoped<IExerciseSubmissionService, ExerciseSubmissionService>();
 
             builder.Services.AddScoped<IClassroomRepository, ClassroomRepository>();
             builder.Services.AddScoped<IJoinRequestRepository, JoinRequestRepository>();
             builder.Services.AddScoped<IClassroomService, ClassroomService>();
             builder.Services.AddScoped<IJoinRequestService, JoinRequestService>();
 
+            builder.Services.AddScoped<ILectureRepository, LectureRepository>();
+            builder.Services.AddScoped<ILectureService, LectureService>();
+
             builder.Services.AddScoped<IUserRepository, UserRepository>();
-            builder.Services.AddScoped<IRoleRepository, RoleRepository>();
             builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+            builder.Services.AddScoped<IOtpRecordRepository, OtpRecordRepository>();
+
+            // Quiz repositories
+            builder.Services.AddScoped<IQuizRepository, QuizRepository>();
+            builder.Services.AddScoped<IQuizSectionRepository, QuizSectionRepository>();
+            builder.Services.AddScoped<IQuizQuestionGroupRepository, QuizQuestionGroupRepository>();
+            builder.Services.AddScoped<IQuizQuestionRepository, QuizQuestionRepository>();
+            builder.Services.AddScoped<IQuizOptionRepository, QuizOptionRepository>();
+            builder.Services.AddScoped<IQuizAttemptRepository, QuizAttemptRepository>();
+            builder.Services.AddScoped<IQuizAnswerRepository, QuizAnswerRepository>();
 
             // Services
             builder.Services.AddScoped<ILessonService, LessonService>();
-            builder.Services.AddScoped<IMaterialService, MaterialService>();
             builder.Services.AddScoped<IMediaService, MediaService>();
-
             builder.Services.AddScoped<IExerciseService, ExerciseService>();
-
             builder.Services.AddScoped<IUserService, UserService>();
-            builder.Services.AddScoped<IRoleService, RoleService>();
             builder.Services.AddScoped<IAuthService, AuthService>();
-            builder.Services.AddScoped<IJwtService, JwtService>();
-
-            builder.Services.AddScoped<IAuthService, AuthService>();
+            builder.Services.AddScoped<IProfileService, ProfileService>();
+            builder.Services.AddScoped<IEmailService, EmailService>();
+            
+            // Quiz services (separated by SOLID principles)
+            builder.Services.AddScoped<IQuizService, QuizService>();
+            builder.Services.AddScoped<IQuizSectionService, QuizSectionService>();
+            builder.Services.AddScoped<IQuestionGroupService, QuestionGroupService>();
+            builder.Services.AddScoped<IQuizQuestionService, QuizQuestionService>();
+            builder.Services.AddScoped<IQuestionOptionService, QuestionOptionService>();
+            builder.Services.AddScoped<IQuizAttemptService, QuizAttemptService>();
+            builder.Services.AddScoped<IQuizAnswerService, QuizAnswerService>();
+            
             builder.Services.AddSingleton<IJwtService, JwtService>();
             builder.Services.AddScoped<PasswordHasher>();
-            builder.Services.AddScoped<IRoleService, RoleService>();
 
             // Auth
             var jwt = builder.Configuration.GetSection("Jwt");
@@ -140,7 +161,8 @@ namespace api_backend
                     ValidIssuer = jwt["Issuer"],
                     ValidAudience = jwt["Audience"],
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt["Key"]!)),
-                    ClockSkew = TimeSpan.Zero
+                    ClockSkew = TimeSpan.Zero,
+                    RoleClaimType = System.Security.Claims.ClaimTypes.Role
                 };
             });
 

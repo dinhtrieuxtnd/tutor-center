@@ -5,7 +5,7 @@ namespace api_backend.Entities;
 
 public partial class QuizQuestionGroup
 {
-    public int GroupId { get; set; }
+    public int QuestionGroupId { get; set; }
 
     public int QuizId { get; set; }
 
@@ -18,10 +18,6 @@ public partial class QuizQuestionGroup
     public int OrderIndex { get; set; }
 
     public bool ShuffleInside { get; set; }
-
-    public string PointsPolicy { get; set; } = null!;
-
-    public DateTime CreatedAt { get; set; }
 
     public virtual Quiz Quiz { get; set; } = null!;
 

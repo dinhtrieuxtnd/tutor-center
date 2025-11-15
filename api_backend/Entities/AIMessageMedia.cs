@@ -5,15 +5,13 @@ namespace api_backend.Entities;
 
 public partial class AIMessageMedia
 {
-    public int Id { get; set; }
+    public int MessageMediaId { get; set; }
 
     public int MessageId { get; set; }
 
     public int MediaId { get; set; }
 
     public string? Purpose { get; set; }
-
-    public int OrderIndex { get; set; }
 
     public DateTime CreatedAt { get; set; }
 

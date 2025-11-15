@@ -5,7 +5,7 @@ namespace api_backend.Entities;
 
 public partial class ClassroomChatMessageMedia
 {
-    public int Id { get; set; }
+    public int ChatMediaId { get; set; }
 
     public int MessageId { get; set; }
 

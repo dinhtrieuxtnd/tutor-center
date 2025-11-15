@@ -14,16 +14,16 @@ export interface LoginRequest {
 }
 
 export interface RegisterStudentRequest {
-  username: string;
-  email?: string;
-  gender?: GENDER;
-  dateOfBirth?: Date;
+  email: string;
+  otpCode: string;
+  fullName: string;
   password: string;
-  firstName: string;
-  lastName: string;
-  studentPhone?: string;
-  grade?: number;
-  school?: string;
+  confirmPassword: string;
+  phoneNumber: string;
+}
+
+export interface SendOtpRegisterRequest {
+  email: string;
 }
 
 // Token payload backend trả về

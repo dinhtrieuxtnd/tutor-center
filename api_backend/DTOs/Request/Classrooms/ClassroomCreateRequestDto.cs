@@ -2,11 +2,10 @@
 {
     public class ClassroomCreateRequestDto
     {
-        public string Title { get; set; } = null!;
+        public string Name { get; set; } = null!;
         public string? Description { get; set; }
-        public int TeacherId { get; set; }
+        public int TutorId { get; set; }
         public int? CoverMediaId { get; set; }
-        public decimal? TuitionAmount { get; set; }
-        public DateTime? TuitionDueAt { get; set; }
+        public decimal Price { get; set; }
     }
 }

@@ -23,25 +23,40 @@ namespace api_backend.Services.Implements
             ClassroomId = j.ClassroomId,
             StudentId = j.StudentId,
             Status = j.Status,
-            Note = j.Note,
+            Note = null,
             RequestedAt = j.RequestedAt,
-            HandledBy = j.HandledBy,
+            HandledBy = null,
             HandledAt = j.HandledAt
         };
 
         public async Task<JoinRequestDto> CreateAsync(JoinRequestCreateDto dto, CancellationToken ct)
         {
-            if (await _jr.ExistsPendingAsync(dto.ClassroomId, dto.StudentId, ct))
-                throw new InvalidOperationException("Bạn đã gửi yêu cầu và đang chờ duyệt.");
-
             if (await _cr.StudentAlreadyInClassAsync(dto.ClassroomId, dto.StudentId, ct))
                 throw new InvalidOperationException("Bạn đã là thành viên lớp này.");
 
+            // Kiểm tra xem có yêu cầu cũ không (bao gồm cả pending, denied, accepted)
+            var existingRequest = await _jr.GetExistingRequestAsync(dto.ClassroomId, dto.StudentId, ct);
+            
+            if (existingRequest != null)
+            {
+                // Nếu đang pending thì không cho gửi lại
+                if (existingRequest.Status == "pending")
+                    throw new InvalidOperationException("Bạn đã gửi yêu cầu và đang chờ duyệt.");
+                
+                // Nếu đã bị từ chối hoặc accepted (nhưng bị xóa khỏi lớp), cập nhật thành pending
+                existingRequest.Status = "pending";
+                existingRequest.RequestedAt = DateTime.UtcNow;
+                existingRequest.HandledAt = null;
+                
+                await _jr.SaveChangesAsync(ct);
+                return Map(existingRequest);
+            }
+
+            // Tạo mới nếu chưa có yêu cầu nào
             var entity = new JoinRequest
             {
                 ClassroomId = dto.ClassroomId,
                 StudentId = dto.StudentId,
-                Note = dto.Note,
                 Status = "pending",
                 RequestedAt = DateTime.UtcNow
             };
@@ -78,8 +93,6 @@ namespace api_backend.Services.Implements
             if (!isOwner) throw new UnauthorizedAccessException("Bạn không phải giáo viên phụ trách lớp này.");
 
             jr.Status = status;
-            jr.Note = note;
-            jr.HandledBy = handlerUserId;
             jr.HandledAt = DateTime.UtcNow;
 
             if (status == "accepted" && !await _cr.StudentAlreadyInClassAsync(jr.ClassroomId, jr.StudentId, ct))

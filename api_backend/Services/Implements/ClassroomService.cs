@@ -9,37 +9,47 @@ namespace api_backend.Services.Implements
     public class ClassroomService : IClassroomService
     {
         private readonly IClassroomRepository _repos;
+        private readonly IJoinRequestRepository _joinRequestRepos;
 
-        public ClassroomService(IClassroomRepository repos)
+        public ClassroomService(IClassroomRepository repos, IJoinRequestRepository joinRequestRepos)
         {
             _repos = repos;
+            _joinRequestRepos = joinRequestRepos;
         }
 
         private static ClassroomDto Map(Classroom c) => new ClassroomDto
         {
             ClassroomId = c.ClassroomId,
-            Title = c.Title,
+            Name = c.Name,
             Description = c.Description,
-            TeacherId = c.TeacherId,
-            TeacherName = c.Teacher?.FullName ?? "",
+            TutorId = c.TutorId,
+            TutorName = c.Tutor?.FullName ?? "",
             IsArchived = c.IsArchived,
             StudentCount = c.ClassroomStudents?.Count ?? 0,
-            TuitionAmount = c.TuitionAmount ?? 0m,
-            TuitionDueAt = c.TuitionDueAt,
+            Price = c.Price,
+            CoverMediaId = c.CoverMediaId,
             CreatedAt = c.CreatedAt
         };
 
-        public async Task<ClassroomDto?> GetAsync(int id, CancellationToken ct)
+        public async Task<ClassroomDto?> GetAsync(int id, int actorUserId, string role, CancellationToken ct)
         {
             var c = await _repos.GetByIdAsync(id, ct);
-            return c == null ? null : Map(c);
+            if (c == null) return null;
+
+            // Tutor chỉ xem được lớp của mình
+            if (role == "Tutor" && c.TutorId != actorUserId)
+            {
+                throw new UnauthorizedAccessException("Bạn không có quyền xem lớp học này.");
+            }
+
+            return Map(c);
         }
 
         public async Task<(List<ClassroomDto> items, int total)> QueryAsync(ClassroomQueryRequest req, CancellationToken ct)
         {
             var skip = (req.Page - 1) * req.PageSize;
-            var list = await _repos.QueryAsync(req.Q, req.TeacherId, req.IsArchived, skip, req.PageSize, ct);
-            var total = await _repos.CountAsync(req.Q, req.TeacherId, req.IsArchived, ct);
+            var list = await _repos.QueryAsync(req.Q, req.TutorId, req.IsArchived, skip, req.PageSize, ct);
+            var total = await _repos.CountAsync(req.Q, req.TutorId, req.IsArchived, ct);
             return (list.Select(Map).ToList(), total);
         }
 
@@ -47,13 +57,11 @@ namespace api_backend.Services.Implements
         {
             var entity = new Classroom
             {
-                Title = dto.Title,
+                Name = dto.Name,
                 Description = dto.Description,
-                TeacherId = dto.TeacherId,
+                TutorId = dto.TutorId,
                 CoverMediaId = dto.CoverMediaId,
-                TuitionAmount = dto.TuitionAmount, 
-                TuitionDueAt = dto.TuitionDueAt,
-                CreatedBy = actorUserId,        
+                Price = dto.Price,
             };
 
             await _repos.AddAsync(entity, ct);
@@ -67,33 +75,44 @@ namespace api_backend.Services.Implements
             var c = await _repos.GetByIdAsync(id, ct);
             if (c == null) return false;
 
-            if (dto.Title != null) c.Title = dto.Title;
+            if (dto.Name != null) c.Name = dto.Name;
             if (dto.Description != null) c.Description = dto.Description;
             if (dto.CoverMediaId.HasValue) c.CoverMediaId = dto.CoverMediaId;
+            if (dto.Price.HasValue) c.Price = dto.Price.Value;
             if (dto.IsArchived.HasValue) c.IsArchived = dto.IsArchived.Value;
-            if (dto.TuitionAmount.HasValue) c.TuitionAmount = dto.TuitionAmount.Value;
-            if (dto.TuitionDueAt.HasValue) c.TuitionDueAt = dto.TuitionDueAt;
 
             await _repos.SaveChangesAsync(ct);
             return true;
         }
 
-        public async Task<string> EnrollStudentAsync(int classroomId, int studentId, int actorUserId, CancellationToken ct)
+        public async Task<bool> ArchiveAsync(int id, CancellationToken ct)
+        {
+            var c = await _repos.GetByIdAsync(id, ct);
+            if (c == null) return false;
+
+            c.IsArchived = true;
+            await _repos.SaveChangesAsync(ct);
+            return true;
+        }
+
+        public async Task<bool> SoftDeleteAsync(int id, CancellationToken ct)
+        {
+            var c = await _repos.GetByIdAsync(id, ct);
+            if (c == null) return false;
+
+            c.DeletedAt = DateTime.UtcNow;
+            await _repos.SaveChangesAsync(ct);
+            return true;
+        }
+
+        public async Task<List<UserDto>> GetStudentsAsync(int classroomId, int actorUserId, CancellationToken ct)
         {
             var isOwner = await _repos.IsTeacherOwnerAsync(classroomId, actorUserId, ct);
             if (!isOwner)
                 throw new UnauthorizedAccessException("Bạn không phải giáo viên phụ trách lớp này.");
-            if (!await _repos.UserExistsAsync(studentId, ct))
-                throw new ArgumentException("Học sinh không tồn tại.");
-            if (!await _repos.IsUserRoleAsync(studentId, "Student", ct))
-                throw new InvalidOperationException("Chỉ được thêm tài khoản có vai trò Học sinh (Student).");
-            if (await _repos.StudentAlreadyInClassAsync(classroomId, studentId, ct))
-                return "exists";
 
-            await _repos.AddStudentAsync(classroomId, studentId, ct);
-            await _repos.EnsureAcceptedJoinRequestAsync(classroomId, studentId, actorUserId, ct);
-            await _repos.SaveChangesAsync(ct);
-            return "added";
+            var students = await _repos.GetStudentsByClassroomIdAsync(classroomId, ct);
+            return students;
         }
 
         public async Task<bool> RemoveStudentAsync(int classroomId, int studentId, int actorUserId, CancellationToken ct)
@@ -110,7 +129,15 @@ namespace api_backend.Services.Implements
 
             await _repos.RemoveStudentAsync(classroomId, studentId, ct);
             await _repos.SaveChangesAsync(ct);
+
+            await _joinRequestRepos.RemoveJoinRequestAsync(classroomId, studentId, ct);
             return true;
+        }
+
+        public async Task<List<ClassroomDto>> GetMyEnrollmentsAsync(int studentId, CancellationToken ct)
+        {
+            var classes = await _repos.GetClassroomsByStudentIdAsync(studentId, ct);
+            return classes.Select(Map).ToList();
         }
     }
 }

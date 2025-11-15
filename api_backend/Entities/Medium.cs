@@ -17,13 +17,13 @@ public partial class Medium
 
     public long? SizeBytes { get; set; }
 
-    public string? ChecksumSha256 { get; set; }
-
     public string Visibility { get; set; } = null!;
 
     public int? UploadedBy { get; set; }
 
     public DateTime CreatedAt { get; set; }
+
+    public DateTime? DeletedAt { get; set; }
 
     public virtual ICollection<AIMessageMedia> AIMessageMedia { get; set; } = new List<AIMessageMedia>();
 
@@ -35,7 +35,7 @@ public partial class Medium
 
     public virtual ICollection<Exercise> Exercises { get; set; } = new List<Exercise>();
 
-    public virtual ICollection<Material> Materials { get; set; } = new List<Material>();
+    public virtual ICollection<Lecture> Lectures { get; set; } = new List<Lecture>();
 
     public virtual ICollection<QuizOptionMedia> QuizOptionMedia { get; set; } = new List<QuizOptionMedia>();
 

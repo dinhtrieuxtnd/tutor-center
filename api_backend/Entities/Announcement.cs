@@ -17,6 +17,8 @@ public partial class Announcement
 
     public DateTime CreatedAt { get; set; }
 
+    public DateTime UpdatedAt { get; set; }
+
     public virtual Classroom Classroom { get; set; } = null!;
 
     public virtual User CreatedByNavigation { get; set; } = null!;
