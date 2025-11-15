@@ -5,7 +5,9 @@ namespace api_backend.Entities;
 
 public partial class QuizAttempt
 {
-    public int AttemptId { get; set; }
+    public int QuizAttemptId { get; set; }
+
+    public int LessonId { get; set; }
 
     public int QuizId { get; set; }
 
@@ -15,19 +17,13 @@ public partial class QuizAttempt
 
     public DateTime? SubmittedAt { get; set; }
 
-    public int? DurationSec { get; set; }
-
     public string Status { get; set; } = null!;
 
     public decimal? ScoreRaw { get; set; }
 
     public decimal? ScoreScaled10 { get; set; }
 
-    public DateTime? GradedAt { get; set; }
-
-    public int? GradedBy { get; set; }
-
-    public virtual User? GradedByNavigation { get; set; }
+    public virtual Lesson Lesson { get; set; } = null!;
 
     public virtual Quiz Quiz { get; set; } = null!;
 

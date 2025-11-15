@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import * as validate from "@/utils/validate";
 import { cleanObjectStrict } from "@/utils";
 import { RegisterStudentRequest } from "@/types";
+import { authApi } from "@/services/authApi";
 import {
   Logo,
   AuthInput,
@@ -20,6 +21,8 @@ export const RegisterPage = () => {
     fullName: "",
     email: "",
     password: "",
+    phoneNumber: "",
+    otpCode: "",
   });
   const router = useRouter();
   const { register, isLoading } = useAuth();
@@ -27,6 +30,9 @@ export const RegisterPage = () => {
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [countdown, setCountdown] = useState(0);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -36,31 +42,66 @@ export const RegisterPage = () => {
     }));
   };
 
+  const handleSendOtp = async () => {
+    // Validate email trước khi gửi OTP
+    if (!validate.validateEmail(formData.email)) return;
+
+    setSendingOtp(true);
+    try {
+      const response = await authApi.sendOtpRegister({ email: formData.email });
+      setOtpSent(true);
+      setCountdown(60); // Đếm ngược 60 giây
+
+      // Đếm ngược
+      const timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      alert(response.data?.message || "Mã OTP đã được gửi đến email của bạn.");
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : "Gửi OTP thất bại. Vui lòng thử lại.";
+      alert(errorMessage);
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Tách họ và tên từ fullName
-    const nameParts = formData.fullName.trim().split(' ');
-    const firstName = nameParts.pop() || ""; // Lấy từ cuối cùng làm tên
-    const lastName = nameParts.join(' '); // Phần còn lại làm họ
-
     // Validate các trường
-    if (!validate.validateName(firstName, lastName)) return;
+    if (!formData.fullName.trim()) {
+      alert("Vui lòng nhập họ và tên");
+      return;
+    }
     if (!validate.validateEmail(formData.email)) return;
     if (!validate.validatePassword(formData.password)) return;
     if (!validate.validateConfirmPassword(formData.password, confirmPassword)) return;
+    if (!formData.otpCode.trim()) {
+      alert("Vui lòng nhập mã OTP");
+      return;
+    }
+    if (!formData.phoneNumber.trim()) {
+      alert("Vui lòng nhập số điện thoại");
+      return;
+    }
 
     // Tạo data để gửi API với các trường bắt buộc từ RegisterStudentRequest
     const registerData: RegisterStudentRequest = {
-      lastName: lastName,
-      firstName: firstName,
-      username: formData.email, // Sử dụng email làm username
-      gender: undefined,
-      dateOfBirth: undefined,
-      school: "",
-      grade: undefined,
       email: formData.email,
+      otpCode: formData.otpCode,
+      fullName: formData.fullName,
       password: formData.password,
+      confirmPassword: confirmPassword,
+      phoneNumber: formData.phoneNumber,
     };
 
     const cleanFormData = cleanObjectStrict(registerData);
@@ -120,12 +161,50 @@ export const RegisterPage = () => {
           required
         />
 
+        <div className="w-full">
+          <div className="flex gap-2 items-end">
+            <div className="flex-1">
+              <AuthInput
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                label="Email"
+                type="email"
+                required
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleSendOtp}
+              disabled={sendingOtp || countdown > 0 || !formData.email}
+              className="h-[54px] px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap text-sm"
+            >
+              {sendingOtp
+                ? "Đang gửi..."
+                : countdown > 0
+                ? `${countdown}s`
+                : otpSent
+                ? "Gửi lại OTP"
+                : "Gửi OTP"}
+            </button>
+          </div>
+        </div>
+
         <AuthInput
-          name="email"
-          value={formData.email}
+          name="otpCode"
+          value={formData.otpCode}
           onChange={handleChange}
-          label="Email"
-          type="email"
+          label="Mã OTP"
+          type="text"
+          required
+        />
+
+        <AuthInput
+          name="phoneNumber"
+          value={formData.phoneNumber}
+          onChange={handleChange}
+          label="Số điện thoại"
+          type="tel"
           required
         />
 

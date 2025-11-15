@@ -5,7 +5,7 @@ namespace api_backend.Entities;
 
 public partial class QuizSection
 {
-    public int SectionId { get; set; }
+    public int QuizSectionId { get; set; }
 
     public int QuizId { get; set; }
 

@@ -19,7 +19,7 @@ public partial class Report
 
     public string Status { get; set; } = null!;
 
-    public int? HandlerId { get; set; }
+    public int? HandledBy { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
@@ -27,7 +27,7 @@ public partial class Report
 
     public string? Notes { get; set; }
 
-    public virtual User? Handler { get; set; }
+    public virtual User? HandledByNavigation { get; set; }
 
     public virtual User Reporter { get; set; } = null!;
 }

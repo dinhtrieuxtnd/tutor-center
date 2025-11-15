@@ -4,18 +4,24 @@
 const AUTH_BASE = "/Auth"
 const STUDENT_BASE = "/students"
 const ADMIN_BASE = "/admins"
+const PROFILE_BASE = "/Profile"
 
 export const API_ENDPOINTS = {
     auth: {
         login: `${AUTH_BASE}/login`,
         register: `${AUTH_BASE}/register`,
+        sendOtpRegister: `${AUTH_BASE}/send-otp-register`,
         refresh: `${AUTH_BASE}/refresh`,
         logout: `${AUTH_BASE}/logout`,
         me: `${AUTH_BASE}/me`,
-        reset_password_token: `${AUTH_BASE}/reset-password/token`,
-        send_email: {
-            reset_password: `${AUTH_BASE}/send-reset-password`
-        },
+        forgotPassword: `${AUTH_BASE}/forgot-password`,
+        resetPassword: `${AUTH_BASE}/reset-password`,
+    },
+
+    profile: {
+        me: `${PROFILE_BASE}/me`,
+        update: `${PROFILE_BASE}/update`,
+        changePassword: `${PROFILE_BASE}/change-password`,
     },
 
 

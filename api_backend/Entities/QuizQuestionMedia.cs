@@ -5,13 +5,11 @@ namespace api_backend.Entities;
 
 public partial class QuizQuestionMedia
 {
-    public int Id { get; set; }
+    public int QuestionMediaId { get; set; }
 
     public int QuestionId { get; set; }
 
     public int MediaId { get; set; }
-
-    public int OrderIndex { get; set; }
 
     public DateTime CreatedAt { get; set; }
 

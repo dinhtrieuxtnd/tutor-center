@@ -1,4 +1,5 @@
 ﻿using api_backend.DbContexts;
+using api_backend.DTOs.Response;
 using api_backend.Entities;
 using api_backend.Repositories.Abstracts;
 using Microsoft.EntityFrameworkCore;
@@ -11,20 +12,28 @@ namespace api_backend.Repositories.Implements
 
         public async Task<Classroom?> GetByIdAsync(int id, CancellationToken ct = default)
             => await _db.Classrooms
-                .Include(x => x.Teacher)
+                .Include(x => x.Tutor)
                 .Include(x => x.ClassroomStudents)
-                .FirstOrDefaultAsync(x => x.ClassroomId == id, ct);
+                .FirstOrDefaultAsync(x => x.ClassroomId == id && x.DeletedAt == null, ct);
 
-        public async Task<List<Classroom>> QueryAsync(string? q, int? teacherId, bool? isArchived, int skip, int take, CancellationToken ct = default)
+        public async Task<Classroom?> GetByIdWithStudentsAsync(int id, CancellationToken ct = default)
+            => await _db.Classrooms
+                .Include(x => x.Tutor)
+                .Include(x => x.ClassroomStudents)
+                    .ThenInclude(cs => cs.Student)
+                .FirstOrDefaultAsync(x => x.ClassroomId == id && x.DeletedAt == null, ct);
+
+        public async Task<List<Classroom>> QueryAsync(string? q, int? tutorId, bool? isArchived, int skip, int take, CancellationToken ct = default)
         {
             var query = _db.Classrooms
-                .Include(x => x.Teacher)
+                .Include(x => x.Tutor)
                 .Include(x => x.ClassroomStudents)
+                .Where(x => x.DeletedAt == null)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(q))
-                query = query.Where(x => x.Title.Contains(q));
-            if (teacherId.HasValue) query = query.Where(x => x.TeacherId == teacherId);
+                query = query.Where(x => x.Name.Contains(q));
+            if (tutorId.HasValue) query = query.Where(x => x.TutorId == tutorId);
             if (isArchived.HasValue) query = query.Where(x => x.IsArchived == isArchived);
 
             return await query
@@ -34,21 +43,49 @@ namespace api_backend.Repositories.Implements
                 .ToListAsync(ct);
         }
 
-        public async Task<int> CountAsync(string? q, int? teacherId, bool? isArchived, CancellationToken ct = default)
+        public async Task<int> CountAsync(string? q, int? tutorId, bool? isArchived, CancellationToken ct = default)
         {
-            var query = _db.Classrooms.AsQueryable();
+            var query = _db.Classrooms
+                .Where(x => x.DeletedAt == null)
+                .AsQueryable();
             if (!string.IsNullOrWhiteSpace(q))
-                query = query.Where(x => x.Title.Contains(q));
-            if (teacherId.HasValue) query = query.Where(x => x.TeacherId == teacherId);
+                query = query.Where(x => x.Name.Contains(q));
+            if (tutorId.HasValue) query = query.Where(x => x.TutorId == tutorId);
             if (isArchived.HasValue) query = query.Where(x => x.IsArchived == isArchived);
             return await query.CountAsync(ct);
         }
 
         public async Task<bool> IsTeacherOwnerAsync(int classroomId, int teacherUserId, CancellationToken ct = default)
-            => await _db.Classrooms.AnyAsync(c => c.ClassroomId == classroomId && c.TeacherId == teacherUserId, ct);
+            => await _db.Classrooms.AnyAsync(c => c.ClassroomId == classroomId && c.TutorId == teacherUserId && c.DeletedAt == null, ct);
+
+        public async Task<bool> IsTutorOfClassroomAsync(int classroomId, int tutorId, CancellationToken ct = default)
+            => await _db.Classrooms.AnyAsync(c => c.ClassroomId == classroomId && c.TutorId == tutorId && c.DeletedAt == null, ct);
 
         public async Task<bool> StudentAlreadyInClassAsync(int classroomId, int studentId, CancellationToken ct = default)
             => await _db.ClassroomStudents.AnyAsync(x => x.ClassroomId == classroomId && x.StudentId == studentId, ct);
+
+        public async Task<bool> IsStudentEnrolledAsync(int classroomId, int studentId, CancellationToken ct = default)
+            => await _db.ClassroomStudents.AnyAsync(x => x.ClassroomId == classroomId && x.StudentId == studentId, ct);
+
+        public async Task<List<UserDto>> GetStudentsByClassroomIdAsync(int classroomId, CancellationToken ct = default)
+        {
+            return await _db.ClassroomStudents
+                .Where(cs => cs.ClassroomId == classroomId)
+                .Include(cs => cs.Student)
+                .Select(cs => new UserDto
+                {
+                    UserId = cs.Student.UserId,
+                    FullName = cs.Student.FullName,
+                    Email = cs.Student.Email,
+                    PhoneNumber = cs.Student.PhoneNumber,
+                    Role = cs.Student.Role,
+                    IsActive = cs.Student.IsActive,
+                    CreatedAt = cs.Student.CreatedAt,
+                    UpdatedAt = cs.Student.UpdatedAt
+                })
+                .AsNoTracking()
+                .ToListAsync(ct);
+        }
 
         public async Task AddStudentAsync(int classroomId, int studentId, CancellationToken ct = default)
         {
@@ -57,20 +94,9 @@ namespace api_backend.Repositories.Implements
                 ClassroomId = classroomId,
                 StudentId = studentId,
                 JoinedAt = DateTime.UtcNow,
-                Status = 1,
-                IsPaid = false
+                HasPaid = false
             };
             await _db.ClassroomStudents.AddAsync(cs, ct);
-        }
-
-        public async Task<bool> UserExistsAsync(int userId, CancellationToken ct = default)
-             => await _db.Users.AnyAsync(u => u.UserId == userId, ct);
-
-        public async Task<bool> IsUserRoleAsync(int userId, string roleName, CancellationToken ct = default)
-        {
-            return await _db.Users
-                .Join(_db.Roles, u => u.RoleId, r => r.RoleId, (u, r) => new { u, r })
-                .AnyAsync(x => x.u.UserId == userId && x.r.Name == roleName, ct);
         }
 
         public async Task RemoveStudentAsync(int classroomId, int studentId, CancellationToken ct = default)
@@ -81,34 +107,16 @@ namespace api_backend.Repositories.Implements
                 _db.ClassroomStudents.Remove(cs);
         }
 
-        public async Task EnsureAcceptedJoinRequestAsync(int classroomId, int studentId, int handledBy, CancellationToken ct = default)
+        public async Task<List<Classroom>> GetClassroomsByStudentIdAsync(int studentId, CancellationToken ct = default)
         {
-            // 1) Nếu đã có pending → chuyển sang accepted
-            var pending = await _db.JoinRequests
-                .FirstOrDefaultAsync(j => j.ClassroomId == classroomId
-                                       && j.StudentId == studentId
-                                       && j.Status == "pending", ct);
-            if (pending != null)
-            {
-                pending.Status = "accepted";
-                pending.HandledBy = handledBy;
-                pending.HandledAt = DateTime.UtcNow;
-                // giữ nguyên RequestedAt/Note nếu muốn
-                return;
-            }
-
-            // 2) Không có pending → tạo accepted mới (ghi nhận lịch sử do GV thêm trực tiếp)
-            var accepted = new JoinRequest
-            {
-                ClassroomId = classroomId,
-                StudentId = studentId,
-                Status = "accepted",
-                Note = "Enrolled by teacher",
-                RequestedAt = DateTime.UtcNow,    // coi như thời điểm phát sinh
-                HandledBy = handledBy,
-                HandledAt = DateTime.UtcNow
-            };
-            await _db.JoinRequests.AddAsync(accepted, ct);
+            return await _db.ClassroomStudents
+                .Where(cs => cs.StudentId == studentId)
+                .Include(cs => cs.Classroom)
+                    .ThenInclude(c => c.Tutor)
+                .Select(cs => cs.Classroom)
+                .Where(c => c.DeletedAt == null)
+                .AsNoTracking()
+                .ToListAsync(ct);
         }
     }
 }

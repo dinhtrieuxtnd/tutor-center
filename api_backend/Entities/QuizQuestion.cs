@@ -19,13 +19,9 @@ public partial class QuizQuestion
 
     public string QuestionType { get; set; } = null!;
 
-    public decimal Points { get; set; }
-
-    public byte? Difficulty { get; set; }
+    public double Points { get; set; }
 
     public int OrderIndex { get; set; }
-
-    public bool IsActive { get; set; }
 
     public virtual QuizQuestionGroup? Group { get; set; }
 

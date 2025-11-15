@@ -33,8 +33,11 @@ export const AuthInput = ({
         onChange={onChange}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
+        placeholder={props.placeholder}
         className={`w-full border-[#C4C4C4] text-sm rounded-xl border-2 px-4 py-3 md:px-6 md:py-4 outline-none transition
           focus:border-primary
+          placeholder:font-semibold placeholder:text-gray-500
+          text-gray-900 font-medium
           ${error ? "border-red-500" : ""}
           ${className}
           ${rightIcon ? "pr-12" : ""}
@@ -44,8 +47,8 @@ export const AuthInput = ({
       <label
         htmlFor={inputId}
         className={`absolute left-4 md:left-6 px-1 bg-white cursor-text
-          font-normal font-open-sans
-          transition-all duration-200 z-10 text-black
+          font-semibold font-open-sans
+          transition-all duration-200 z-10 text-gray-500
           ${isFocused || hasValue ? "-top-2.5 text-sm" : "top-3 md:top-4 text-base"}
         `}
       >

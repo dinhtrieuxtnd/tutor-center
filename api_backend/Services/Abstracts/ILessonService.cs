@@ -1,14 +1,17 @@
-﻿using api_backend.DTOs.Request.Lessons;
+using api_backend.DTOs.Request.Lessons;
 using api_backend.DTOs.Response;
 
 namespace api_backend.Services.Abstracts
 {
     public interface ILessonService
     {
-        Task<LessonDto> CreateAsync(LessonCreateDto dto, int actorUserId, CancellationToken ct);
-        Task<bool> UpdateAsync(int lessonId, LessonUpdateDto dto, int actorUserId, CancellationToken ct);
-        Task<bool> DeleteAsync(int lessonId, int actorUserId, CancellationToken ct);
-        Task<LessonDto?> GetAsync(int lessonId, bool includeDraft, int? actorUserId, CancellationToken ct);
-        Task<List<LessonDto>> ListByClassroomAsync(int classroomId, bool onlyPublished, int? actorUserId, CancellationToken ct);
+        // Tutor APIs
+        Task<LessonDto> AssignLectureAsync(AssignLectureDto dto, int tutorId, CancellationToken ct);
+        Task<LessonDto> AssignExerciseAsync(AssignExerciseDto dto, int tutorId, CancellationToken ct);
+        Task<LessonDto> AssignQuizAsync(AssignQuizDto dto, int tutorId, CancellationToken ct);
+        Task<bool> SoftDeleteAsync(int lessonId, int tutorId, CancellationToken ct);
+        
+        // Common APIs
+        Task<List<LessonDto>> ListByClassroomAsync(int classroomId, int? userId, CancellationToken ct);
     }
 }

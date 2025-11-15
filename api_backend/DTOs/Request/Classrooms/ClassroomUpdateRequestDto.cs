@@ -2,11 +2,10 @@
 {
     public class ClassroomUpdateRequestDto
     {
-        public string? Title { get; set; }
+        public string? Name { get; set; }
         public string? Description { get; set; }
         public int? CoverMediaId { get; set; }
         public bool? IsArchived { get; set; }
-        public decimal? TuitionAmount { get; set; }
-        public DateTime? TuitionDueAt { get; set; }
+        public decimal? Price { get; set; }
     }
 }

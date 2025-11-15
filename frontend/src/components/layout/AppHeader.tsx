@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Bell, User, Settings, LogOut, ChevronDown } from 'lucide-react';
 import { Logo } from '@/components';
+import { useAuth } from '@/hooks/useAuth';
 
 interface AppHeaderProps {
   currentPage?: 'dashboard' | 'classes' | 'messages';
@@ -23,6 +24,7 @@ export function AppHeader({
   showTeacherLink = false
 }: AppHeaderProps) {
   const router = useRouter();
+  const { logout: handleLogoutAPI } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -83,12 +85,25 @@ export function AppHeader({
 
   const handleProfileClick = () => {
     setShowUserMenu(false);
-    router.push('/student/profile');
+    const profilePath = userRole === 'student' ? '/student/profile' : 
+                        userRole === 'tutor' ? '/tutor/profile' : 
+                        '/admin/profile';
+    router.push(profilePath);
   };
 
   const handleLogout = () => {
     setShowUserMenu(false);
-    if (onLogout) onLogout();
+    
+    // Gọi API logout thông qua Redux (không cần await)
+    handleLogoutAPI();
+    
+    // Gọi callback nếu được cung cấp
+    if (onLogout) {
+      onLogout();
+    }
+    
+    // Redirect về trang login ngay lập tức
+    router.push('/auth/login');
   };
 
   const getNotificationIcon = (type: string) => {
@@ -114,7 +129,12 @@ export function AppHeader({
           <div className="flex items-center">
             <div
               className="flex-shrink-0 flex items-center gap-3 cursor-pointer"
-              onClick={() => router.push('/dashboard')}
+              onClick={() => {
+                const dashboardPath = userRole === 'student' ? '/student/dashboard' : 
+                                     userRole === 'tutor' ? '/tutor/dashboard' : 
+                                     '/admin/dashboard';
+                router.push(dashboardPath);
+              }}
             >
               <Logo className="w-12 h-12" />
               <span className="text-xl font-bold text-primary font-open-sans">
@@ -126,7 +146,7 @@ export function AppHeader({
           {/* Navigation Links */}
           <div className="hidden md:flex items-center space-x-8">
             <a
-              href="/dashboard"
+              href={userRole === 'student' ? '/student/dashboard' : userRole === 'tutor' ? '/tutor/dashboard' : '/admin/dashboard'}
               className={`transition-colors font-open-sans ${
                 currentPage === 'dashboard'
                   ? 'text-gray-900 font-medium border-b-2 border-primary pb-1'
@@ -147,14 +167,14 @@ export function AppHeader({
             </a>
             {showTeacherLink && (
               <a
-                href="#"
+                href="/tutor/students"
                 className="text-gray-600 hover:text-primary transition-colors font-open-sans"
               >
                 Học sinh
               </a>
             )}
             <a
-              href="#"
+              href="/messages"
               className={`transition-colors font-open-sans ${
                 currentPage === 'messages'
                   ? 'text-gray-900 font-medium border-b-2 border-primary pb-1'
@@ -238,7 +258,10 @@ export function AppHeader({
 
                   {/* Footer */}
                   <div className="px-4 py-3 border-t border-gray-200 text-center">
-                    <button className="text-sm text-primary hover:text-blue-700 font-medium font-open-sans">
+                    <button 
+                      onClick={() => router.push('/notifications')}
+                      className="text-sm text-primary hover:text-blue-700 font-medium font-open-sans"
+                    >
                       Xem tất cả thông báo
                     </button>
                   </div>
@@ -287,6 +310,7 @@ export function AppHeader({
                   </button>
                   
                   <button
+                    onClick={() => router.push('/settings')}
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 transition-colors font-open-sans text-left"
                   >
                     <Settings className="w-5 h-5" />

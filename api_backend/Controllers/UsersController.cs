@@ -2,15 +2,12 @@
 using Microsoft.AspNetCore.Mvc;
 using api_backend.Services.Abstracts;
 using api_backend.DTOs.Request.Users;
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace api_backend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Roles = "admin")]
     public class UsersController : ControllerBase
     {
         private readonly IUserService _service;
@@ -20,42 +17,58 @@ namespace api_backend.Controllers
             _service = service;
         }
 
-        // Chỉ Admin mới xem danh sách
-        [HttpGet]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> GetAll(CancellationToken ct)
-            => Ok(await _service.GetAllAsync(ct));
-
-        // Chỉ Admin mới xem chi tiết
-        [HttpGet("{id:int}")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Get(int id, CancellationToken ct)
+        /// <summary>
+        /// Get all students with pagination, filtering, and search
+        /// Only Admin can access
+        /// </summary>
+        [HttpGet("students")]
+        public async Task<IActionResult> GetAllStudents([FromQuery] GetUsersQueryDto query, CancellationToken ct)
         {
-            var u = await _service.GetByIdAsync(id, ct);
-            return u == null ? NotFound() : Ok(u);
+            var result = await _service.GetAllStudentsAsync(query, ct);
+            return Ok(result);
         }
 
-        // Khi đã có Admin => bắt buộc token Admin.
-        [HttpPost("{userId:int}/assign-role")]
-        [AllowAnonymous]
-        public async Task<IActionResult> AssignRole(int userId, [FromBody] AssignRoleRequestDto dto, CancellationToken ct)
+        /// <summary>
+        /// Get all tutors with pagination, filtering, and search
+        /// Only Admin can access
+        /// </summary>
+        [HttpGet("tutors")]
+        public async Task<IActionResult> GetAllTutors([FromQuery] GetUsersQueryDto query, CancellationToken ct)
         {
-            if (dto == null || dto.RoleId <= 0)
-                return BadRequest("roleId không hợp lệ.");
+            var result = await _service.GetAllTutorsAsync(query, ct);
+            return Ok(result);
+        }
 
-            // kiểm tra đã có admin chưa
-            var users = await _service.GetAllAsync(ct);
-            var hasAdmin = users.Any(u => string.Equals(u.Role, "Admin", StringComparison.OrdinalIgnoreCase));
-
-            if (hasAdmin)
+        /// <summary>
+        /// Create a new tutor account
+        /// Only Admin can access
+        /// </summary>
+        [HttpPost("tutors")]
+        public async Task<IActionResult> CreateTutor([FromBody] CreateTutorRequestDto dto, CancellationToken ct)
+        {
+            try
             {
-                // từ đây về sau phải là Admin
-                if (!(User?.Identity?.IsAuthenticated ?? false)) return Unauthorized();
-                if (!User.IsInRole("Admin")) return Forbid();
+                var tutor = await _service.CreateTutorAsync(dto, ct);
+                return CreatedAtAction(nameof(CreateTutor), new { id = tutor!.UserId }, tutor);
             }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
 
-            var ok = await _service.AssignRoleAsync(userId, dto.RoleId, ct);
-            return ok ? NoContent() : NotFound();
+        /// <summary>
+        /// Activate or deactivate a user account
+        /// Only Admin can access
+        /// </summary>
+        [HttpPatch("{userId:int}/status")]
+        public async Task<IActionResult> UpdateUserStatus(int userId, [FromBody] UpdateUserStatusDto dto, CancellationToken ct)
+        {
+            var success = await _service.UpdateUserStatusAsync(userId, dto.IsActive, ct);
+            if (!success)
+                return NotFound(new { message = "User not found" });
+
+            return NoContent();
         }
     }
 }

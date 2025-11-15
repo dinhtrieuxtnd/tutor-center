@@ -29,7 +29,7 @@ public partial class PaymentTransaction
 
     public virtual Classroom Classroom { get; set; } = null!;
 
-    public virtual ClassroomStudent ClassroomStudent { get; set; } = null!;
+    public virtual ICollection<ClassroomStudent> ClassroomStudents { get; set; } = new List<ClassroomStudent>();
 
     public virtual User Student { get; set; } = null!;
 }

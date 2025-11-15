@@ -168,7 +168,7 @@ class ApiService {
                         // Refresh token thất bại, clear tất cả và redirect
                         this.processQueue(refreshError, null);
                         auth.clearAll();
-                        window.location.href = '/login';
+                        window.location.href = '/auth/login';
                         return Promise.reject(refreshError);
                     } finally {
                         this.isRefreshing = false;
@@ -188,6 +188,10 @@ class ApiService {
 
     async post<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
         const response = await this.api.post<T>(url, data, config);
+        // Handle 204 No Content response
+        if (response.status === 204) {
+            return {} as T;
+        }
         return response.data;
     }
 

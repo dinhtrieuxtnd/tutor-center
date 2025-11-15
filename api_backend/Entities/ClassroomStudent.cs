@@ -11,15 +11,17 @@ public partial class ClassroomStudent
 
     public DateTime JoinedAt { get; set; }
 
-    public byte Status { get; set; }
-
-    public bool IsPaid { get; set; }
+    public bool HasPaid { get; set; }
 
     public DateTime? PaidAt { get; set; }
 
+    public int? PaymentTransactionId { get; set; }
+
+    public DateTime? DeletedAt { get; set; }
+
     public virtual Classroom Classroom { get; set; } = null!;
 
-    public virtual ICollection<PaymentTransaction> PaymentTransactions { get; set; } = new List<PaymentTransaction>();
+    public virtual PaymentTransaction? PaymentTransaction { get; set; }
 
     public virtual User Student { get; set; } = null!;
 }

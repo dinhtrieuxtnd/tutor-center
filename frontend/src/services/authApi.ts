@@ -1,4 +1,4 @@
-import { apiService } from "@/services"; // đổi path theo nơi bạn export apiService
+import { apiService } from "@/services";
 import { API_ENDPOINTS } from "@/constants";
 import {
     LoginRequest,
@@ -6,26 +6,13 @@ import {
     Tokens,
     ApiResponse,
     RegisterStudentRequest,
+    SendOtpRegisterRequest,
 } from "@/types";
 
-// Types theo backend
-interface BackendLoginRequest {
-    email: string;
-    password: string;
-}
-
-interface BackendRegisterRequest {
-    fullName: string;
-    email: string;
-    password: string;
-    phone?: string;
-}
-
 export const authApi = {
-    // Đăng nhập Student
+    // Đăng nhập - Backend expects { email, password }
     login: async (data: LoginRequest): Promise<ApiResponse<any>> => {
-        // Chuyển đổi format từ frontend sang backend
-        const backendData: BackendLoginRequest = {
+        const backendData = {
             email: data.email || data.username || '',
             password: data.password
         };
@@ -36,19 +23,19 @@ export const authApi = {
         );
     },
 
-    // Đăng ký Student
+    // Gửi OTP đăng ký - Backend expects { email }
+    sendOtpRegister: async (data: SendOtpRegisterRequest): Promise<ApiResponse<{ message: string }>> => {
+        return await apiService.post<ApiResponse<{ message: string }>>(
+            API_ENDPOINTS.auth.sendOtpRegister,
+            data
+        );
+    },
+
+    // Đăng ký - Backend expects { email, otpCode, fullName, password, confirmPassword, phoneNumber }
     register: async (data: RegisterStudentRequest): Promise<ApiResponse<any>> => {
-        // Chuyển đổi format từ frontend sang backend
-        const backendData: BackendRegisterRequest = {
-            fullName: `${data.lastName} ${data.firstName}`.trim(),
-            email: data.email || '',
-            password: data.password,
-            phone: data.studentPhone
-        };
-        
         return await apiService.post<ApiResponse<any>>(
             API_ENDPOINTS.auth.register,
-            backendData
+            data
         );
     },
 
@@ -71,25 +58,27 @@ export const authApi = {
 
     // Get current user info
     getMe: async (): Promise<ApiResponse<any>> => {
-        return await apiService.get<ApiResponse<any>>(API_ENDPOINTS.auth.me);
+        return await apiService.get<ApiResponse<any>>(API_ENDPOINTS.profile.me);
     },
 
-    requestPasswordResetEmail: async (
-        email: string
-    ): Promise<ApiResponse<{emailSent: string, expiresAt: string}>> =>{
-        return await apiService.post<ApiResponse<{emailSent: string, expiresAt: string}>> (
-            API_ENDPOINTS.auth.send_email.reset_password,
+    // Gửi OTP forgot password - Backend expects { email }
+    forgotPassword: async (email: string): Promise<ApiResponse<{ message: string }>> => {
+        return await apiService.post<ApiResponse<{ message: string }>>(
+            API_ENDPOINTS.auth.forgotPassword,
             { email }
-        )
+        );
     },
 
-    resetPasswordWithToken: async (
-        token: string,
-        newPassword: string
-    ): Promise<ApiResponse<{ success: boolean }>> => {
-        return await apiService.post<ApiResponse<{ success: boolean }>>(
-            API_ENDPOINTS.auth.reset_password_token,
-            { token, newPassword}
+    // Reset password với OTP - Backend expects { email, otpCode, newPassword, confirmNewPassword }
+    resetPassword: async (data: {
+        email: string;
+        otpCode: string;
+        newPassword: string;
+        confirmNewPassword: string;
+    }): Promise<ApiResponse<{ message: string }>> => {
+        return await apiService.post<ApiResponse<{ message: string }>>(
+            API_ENDPOINTS.auth.resetPassword,
+            data
         );
     }
 };

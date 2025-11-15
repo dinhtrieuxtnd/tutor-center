@@ -1,4 +1,5 @@
 export type Gender = "MALE" | "FEMALE" | "OTHER"
+export type UserRole = "student" | "tutor" | "admin"
 
 export interface ImageUrl {
     url: string
@@ -21,4 +22,5 @@ export interface User {
     lastLoginAt?: string
     createdAt: string
     updatedAt: string
+    role?: UserRole // Role của user để xác định quyền truy cập
 }

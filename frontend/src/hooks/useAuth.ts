@@ -5,10 +5,9 @@ import {
   login,
   register,
   logout,
-  requestPasswordResetEmail,
-  resetPasswordWithToken,
 } from "@/store/features"
 import type { LoginRequest, RegisterStudentRequest } from "@/types"
+import { authApi } from "@/services"
 
 export const useAuth = () => {
   const dispatch: AppDispatch = useDispatch()
@@ -39,15 +38,25 @@ export const useAuth = () => {
     dispatch(logout())
   }, [dispatch])
 
-  const handleRequestPasswordResetEmail = useCallback(
-    (email: string) => dispatch(requestPasswordResetEmail(email)),
-    [dispatch]
+  // Forgot password - gửi OTP
+  const handleForgotPassword = useCallback(
+    async (email: string) => {
+      return await authApi.forgotPassword(email)
+    },
+    []
   )
 
-  const handleResetPasswordWithToken = useCallback(
-    (token: string, newPassword: string) =>
-      dispatch(resetPasswordWithToken({ token, newPassword })),
-    [dispatch]
+  // Reset password - sử dụng OTP
+  const handleResetPassword = useCallback(
+    async (data: {
+      email: string;
+      otpCode: string;
+      newPassword: string;
+      confirmNewPassword: string;
+    }) => {
+      return await authApi.resetPassword(data)
+    },
+    []
   )
 
   return {
@@ -62,7 +71,7 @@ export const useAuth = () => {
     login: handleLogin,
     register: handleRegister,
     logout: handleLogout,
-    requestPasswordResetEmail: handleRequestPasswordResetEmail,
-    resetPasswordWithToken: handleResetPasswordWithToken,
+    forgotPassword: handleForgotPassword,
+    resetPassword: handleResetPassword,
   }
 }

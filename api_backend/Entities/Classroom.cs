@@ -7,27 +7,23 @@ public partial class Classroom
 {
     public int ClassroomId { get; set; }
 
-    public string Title { get; set; } = null!;
+    public int TutorId { get; set; }
+
+    public string Name { get; set; } = null!;
 
     public string? Description { get; set; }
 
-    public int TeacherId { get; set; }
+    public decimal Price { get; set; }
 
     public int? CoverMediaId { get; set; }
 
     public bool IsArchived { get; set; }
 
-    public decimal? TuitionAmount { get; set; }
-
-    public DateTime? TuitionDueAt { get; set; }
-
-    public bool IsTuitionRequired { get; set; }
-
-    public int CreatedBy { get; set; }
-
     public DateTime CreatedAt { get; set; }
 
     public DateTime UpdatedAt { get; set; }
+
+    public DateTime? DeletedAt { get; set; }
 
     public virtual ICollection<AIConversation> AIConversations { get; set; } = new List<AIConversation>();
 
@@ -39,13 +35,11 @@ public partial class Classroom
 
     public virtual Medium? CoverMedia { get; set; }
 
-    public virtual User CreatedByNavigation { get; set; } = null!;
-
     public virtual ICollection<JoinRequest> JoinRequests { get; set; } = new List<JoinRequest>();
 
     public virtual ICollection<Lesson> Lessons { get; set; } = new List<Lesson>();
 
     public virtual ICollection<PaymentTransaction> PaymentTransactions { get; set; } = new List<PaymentTransaction>();
 
-    public virtual User Teacher { get; set; } = null!;
+    public virtual User Tutor { get; set; } = null!;
 }

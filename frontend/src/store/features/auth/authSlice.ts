@@ -8,44 +8,46 @@ import {
     Tokens,
     ApiResponse
 } from "@/types"
-import { auth, createAsyncThunkHandler, createAuthThunkHandler } from "@/utils"
+import { auth, createAsyncThunkHandler, createAuthThunkHandler, authCookies } from "@/utils"
 import { StudentAuthState } from "@/types"
 import { Student } from "@/types"
 
 const initialState: StudentAuthState = {
     student: null,
-    accessToken: auth.getAccessToken(),
-    refreshToken: auth.getRefreshToken(),
+    accessToken: null,
+    refreshToken: null,
     isLoading: false,
     error: null,
-    isAuthenticated: !!auth.getAccessToken() && !!auth.getRefreshToken()
+    isAuthenticated: false
 }
 
 export const login = createAsyncThunk<
-    ApiResponse<any> & { user?: any },
+    { data: any; user?: any },
     LoginRequest
 >(
     'auth/login',
     async (credentials: LoginRequest, { dispatch, rejectWithValue }) => {
         try {
-            // 1. Đăng nhập
+            // 1. Đăng nhập - Backend trả về {accessToken, refreshToken, expiresIn, tokenType}
             const loginResponse = await authApi.login(credentials);
+            const tokens = (loginResponse as any).data || loginResponse;
             
-            if (loginResponse.data?.accessToken) {
-                // 2. Lưu tokens - backend trả về trực tiếp AuthTokensDto
-                auth.setAccessToken(loginResponse.data.accessToken);
-                auth.setRefreshToken(loginResponse.data.refreshToken);
+            if (tokens.accessToken) {
+                // 2. Lưu tokens
+                auth.setAccessToken(tokens.accessToken);
+                auth.setRefreshToken(tokens.refreshToken);
                 
                 // 3. Fetch user info
                 const userResponse = await authApi.getMe();
+                const user = (userResponse as any).data || userResponse;
                 
                 return {
-                    ...loginResponse,
-                    user: userResponse.data
+                    data: tokens,
+                    user: user
                 };
             }
             
-            return loginResponse;
+            return { data: tokens };
         } catch (error: any) {
             return rejectWithValue(error.message || 'Đăng nhập thất bại');
         }
@@ -86,39 +88,72 @@ export const register = createAsyncThunk<
 
 export const logout = createAsyncThunk<void>(
     'auth/logout',
-    createAsyncThunkHandler(
-        async () => {
-            try {
-                await authApi.logout(auth.getRefreshToken() || '');
-            } finally {
-                auth.clearAccessToken()
-                auth.clearRefreshToken()
+    async (_, { rejectWithValue }) => {
+        try {
+            const refreshToken = auth.getRefreshToken();
+            if (refreshToken) {
+                await authApi.logout(refreshToken);
             }
-        },
-        'Đăng xuất học sinh thất bại'
-    )
+        } catch (error: any) {
+            console.error('Logout API error:', error);
+            // Không reject vì chúng ta vẫn muốn clear local state dù API fail
+        } finally {
+            // Luôn clear tokens
+            auth.clearAccessToken();
+            auth.clearRefreshToken();
+        }
+    }
+)
+
+// Initialize auth and fetch user info
+export const initializeAuth = createAsyncThunk<any>(
+    'auth/initialize',
+    async (_, { rejectWithValue }) => {
+        try {
+            const accessToken = auth.getAccessToken();
+            const refreshToken = auth.getRefreshToken();
+            
+            if (!accessToken || !refreshToken) {
+                return null;
+            }
+
+            // Fetch user info
+            const userResponse = await authApi.getMe();
+            const user = (userResponse as any).data || userResponse;
+            
+            return {
+                accessToken,
+                refreshToken,
+                user
+            };
+        } catch (error: any) {
+            // If token is invalid, clear auth
+            auth.clearAccessToken();
+            auth.clearRefreshToken();
+            return rejectWithValue(error.message || 'Failed to initialize auth');
+        }
+    }
 );
 
-export const requestPasswordResetEmail = createAsyncThunk<
-    ApiResponse<{ emailSent: string; expiresAt: string }>,
+export const forgotPassword = createAsyncThunk<
+    ApiResponse<{ message: string }>,
     string
 >(
-    'auth/requestPasswordResetEmail',
+    'auth/forgotPassword',
     createAsyncThunkHandler(
-        (email: string) => authApi.requestPasswordResetEmail(email),
+        (email: string) => authApi.forgotPassword(email),
         "Gửi email reset password thất bại"
     )
 )
 
-export const resetPasswordWithToken = createAsyncThunk<
-    ApiResponse<{ success: boolean }>,
-    { token: string; newPassword: string }
+export const resetPassword = createAsyncThunk<
+    ApiResponse<{ message: string }>,
+    { email: string; otpCode: string; newPassword: string; confirmNewPassword: string }
 >(
-    "auth/resetPasswordWithToken",
+    "auth/resetPassword",
     createAsyncThunkHandler(
-    ({ token, newPassword }) =>
-        authApi.resetPasswordWithToken(token, newPassword),
-    "Đặt lại mật khẩu thất bại"    
+        (data) => authApi.resetPassword(data),
+        "Đặt lại mật khẩu thất bại"    
     )
 );
 
@@ -150,18 +185,20 @@ const authSlice = createSlice({
             state.isAuthenticated = false;
             state.error = null;
             auth.clearAll()
+            authCookies.clearAuthCookies()
         },
         initializeStudentAuth: (state) => {
             const accessToken = auth.getAccessToken()
             const refreshToken = auth.getRefreshToken()
+            console.log('🔄 Initializing auth from localStorage:', { hasAccessToken: !!accessToken, hasRefreshToken: !!refreshToken });
             if (accessToken && refreshToken) {
-                try {
-                    state.accessToken = accessToken;
-                    state.refreshToken = refreshToken;
-                    state.isAuthenticated = true;
-                } catch (error) {
-                    auth.clearAccessToken()
-                }
+                state.accessToken = accessToken;
+                state.refreshToken = refreshToken;
+                state.isAuthenticated = true;
+                console.log('✅ Auth initialized successfully');
+            } else {
+                console.log('❌ No tokens found in localStorage');
+                state.isAuthenticated = false;
             }
         },
         setStudentAccessToken: (state, action: PayloadAction<string>) => {
@@ -192,12 +229,18 @@ const authSlice = createSlice({
                 state.error = null;
             })
             .addCase(login.fulfilled, (state, action) => {
+                state.isLoading = false;
                 const data = action.payload.data
                 const user = action.payload.user
-                if (!data) return
-                state.isLoading = false;
+                if (!data) {
+                    state.error = 'Không nhận được dữ liệu từ server';
+                    return;
+                }
                 if (user) {
                     state.student = user;
+                    // Set cookies dựa trên role của user
+                    const role = user.role || 'student';
+                    authCookies.setAuthCookies(role);
                 }
                 state.accessToken = data.accessToken;
                 state.refreshToken = data.refreshToken;
@@ -217,14 +260,20 @@ const authSlice = createSlice({
                 state.error = null;
             })
             .addCase(register.fulfilled, (state, action) => {
+                state.isLoading = false;
                 const data = action.payload.data
                 const user = action.payload.user
-                if (!data) return
-                state.isLoading = false;
+                if (!data) {
+                    state.error = 'Không nhận được dữ liệu từ server';
+                    return;
+                }
                 state.accessToken = data.accessToken;
                 state.refreshToken = data.refreshToken;
                 if (user) {
                     state.student = user;
+                    // Set cookies dựa trên role của user
+                    const role = user.role || 'student';
+                    authCookies.setAuthCookies(role);
                 }
                 state.isAuthenticated = true;
                 state.error = null;
@@ -246,6 +295,7 @@ const authSlice = createSlice({
                 state.accessToken = null;
                 state.isAuthenticated = false;
                 state.error = null;
+                authCookies.clearAuthCookies();
             })
             .addCase(logout.rejected, (state) => {
                 state.isLoading = false;
@@ -253,29 +303,55 @@ const authSlice = createSlice({
                 state.accessToken = null;
                 state.isAuthenticated = false;
                 state.error = null;
+                authCookies.clearAuthCookies();
+            });
+
+        // Initialize auth
+        builder
+            .addCase(initializeAuth.pending, (state) => {
+                state.isLoading = true;
+            })
+            .addCase(initializeAuth.fulfilled, (state, action) => {
+                state.isLoading = false;
+                if (action.payload) {
+                    state.accessToken = action.payload.accessToken;
+                    state.refreshToken = action.payload.refreshToken;
+                    state.student = action.payload.user;
+                    state.isAuthenticated = true;
+                    console.log('✅ Auth initialized with user:', action.payload.user);
+                } else {
+                    state.isAuthenticated = false;
+                }
+            })
+            .addCase(initializeAuth.rejected, (state) => {
+                state.isLoading = false;
+                state.student = null;
+                state.accessToken = null;
+                state.refreshToken = null;
+                state.isAuthenticated = false;
             });
 
             builder
-            .addCase(requestPasswordResetEmail.pending, (state) => {
+            .addCase(forgotPassword.pending, (state) => {
                 state.isLoading = true;
                 state.error = null;
             })
-            .addCase(requestPasswordResetEmail.fulfilled, (state) => {
+            .addCase(forgotPassword.fulfilled, (state) => {
                 state.isLoading = false;
                 state.error = null;
             })
-            .addCase(requestPasswordResetEmail.rejected, (state, action) => {
+            .addCase(forgotPassword.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error = action.payload as string;
             });
 
-            // Reset password with token
+            // Reset password with OTP
             builder
-            .addCase(resetPasswordWithToken.pending, (state) => {
+            .addCase(resetPassword.pending, (state) => {
                 state.isLoading = true;
                 state.error = null;
             })
-            .addCase(resetPasswordWithToken.fulfilled, (state) => {
+            .addCase(resetPassword.fulfilled, (state) => {
                 state.isLoading = false;
                 state.error = null;
                 state.student = null; // bắt buộc login lại
@@ -283,7 +359,7 @@ const authSlice = createSlice({
                 state.refreshToken = null;
                 state.isAuthenticated = false;
             })
-            .addCase(resetPasswordWithToken.rejected, (state, action) => {
+            .addCase(resetPassword.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error = action.payload as string;
             });

@@ -12,13 +12,26 @@ namespace api_backend.Repositories.Implements
         public async Task<bool> ExistsPendingAsync(int classroomId, int studentId, CancellationToken ct = default)
             => await _db.JoinRequests.AnyAsync(j => j.ClassroomId == classroomId && j.StudentId == studentId && j.Status == "pending", ct);
 
-        public async Task<JoinRequest?> GetByIdAsync(int id, CancellationToken ct = default)
-            => await _db.JoinRequests.FirstOrDefaultAsync(j => j.JoinRequestId == id, ct);
+        public async Task<JoinRequest?> GetExistingRequestAsync(int classroomId, int studentId, CancellationToken ct = default)
+            => await _db.JoinRequests.FirstOrDefaultAsync(j => j.ClassroomId == classroomId && j.StudentId == studentId, ct);
 
         public async Task<List<JoinRequest>> GetByClassroomAsync(int classroomId, CancellationToken ct = default)
             => await _db.JoinRequests.Where(j => j.ClassroomId == classroomId).OrderByDescending(j => j.RequestedAt).ToListAsync(ct);
 
         public async Task<List<JoinRequest>> GetByStudentAsync(int studentId, CancellationToken ct = default)
             => await _db.JoinRequests.Where(j => j.StudentId == studentId).OrderByDescending(j => j.RequestedAt).ToListAsync(ct);
+
+        public async Task RemoveJoinRequestAsync(int classroomId, int studentId, CancellationToken ct = default)
+        {
+            var joinRequests = await _db.JoinRequests
+                .Where(j => j.ClassroomId == classroomId && j.StudentId == studentId)
+                .ToListAsync(ct);
+
+            if (joinRequests.Any())
+            {
+                _db.JoinRequests.RemoveRange(joinRequests);
+                await _db.SaveChangesAsync(ct);
+            }
+        }
     }
 }

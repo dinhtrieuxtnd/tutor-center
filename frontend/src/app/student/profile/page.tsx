@@ -1,90 +1,201 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   User,
   Mail,
   Phone,
-  Calendar,
-  MapPin,
-  School,
   Edit,
   Save,
   X,
   Camera,
   Lock,
   Bell,
-  Globe,
-  Shield
+  Shield,
+  Award,
+  BookOpen,
+  Calendar,
+  Loader2
 } from 'lucide-react';
-import { AppHeader } from '@/components/layout';
+import { Header } from '@/components/layout';
+import { profileApi, ProfileResponse, UpdateProfileRequest, ChangePasswordRequest } from '@/services/profileApi';
 
-interface UserProfile {
-  id: number;
-  fullName: string;
-  email: string;
-  phone: string;
-  dateOfBirth: string;
-  address: string;
-  school: string;
-  grade: string;
-  avatar?: string;
-  bio?: string;
-  joinedDate: string;
+interface PasswordForm {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
 }
 
-export default function ProfilePage() {
+export default function StudentProfilePage() {
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'notifications'>('profile');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'notifications' | 'stats'>('profile');
 
-  // Mock data - sẽ fetch từ API
-  const [profile, setProfile] = useState<UserProfile>({
-    id: 1,
-    fullName: 'Nguyễn Văn A',
-    email: 'nguyenvana@example.com',
-    phone: '0912345678',
-    dateOfBirth: '15/05/2007',
-    address: 'Quận 1, TP. Hồ Chí Minh',
-    school: 'THPT Lê Hồng Phong',
-    grade: 'Lớp 12A1',
-    bio: 'Học sinh yêu thích môn Toán và Vật lý. Đang chuẩn bị cho kỳ thi THPT Quốc gia.',
-    joinedDate: '01/09/2024'
+  const [profile, setProfile] = useState<ProfileResponse | null>(null);
+  const [editForm, setEditForm] = useState<Partial<ProfileResponse>>({});
+  const [passwordForm, setPasswordForm] = useState<PasswordForm>({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
   });
 
-  const [editForm, setEditForm] = useState({ ...profile });
+  useEffect(() => {
+    fetchProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const handleSave = () => {
-    // TODO: Call API to update profile
-    setProfile(editForm);
-    setIsEditing(false);
-    console.log('Saving profile:', editForm);
+  const fetchProfile = async () => {
+    try {
+      setLoading(true);
+      const response = await profileApi.getProfile();
+      console.log('Profile API response:', response);
+      
+      // Backend có thể trả về trực tiếp object hoặc wrap trong { data: ... }
+      const profileData = response?.data || response;
+      console.log('Profile data:', profileData);
+      
+      if (profileData && profileData.userId) {
+        setProfile(profileData as ProfileResponse);
+        setEditForm(profileData as ProfileResponse);
+        console.log('✅ Profile loaded successfully');
+      } else {
+        console.error('❌ No valid profile data in response');
+      }
+    } catch (error: any) {
+      console.error('❌ Error fetching profile:', error);
+      console.error('Error message:', error?.message);
+      console.error('Error response:', error?.response?.data);
+      console.error('Error status:', error?.response?.status);
+      
+      if (error?.response?.status === 401) {
+        alert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+        handleLogout();
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      if (!editForm.fullName || !editForm.phoneNumber) {
+        alert('Vui lòng điền đầy đủ thông tin');
+        return;
+      }
+
+      const updateData: UpdateProfileRequest = {
+        fullName: editForm.fullName,
+        phoneNumber: editForm.phoneNumber,
+      };
+
+      await profileApi.updateProfile(updateData);
+      alert('Cập nhật thông tin thành công');
+      await fetchProfile();
+      setIsEditing(false);
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      const errorMsg = error?.response?.data?.message || error?.message || 'Không thể cập nhật thông tin';
+      alert(errorMsg);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    try {
+      if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+        alert('Vui lòng điền đầy đủ thông tin');
+        return;
+      }
+
+      if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+        alert('Mật khẩu mới không khớp');
+        return;
+      }
+
+      if (passwordForm.newPassword.length < 6) {
+        alert('Mật khẩu mới phải có ít nhất 6 ký tự');
+        return;
+      }
+
+      const changePasswordData: ChangePasswordRequest = {
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+      };
+
+      await profileApi.changePassword(changePasswordData);
+      alert('Đổi mật khẩu thành công');
+      setPasswordForm({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+    } catch (error: any) {
+      console.error('Error changing password:', error);
+      const errorMsg = error?.response?.data?.message || error?.message || 'Không thể đổi mật khẩu';
+      alert(errorMsg);
+    }
   };
 
   const handleCancel = () => {
-    setEditForm({ ...profile });
+    setEditForm(profile || {});
     setIsEditing(false);
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
     document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     document.cookie = 'refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    document.cookie = 'hasAuth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     router.push('/auth/login');
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 font-open-sans">
-      {/* Header */}
-      <AppHeader
-        currentPage="dashboard"
-        userName={profile.fullName}
-        userRole="Học sinh"
-        onLogout={handleLogout}
-      />
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header userRole="student" />
+        <div className="max-w-7xl mx-auto py-8 px-4">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto" />
+              <p className="mt-4 text-gray-600">Đang tải...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-      {/* Main Content */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header userRole="student" />
+        <div className="max-w-7xl mx-auto py-8 px-4">
+          <div className="bg-white rounded-lg shadow p-8 text-center">
+            <p className="text-gray-600">Không thể tải thông tin người dùng</p>
+            <button
+              onClick={fetchProfile}
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Thử lại
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Header userRole="student" />
+
+      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 font-poppins">
             Thông tin cá nhân
@@ -109,6 +220,17 @@ export default function ProfilePage() {
                 >
                   <User className="w-5 h-5" />
                   <span>Hồ sơ</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('stats')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left font-open-sans ${
+                    activeTab === 'stats'
+                      ? 'bg-primary text-white'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <Award className="w-5 h-5" />
+                  <span>Thống kê học tập</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('security')}
@@ -157,8 +279,8 @@ export default function ProfilePage() {
                         {profile.fullName}
                       </h2>
                       <p className="text-gray-600 font-open-sans">{profile.email}</p>
-                      <p className="text-sm text-gray-500 font-open-sans mt-1">
-                        Tham gia từ {profile.joinedDate}
+                      <p className="text-sm text-primary font-semibold font-open-sans mt-1">
+                        Học sinh
                       </p>
                     </div>
                     {!isEditing && (
@@ -204,16 +326,8 @@ export default function ProfilePage() {
                         <Mail className="w-4 h-4" />
                         Email
                       </label>
-                      {isEditing ? (
-                        <input
-                          type="email"
-                          value={editForm.email}
-                          onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent font-open-sans"
-                        />
-                      ) : (
-                        <p className="text-gray-900 font-open-sans">{profile.email}</p>
-                      )}
+                      <p className="text-gray-900 font-open-sans">{profile.email}</p>
+                      <p className="text-xs text-gray-500 mt-1">Email không thể thay đổi</p>
                     </div>
 
                     {/* Phone */}
@@ -225,103 +339,12 @@ export default function ProfilePage() {
                       {isEditing ? (
                         <input
                           type="tel"
-                          value={editForm.phone}
-                          onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                          value={editForm.phoneNumber}
+                          onChange={(e) => setEditForm({ ...editForm, phoneNumber: e.target.value })}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent font-open-sans"
                         />
                       ) : (
-                        <p className="text-gray-900 font-open-sans">{profile.phone}</p>
-                      )}
-                    </div>
-
-                    {/* Date of Birth */}
-                    <div>
-                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2 font-open-sans">
-                        <Calendar className="w-4 h-4" />
-                        Ngày sinh
-                      </label>
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          value={editForm.dateOfBirth}
-                          onChange={(e) => setEditForm({ ...editForm, dateOfBirth: e.target.value })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent font-open-sans"
-                          placeholder="DD/MM/YYYY"
-                        />
-                      ) : (
-                        <p className="text-gray-900 font-open-sans">{profile.dateOfBirth}</p>
-                      )}
-                    </div>
-
-                    {/* Address */}
-                    <div>
-                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2 font-open-sans">
-                        <MapPin className="w-4 h-4" />
-                        Địa chỉ
-                      </label>
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          value={editForm.address}
-                          onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent font-open-sans"
-                        />
-                      ) : (
-                        <p className="text-gray-900 font-open-sans">{profile.address}</p>
-                      )}
-                    </div>
-
-                    {/* School */}
-                    <div>
-                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2 font-open-sans">
-                        <School className="w-4 h-4" />
-                        Trường học
-                      </label>
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          value={editForm.school}
-                          onChange={(e) => setEditForm({ ...editForm, school: e.target.value })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent font-open-sans"
-                        />
-                      ) : (
-                        <p className="text-gray-900 font-open-sans">{profile.school}</p>
-                      )}
-                    </div>
-
-                    {/* Grade */}
-                    <div>
-                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2 font-open-sans">
-                        <School className="w-4 h-4" />
-                        Lớp
-                      </label>
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          value={editForm.grade}
-                          onChange={(e) => setEditForm({ ...editForm, grade: e.target.value })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent font-open-sans"
-                        />
-                      ) : (
-                        <p className="text-gray-900 font-open-sans">{profile.grade}</p>
-                      )}
-                    </div>
-
-                    {/* Bio */}
-                    <div>
-                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2 font-open-sans">
-                        <Globe className="w-4 h-4" />
-                        Giới thiệu
-                      </label>
-                      {isEditing ? (
-                        <textarea
-                          value={editForm.bio}
-                          onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
-                          rows={3}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent resize-none font-open-sans"
-                        />
-                      ) : (
-                        <p className="text-gray-900 font-open-sans">{profile.bio}</p>
+                        <p className="text-gray-900 font-open-sans">{profile.phoneNumber || 'Chưa cập nhật'}</p>
                       )}
                     </div>
                   </div>
@@ -331,20 +354,71 @@ export default function ProfilePage() {
                     <div className="flex gap-3 mt-6 pt-6 border-t border-gray-200">
                       <button
                         onClick={handleCancel}
-                        className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-open-sans"
+                        disabled={saving}
+                        className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-open-sans disabled:opacity-50"
                       >
                         <X className="w-4 h-4" />
                         Hủy
                       </button>
                       <button
                         onClick={handleSave}
-                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-blue-600 text-white rounded-lg hover:shadow-lg transition-all font-open-sans"
+                        disabled={saving}
+                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-blue-600 text-white rounded-lg hover:shadow-lg transition-all font-open-sans disabled:opacity-50"
                       >
-                        <Save className="w-4 h-4" />
-                        Lưu thay đổi
+                        {saving ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Save className="w-4 h-4" />
+                        )}
+                        {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
                       </button>
                     </div>
                   )}
+                </div>
+              </div>
+            )}
+
+            {/* Stats Tab */}
+            {activeTab === 'stats' && (
+              <div className="space-y-6">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <h3 className="text-lg font-bold text-gray-900 mb-6 font-poppins">
+                    Thống kê học tập
+                  </h3>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 bg-blue-50 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <BookOpen className="w-5 h-5 text-primary" />
+                        <p className="text-sm text-gray-600">Lớp đã tham gia</p>
+                      </div>
+                      <p className="text-2xl font-bold text-gray-900">5</p>
+                    </div>
+                    
+                    <div className="p-4 bg-green-50 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Award className="w-5 h-5 text-green-600" />
+                        <p className="text-sm text-gray-600">Bài tập hoàn thành</p>
+                      </div>
+                      <p className="text-2xl font-bold text-gray-900">42</p>
+                    </div>
+                    
+                    <div className="p-4 bg-purple-50 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Calendar className="w-5 h-5 text-purple-600" />
+                        <p className="text-sm text-gray-600">Bài quiz đã làm</p>
+                      </div>
+                      <p className="text-2xl font-bold text-gray-900">18</p>
+                    </div>
+                    
+                    <div className="p-4 bg-orange-50 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Award className="w-5 h-5 text-orange-600" />
+                        <p className="text-sm text-gray-600">Điểm trung bình</p>
+                      </div>
+                      <p className="text-2xl font-bold text-gray-900">8.5</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -366,19 +440,28 @@ export default function ProfilePage() {
                       <input
                         type="password"
                         placeholder="Mật khẩu hiện tại"
+                        value={passwordForm.currentPassword}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent font-open-sans"
                       />
                       <input
                         type="password"
                         placeholder="Mật khẩu mới"
+                        value={passwordForm.newPassword}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent font-open-sans"
                       />
                       <input
                         type="password"
                         placeholder="Xác nhận mật khẩu mới"
+                        value={passwordForm.confirmPassword}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent font-open-sans"
                       />
-                      <button className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition-colors font-open-sans">
+                      <button 
+                        onClick={handleChangePassword}
+                        className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition-colors font-open-sans"
+                      >
                         <Lock className="w-4 h-4" />
                         Cập nhật mật khẩu
                       </button>
@@ -432,7 +515,7 @@ export default function ProfilePage() {
             )}
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

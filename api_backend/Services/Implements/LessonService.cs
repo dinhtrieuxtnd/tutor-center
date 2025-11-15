@@ -1,4 +1,4 @@
-﻿using api_backend.DbContexts;
+using api_backend.DbContexts;
 using api_backend.DTOs.Request.Lessons;
 using api_backend.DTOs.Response;
 using api_backend.Entities;
@@ -15,84 +15,207 @@ public class LessonService : ILessonService
 
     public LessonService(AppDbContext db, ILessonRepository repo)
     {
-        _db = db; _repo = repo;
+        _db = db;
+        _repo = repo;
     }
 
-    private static LessonDto Map(Lesson e) => new()
+    private static LessonDto MapToDto(Lesson lesson)
     {
-        LessonId = e.LessonId,
-        ClassroomId = e.ClassroomId,
-        Title = e.Title,
-        Content = e.Content,
-        LessonType = e.LessonType,
-        OrderIndex = e.OrderIndex,
-        PublishedAt = e.PublishedAt
-    };
-
-    public async Task<LessonDto> CreateAsync(LessonCreateDto dto, int actorUserId, CancellationToken ct)
-    {
-        // Chỉ giáo viên phụ trách Classroom được tạo
-        var isTeacher = await _repo.IsTeacherOfClassroomAsync(dto.ClassroomId, actorUserId, ct);
-        if (!isTeacher) throw new UnauthorizedAccessException("Chỉ giáo viên phụ trách lớp mới được tạo bài học.");
-
-        var e = new Lesson
+        var dto = new LessonDto
         {
-            ClassroomId = dto.ClassroomId,
-            Title = dto.Title,
-            Content = dto.Content,
-            LessonType = dto.LessonType ?? "lesson",
-            OrderIndex = dto.OrderIndex,
-            PublishedAt = dto.Publish ? DateTime.UtcNow : null
+            LessonId = lesson.LessonId,
+            ClassroomId = lesson.ClassroomId,
+            LessonType = lesson.LessonType,
+            OrderIndex = lesson.OrderIndex,
+            CreatedAt = lesson.CreatedAt
         };
 
-        _db.Lessons.Add(e);
-        await _db.SaveChangesAsync(ct);
-        return Map(e);
+        // Map Lecture with tree structure
+        if (lesson.Lecture != null)
+        {
+            dto.Lecture = MapLectureTree(lesson.Lecture);
+        }
+
+        // Map Exercise
+        if (lesson.Exercise != null)
+        {
+            dto.Exercise = new ExerciseSimpleDto
+            {
+                ExerciseId = lesson.Exercise.ExerciseId,
+                Title = lesson.Exercise.Title,
+                Description = lesson.Exercise.Description,
+                AttachMediaId = lesson.Exercise.AttachMediaId,
+                CreatedBy = lesson.Exercise.CreatedBy,
+                CreatedAt = lesson.Exercise.CreatedAt
+            };
+            dto.ExerciseDueAt = lesson.ExerciseDueAt;
+        }
+
+        // Map Quiz
+        if (lesson.Quiz != null)
+        {
+            dto.Quiz = new QuizSimpleDto
+            {
+                QuizId = lesson.Quiz.QuizId,
+                Title = lesson.Quiz.Title,
+                Description = lesson.Quiz.Description,
+                TimeLimitSec = lesson.Quiz.TimeLimitSec,
+                MaxAttempts = lesson.Quiz.MaxAttempts,
+                CreatedBy = lesson.Quiz.CreatedBy,
+                CreatedAt = lesson.Quiz.CreatedAt
+            };
+            dto.QuizStartAt = lesson.QuizStartAt;
+            dto.QuizEndAt = lesson.QuizEndAt;
+        }
+
+        return dto;
     }
 
-    public async Task<bool> UpdateAsync(int lessonId, LessonUpdateDto dto, int actorUserId, CancellationToken ct)
+    private static LectureTreeDto MapLectureTree(Lecture lecture)
     {
-        var e = await _db.Lessons.FirstOrDefaultAsync(x => x.LessonId == lessonId, ct);
-        if (e == null) return false;
+        var dto = new LectureTreeDto
+        {
+            LectureId = lecture.LectureId,
+            ParentId = lecture.ParentId,
+            Title = lecture.Title,
+            Content = lecture.Content,
+            MediaId = lecture.MediaId,
+            UploadedAt = lecture.UploadedAt,
+            UploadedBy = lecture.UploadedBy,
+            UploadedByName = lecture.UploadedByNavigation?.FullName ?? string.Empty
+        };
 
-        var isTeacher = await _repo.IsTeacherOfClassroomAsync(e.ClassroomId, actorUserId, ct);
-        if (!isTeacher) throw new UnauthorizedAccessException("Chỉ giáo viên phụ trách lớp mới được sửa bài học.");
+        // Recursively map children
+        if (lecture.InverseParent != null && lecture.InverseParent.Any())
+        {
+            dto.Children = lecture.InverseParent
+                .Where(l => l.DeletedAt == null)
+                .Select(MapLectureTree)
+                .ToList();
+        }
 
-        if (dto.Title != null) e.Title = dto.Title;
-        if (dto.Content != null) e.Content = dto.Content;
-        if (dto.LessonType != null) e.LessonType = dto.LessonType;
-        if (dto.OrderIndex.HasValue) e.OrderIndex = dto.OrderIndex.Value;
-        if (dto.Publish.HasValue) e.PublishedAt = dto.Publish.Value ? (e.PublishedAt ?? DateTime.UtcNow) : null;
+        return dto;
+    }
+
+    public async Task<LessonDto> AssignLectureAsync(AssignLectureDto dto, int tutorId, CancellationToken ct)
+    {
+        // Check if tutor owns the classroom
+        if (!await _repo.IsTeacherOfClassroomAsync(dto.ClassroomId, tutorId, ct))
+            throw new UnauthorizedAccessException("Bạn không có quyền thao tác với lớp học này.");
+
+        // Check if lecture exists, is root (parentId = null), and owned by tutor
+        if (!await _repo.LectureExistsAndIsRootAsync(dto.LectureId, tutorId, ct))
+            throw new InvalidOperationException("Lecture không tồn tại, không phải lecture gốc hoặc bạn không sở hữu.");
+
+        var lesson = new Lesson
+        {
+            ClassroomId = dto.ClassroomId,
+            LessonType = "lecture",
+            LectureId = dto.LectureId,
+            OrderIndex = dto.OrderIndex,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        _db.Lessons.Add(lesson);
+        await _db.SaveChangesAsync(ct);
+
+        // Reload with details
+        var saved = await _repo.GetByIdWithDetailsAsync(lesson.LessonId, ct);
+        return MapToDto(saved!);
+    }
+
+    public async Task<LessonDto> AssignExerciseAsync(AssignExerciseDto dto, int tutorId, CancellationToken ct)
+    {
+        // Check if tutor owns the classroom
+        if (!await _repo.IsTeacherOfClassroomAsync(dto.ClassroomId, tutorId, ct))
+            throw new UnauthorizedAccessException("Bạn không có quyền thao tác với lớp học này.");
+
+        // Check if exercise exists and owned by tutor
+        if (!await _repo.ExerciseExistsAndOwnedByTutorAsync(dto.ExerciseId, tutorId, ct))
+            throw new InvalidOperationException("Exercise không tồn tại hoặc bạn không sở hữu.");
+
+        var lesson = new Lesson
+        {
+            ClassroomId = dto.ClassroomId,
+            LessonType = "exercise",
+            ExerciseId = dto.ExerciseId,
+            ExerciseDueAt = dto.DueAt,
+            OrderIndex = dto.OrderIndex,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        _db.Lessons.Add(lesson);
+        await _db.SaveChangesAsync(ct);
+
+        // Reload with details
+        var saved = await _repo.GetByIdWithDetailsAsync(lesson.LessonId, ct);
+        return MapToDto(saved!);
+    }
+
+    public async Task<LessonDto> AssignQuizAsync(AssignQuizDto dto, int tutorId, CancellationToken ct)
+    {
+        // Check if tutor owns the classroom
+        if (!await _repo.IsTeacherOfClassroomAsync(dto.ClassroomId, tutorId, ct))
+            throw new UnauthorizedAccessException("Bạn không có quyền thao tác với lớp học này.");
+
+        // Check if quiz exists and owned by tutor
+        if (!await _repo.QuizExistsAndOwnedByTutorAsync(dto.QuizId, tutorId, ct))
+            throw new InvalidOperationException("Quiz không tồn tại hoặc bạn không sở hữu.");
+
+        var lesson = new Lesson
+        {
+            ClassroomId = dto.ClassroomId,
+            LessonType = "quiz",
+            QuizId = dto.QuizId,
+            QuizStartAt = dto.StartAt,
+            QuizEndAt = dto.EndAt,
+            OrderIndex = dto.OrderIndex,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        _db.Lessons.Add(lesson);
+        await _db.SaveChangesAsync(ct);
+
+        // Reload with details
+        var saved = await _repo.GetByIdWithDetailsAsync(lesson.LessonId, ct);
+        return MapToDto(saved!);
+    }
+
+    public async Task<bool> SoftDeleteAsync(int lessonId, int tutorId, CancellationToken ct)
+    {
+        var lesson = await _db.Lessons
+            .FirstOrDefaultAsync(l => l.LessonId == lessonId && l.DeletedAt == null, ct);
+
+        if (lesson == null)
+            return false;
+
+        // Check if tutor owns the classroom
+        if (!await _repo.IsTeacherOfClassroomAsync(lesson.ClassroomId, tutorId, ct))
+            throw new UnauthorizedAccessException("Bạn không có quyền thao tác với lớp học này.");
+
+        lesson.DeletedAt = DateTime.UtcNow;
+        lesson.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(ct);
         return true;
     }
 
-    public async Task<bool> DeleteAsync(int lessonId, int actorUserId, CancellationToken ct)
+    public async Task<List<LessonDto>> ListByClassroomAsync(int classroomId, int? userId, CancellationToken ct)
     {
-        var e = await _db.Lessons.FirstOrDefaultAsync(x => x.LessonId == lessonId, ct);
-        if (e == null) return false;
+        // Check access: user must be tutor or student of classroom
+        if (userId.HasValue)
+        {
+            var isTutor = await _repo.IsTeacherOfClassroomAsync(classroomId, userId.Value, ct);
+            var isStudent = await _repo.IsStudentOfClassroomAsync(classroomId, userId.Value, ct);
 
-        var isTeacher = await _repo.IsTeacherOfClassroomAsync(e.ClassroomId, actorUserId, ct);
-        if (!isTeacher) throw new UnauthorizedAccessException("Chỉ giáo viên phụ trách lớp mới được xóa bài học.");
+            if (!isTutor && !isStudent)
+                throw new UnauthorizedAccessException("Bạn không có quyền xem danh sách bài học của lớp này.");
+        }
 
-        _db.Lessons.Remove(e);
-        await _db.SaveChangesAsync(ct);
-        return true;
-    }
-
-    public async Task<LessonDto?> GetAsync(int lessonId, bool includeDraft, int? actorUserId, CancellationToken ct)
-    {
-        var e = await _db.Lessons.AsNoTracking().FirstOrDefaultAsync(x => x.LessonId == lessonId, ct);
-        if (e == null) return null;
-        if (!includeDraft && e.PublishedAt == null) return null; // ẩn draft
-
-        return Map(e);
-    }
-
-    public async Task<List<LessonDto>> ListByClassroomAsync(int classroomId, bool onlyPublished, int? actorUserId, CancellationToken ct)
-    {
-        var list = await _repo.ListByClassroomAsync(classroomId, onlyPublished, ct);
-        return list.Select(Map).ToList();
+        var lessons = await _repo.ListByClassroomWithDetailsAsync(classroomId, ct);
+        return lessons.Select(MapToDto).ToList();
     }
 }

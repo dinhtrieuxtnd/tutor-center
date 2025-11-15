@@ -3,12 +3,12 @@ using Microsoft.AspNetCore.Mvc;
 using api_backend.Services.Abstracts;
 using api_backend.DTOs.Request.JoinRequests;
 using System.Security.Claims;
-using System.Threading;
 
 namespace api_backend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class JoinRequestsController : ControllerBase
     {
         private readonly IJoinRequestService _service;
@@ -16,7 +16,7 @@ namespace api_backend.Controllers
 
         // Student gửi yêu cầu
         [HttpPost]
-        [Authorize(Roles = "Student")]
+        [Authorize(Roles = "student")]
         public async Task<IActionResult> Create([FromBody] JoinRequestCreateDto dto, CancellationToken ct)
         {
             var res = await _service.CreateAsync(dto, ct);
@@ -25,7 +25,7 @@ namespace api_backend.Controllers
 
         // Student xem các yêu cầu của mình
         [HttpGet("my")]
-        [Authorize(Roles = "Student")]
+        [Authorize(Roles = "student")]
         public async Task<IActionResult> GetMine(CancellationToken ct)
         {
             var actorId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -35,7 +35,7 @@ namespace api_backend.Controllers
 
         // Teacher xem yêu cầu theo lớp (ownership check in service)
         [HttpGet("by-classroom/{classroomId:int}")]
-        [Authorize(Roles = "Tutor")]
+        [Authorize(Roles = "tutor")]
         public async Task<IActionResult> GetByClassroom(int classroomId, CancellationToken ct)
         {
             var actorId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -52,7 +52,7 @@ namespace api_backend.Controllers
 
         // Teacher duyệt/từ chối (ownership check in service)
         [HttpPatch("{joinRequestId:int}/status")]
-        [Authorize(Roles = "Tutor")]
+        [Authorize(Roles = "tutor")]
         public async Task<IActionResult> UpdateStatus(int joinRequestId, [FromBody] JoinRequestUpdateStatusDto dto, CancellationToken ct)
         {
             var actorId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);

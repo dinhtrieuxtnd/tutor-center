@@ -6,5 +6,6 @@ namespace api_backend.Repositories.Abstracts
     {
         Task<RefreshToken?> FindActiveAsync(string plainToken, CancellationToken ct = default);
         Task InvalidateUserTokensAsync(int userId, CancellationToken ct = default);
+        Task DeleteRefreshTokenAsync(string plainToken, CancellationToken ct = default);
     }
 }

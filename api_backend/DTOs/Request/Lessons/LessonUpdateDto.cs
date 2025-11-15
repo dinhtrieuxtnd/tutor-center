@@ -1,11 +1,10 @@
 ﻿namespace api_backend.DTOs.Request.Lessons
 {
-    public class LessonUpdateDto
+    public class AssignExerciseDto
     {
-        public string? Title { get; set; }
-        public string? Content { get; set; }
-        public string? LessonType { get; set; }
-        public int? OrderIndex { get; set; }
-        public bool? Publish { get; set; }
+        public int ClassroomId { get; set; }
+        public int ExerciseId { get; set; }
+        public DateTime? DueAt { get; set; }
+        public int OrderIndex { get; set; } = 0;
     }
 }

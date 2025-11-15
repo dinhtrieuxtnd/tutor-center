@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
     useAuth
@@ -23,8 +22,7 @@ import {
 import { LOCAL_KEYS } from '@/constants'
 
 export const LoginClient = () => {
-    const router = useRouter()
-    const { login, isLoading, isAuthenticated } = useAuth()
+    const { login, isLoading } = useAuth()
     const [show, setShow] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
 
@@ -55,7 +53,22 @@ export const LoginClient = () => {
             } else {
                 localStorage.removeItem(LOCAL_KEYS.REMEMBERME_ACCOUNT);
             }
-            router.push("/");
+            
+            // Get user role from the login response
+            const user = (resultAction.payload as any)?.user;
+            const userRole = user?.role || 'student';
+            
+            // Force a small delay to ensure cookies are set by authSlice
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Redirect based on user role using window.location for hard navigation
+            if (userRole === "admin") {
+                window.location.href = "/admin/dashboard";
+            } else if (userRole === "tutor") {
+                window.location.href = "/tutor/dashboard";
+            } else {
+                window.location.href = "/student/dashboard";
+            }
         }
 
     };
