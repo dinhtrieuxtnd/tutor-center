@@ -6,7 +6,7 @@ export interface JoinRequestResponse {
     joinRequestId: number;
     classroomId: number;
     studentId: number;
-    status: 'pending' | 'accepted' | 'rejected';
+    status: 'pending' | 'approved' | 'rejected';
     note?: string | null;
     requestedAt: string;
     handledBy?: number | null;
@@ -20,13 +20,13 @@ export interface CreateJoinRequestRequest {
 }
 
 export interface UpdateJoinRequestStatusRequest {
-    status: 'accepted' | 'rejected';
+    status: 'approved' | 'rejected';
     note?: string;
 }
 
 export const joinRequestApi = {
     // Student: Create new join request (POST /api/JoinRequests)
-    // Tạo yêu cầu tham gia lớp học mới. Nếu đã có yêu cầu cũ (pending/denied/accepted), 
+    // Tạo yêu cầu tham gia lớp học mới. Nếu đã có yêu cầu cũ (pending/denied/approved), 
     // hệ thống sẽ tự động cập nhật thành pending thay vì tạo mới
     create: async (data: CreateJoinRequestRequest): Promise<ApiResponse<JoinRequestResponse>> => {
         return await apiService.post<ApiResponse<JoinRequestResponse>>(
@@ -52,7 +52,7 @@ export const joinRequestApi = {
     },
 
     // Tutor: Update join request status (PATCH /api/JoinRequests/:id/status)
-    // Duyệt hoặc từ chối yêu cầu tham gia lớp học. Nếu duyệt (accepted), sinh viên sẽ được tự động thêm vào lớp
+    // Duyệt hoặc từ chối yêu cầu tham gia lớp học. Nếu duyệt (approved), sinh viên sẽ được tự động thêm vào lớp
     // Returns: 204 No Content on success
     updateStatus: async (joinRequestId: number | string, data: UpdateJoinRequestStatusRequest): Promise<void> => {
         await apiService.patch<void>(

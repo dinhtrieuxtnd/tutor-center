@@ -1,0 +1,30 @@
+/* React PDF Styles */
+.react-pdf__Document {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.react-pdf__Page {
+  max-width: 100%;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+  margin: 0 auto;
+}
+
+.react-pdf__Page__textContent {
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+}
+
+.react-pdf__Page__annotations {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.react-pdf__Page__canvas {
+  display: block;
+  user-select: none;
+}

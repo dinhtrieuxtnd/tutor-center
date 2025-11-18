@@ -16,7 +16,7 @@ interface ClassCardProps {
   classItem: ClassroomResponse;
   viewMode: "grid" | "list";
   isEnrolled?: boolean;
-  joinRequestStatus?: 'pending' | 'accepted' | 'rejected';
+  joinRequestStatus?: 'pending' | 'approved' | 'rejected';
   isLoadingEnrollments?: boolean;
   onEnroll?: (classroomId: number) => void;
 }

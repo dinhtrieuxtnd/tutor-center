@@ -1,76 +1,115 @@
 import { apiService } from "@/services";
 import { API_ENDPOINTS } from "@/constants";
-import { ApiResponse } from "@/types";
 
 export interface MediaResponse {
     mediaId: number;
-    userId: number;
-    fileName: string;
-    filePath: string;
-    fileSize: number;
-    mimeType: string;
-    uploadedAt: string;
+    disk: string;
+    bucket: string | null;
+    objectKey: string;
+    mimeType: string | null;
+    sizeBytes: number | null;
+    visibility: string;
+    uploadedBy: number | null;
+    createdAt: string;
+    uploadedByName: string | null;
+    previewUrl: string | null;
+}
+
+export interface UploadMediaRequest {
+    file: File;
+    visibility?: 'public' | 'private';
 }
 
 export interface UpdateMediaRequest {
-    fileName?: string;
+    visibility?: 'public' | 'private';
+}
+
+export interface ListMediaRequest {
+    visibility?: 'public' | 'private';
+    uploadedBy?: number;
+    mimeType?: string;
+    fromDate?: string;
+    toDate?: string;
+    page?: number;
+    pageSize?: number;
+}
+
+export interface ListMediaResponse {
+    items: MediaResponse[];
+    total: number;
+    page: number;
+    pageSize: number;
 }
 
 export interface PresignedUrlResponse {
-    presignedUrl: string;
-    expiresAt: string;
+    url: string;
+    expirySeconds?: number;
+    visibility?: string;
 }
 
 export const mediaApi = {
     // Upload media file
-    upload: async (file: File, onProgress?: (progress: number) => void): Promise<ApiResponse<MediaResponse>> => {
-        return await apiService.uploadFile<ApiResponse<MediaResponse>>(
+    upload: async (data: UploadMediaRequest, onProgress?: (progress: number) => void): Promise<MediaResponse> => {
+        const formData = new FormData();
+        formData.append('file', data.file);
+        if (data.visibility) {
+            formData.append('visibility', data.visibility);
+        }
+        
+        return await apiService.uploadFile<MediaResponse>(
             API_ENDPOINTS.media.upload,
-            file,
+            data.file,
             onProgress
         );
     },
 
-    // Get all media files
-    getAll: async (): Promise<ApiResponse<MediaResponse[]>> => {
-        return await apiService.get<ApiResponse<MediaResponse[]>>(
-            API_ENDPOINTS.media.getAll
-        );
+    // Get list of media files with filters and pagination
+    getList: async (params?: ListMediaRequest): Promise<ListMediaResponse> => {
+        const queryString = new URLSearchParams();
+        if (params?.visibility) queryString.append('Visibility', params.visibility);
+        if (params?.uploadedBy) queryString.append('UploadedBy', params.uploadedBy.toString());
+        if (params?.mimeType) queryString.append('MimeType', params.mimeType);
+        if (params?.fromDate) queryString.append('FromDate', params.fromDate);
+        if (params?.toDate) queryString.append('ToDate', params.toDate);
+        if (params?.page) queryString.append('Page', params.page.toString());
+        if (params?.pageSize) queryString.append('PageSize', params.pageSize.toString());
+        
+        const url = `${API_ENDPOINTS.media.getAll}${queryString.toString() ? `?${queryString}` : ''}`;
+        return await apiService.get<ListMediaResponse>(url);
     },
 
     // Get media by ID
-    getById: async (mediaId: number | string): Promise<ApiResponse<MediaResponse>> => {
-        return await apiService.get<ApiResponse<MediaResponse>>(
+    getById: async (mediaId: number | string): Promise<MediaResponse> => {
+        return await apiService.get<MediaResponse>(
             API_ENDPOINTS.media.getById(mediaId)
         );
     },
 
-    // Update media
-    update: async (mediaId: number | string, data: UpdateMediaRequest): Promise<ApiResponse<MediaResponse>> => {
-        return await apiService.patch<ApiResponse<MediaResponse>>(
+    // Update media visibility
+    update: async (mediaId: number | string, data: UpdateMediaRequest): Promise<MediaResponse> => {
+        return await apiService.patch<MediaResponse>(
             API_ENDPOINTS.media.update(mediaId),
             data
         );
     },
 
-    // Delete media
-    delete: async (mediaId: number | string): Promise<ApiResponse<any>> => {
-        return await apiService.delete<ApiResponse<any>>(
+    // Delete media (soft delete)
+    delete: async (mediaId: number | string): Promise<{ message: string }> => {
+        return await apiService.delete<{ message: string }>(
             API_ENDPOINTS.media.delete(mediaId)
         );
     },
 
     // Get media by user ID
-    getByUser: async (userId: number | string): Promise<ApiResponse<MediaResponse[]>> => {
-        return await apiService.get<ApiResponse<MediaResponse[]>>(
+    getByUser: async (userId: number | string): Promise<MediaResponse[]> => {
+        return await apiService.get<MediaResponse[]>(
             API_ENDPOINTS.media.getByUser(userId)
         );
     },
 
-    // Get presigned URL for media
-    getPresigned: async (mediaId: number | string): Promise<ApiResponse<PresignedUrlResponse>> => {
-        return await apiService.get<ApiResponse<PresignedUrlResponse>>(
-            API_ENDPOINTS.media.getPresigned(mediaId)
-        );
+    // Get presigned URL for media download
+    getPresigned: async (mediaId: number | string, expirySeconds: number = 900): Promise<PresignedUrlResponse> => {
+        const url = `${API_ENDPOINTS.media.getPresigned(mediaId)}?expirySeconds=${expirySeconds}`;
+        return await apiService.get<PresignedUrlResponse>(url);
     },
 };

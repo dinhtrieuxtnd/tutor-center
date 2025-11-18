@@ -7,6 +7,9 @@ import notificationReducer from './features/notification/notificationSlice'
 import authReducer from './features/auth/authSlice'
 import classroomReducer from './features/classroom/classroomSlice'
 import joinRequestReducer from './features/joinRequest/joinRequestSlice'
+import lectureReducer from './features/lecture/lectureSlice'
+import lessonReducer from './features/lesson/lessonSlice'
+import mediaReducer from './features/media/mediaSlice'
 
 export const store = configureStore({
     reducer: {
@@ -15,7 +18,10 @@ export const store = configureStore({
         notification: notificationReducer,
         auth: authReducer,
         classroom: classroomReducer,
-        joinRequest: joinRequestReducer
+        joinRequest: joinRequestReducer,
+        lecture: lectureReducer,
+        lesson: lessonReducer,
+        media: mediaReducer
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({

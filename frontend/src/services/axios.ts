@@ -14,7 +14,7 @@ class ApiService {
 
     constructor() {
         this.isDevelopment = process.env.NODE_ENV === 'development';
-        this.baseURL = process.env.NEXT_PUBLIC_API_URL || 'https://dmlbbbr6-5293.asse.devtunnels.ms/api';
+        this.baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
 
         this.api = axios.create({
             baseURL: this.baseURL,

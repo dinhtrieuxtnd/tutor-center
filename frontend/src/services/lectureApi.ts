@@ -4,65 +4,82 @@ import { ApiResponse } from "@/types";
 
 export interface LectureResponse {
     lectureId: number;
+    parentId: number | null;
     title: string;
-    description?: string;
-    content?: string;
-    videoUrl?: string;
-    duration?: number;
-    createdAt: string;
+    content: string | null;
+    mediaId: number | null;
+    uploadedAt: string;
+    uploadedBy: number;
+    uploadedByName: string;
     updatedAt: string;
+    children: LectureResponse[];
 }
 
 export interface CreateLectureRequest {
+    parentId?: number | null;
     title: string;
-    description?: string;
-    content?: string;
-    videoUrl?: string;
-    duration?: number;
+    content?: string | null;
+    mediaId?: number | null;
 }
 
 export interface UpdateLectureRequest {
-    title?: string;
-    description?: string;
-    content?: string;
-    videoUrl?: string;
-    duration?: number;
+    parentId?: number | null;
+    title: string;
+    content?: string | null;
+    mediaId?: number | null;
+}
+
+export interface LectureQueryResponse {
+    items: LectureResponse[];
+    total: number;
+    page: number;
+    pageSize: number;
+}
+
+export interface LectureQueryRequest {
+    q?: string;
+    page?: number;
+    pageSize?: number;
 }
 
 export const lectureApi = {
-    // Get all lectures
-    getAll: async (): Promise<ApiResponse<LectureResponse[]>> => {
-        return await apiService.get<ApiResponse<LectureResponse[]>>(
-            API_ENDPOINTS.lectures.getAll
-        );
+    // Get all lectures (Query with pagination)
+    query: async (params?: LectureQueryRequest): Promise<LectureQueryResponse> => {
+        const queryString = new URLSearchParams();
+        if (params?.q) queryString.append('Q', params.q);
+        if (params?.page) queryString.append('Page', params.page.toString());
+        if (params?.pageSize) queryString.append('PageSize', params.pageSize.toString());
+        
+        const url = `${API_ENDPOINTS.lectures.getAll}${queryString.toString() ? `?${queryString}` : ''}`;
+        return await apiService.get<LectureQueryResponse>(url);
     },
 
     // Create new lecture
-    create: async (data: CreateLectureRequest): Promise<ApiResponse<LectureResponse>> => {
-        return await apiService.post<ApiResponse<LectureResponse>>(
+    create: async (data: CreateLectureRequest): Promise<LectureResponse> => {
+        return await apiService.post<LectureResponse>(
             API_ENDPOINTS.lectures.create,
             data
         );
     },
 
     // Get lecture by ID
-    getById: async (id: number | string): Promise<ApiResponse<LectureResponse>> => {
-        return await apiService.get<ApiResponse<LectureResponse>>(
+    getById: async (id: number | string): Promise<LectureResponse> => {
+        return await apiService.get<LectureResponse>(
             API_ENDPOINTS.lectures.getById(id)
         );
     },
 
     // Update lecture
-    update: async (id: number | string, data: UpdateLectureRequest): Promise<ApiResponse<LectureResponse>> => {
-        return await apiService.put<ApiResponse<LectureResponse>>(
+    update: async (id: number | string, data: UpdateLectureRequest): Promise<{ message: string }> => {
+        return await apiService.put<{ message: string }>(
             API_ENDPOINTS.lectures.update(id),
             data
         );
     },
 
     // Delete lecture
-    delete: async (id: number | string): Promise<ApiResponse<any>> => {
-        return await apiService.delete<ApiResponse<any>>(
+    delete: async (id: number | string): Promise<{ message: string }> => {
+        return await apiService.delete<{ message: string }>(
             API_ENDPOINTS.lectures.delete(id)
         );
     },

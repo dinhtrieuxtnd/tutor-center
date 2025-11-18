@@ -1,16 +1,22 @@
 import { apiService } from "@/services";
 import { API_ENDPOINTS } from "@/constants";
 import { ApiResponse } from "@/types";
+import { LectureResponse } from "./lectureApi";
+import { ExerciseResponse } from "./exerciseApi";
+import { QuizResponse } from "./quizApi";
 
 export interface LessonResponse {
     lessonId: number;
     classroomId: number;
-    title: string;
-    description?: string;
-    lessonType: 'Lecture' | 'Exercise' | 'Quiz';
-    contentId: number;
+    lessonType: 'lecture' | 'exercise' | 'quiz';
     orderIndex: number;
     createdAt: string;
+    lecture: LectureResponse | null;
+    exercise: ExerciseResponse | null;
+    exerciseDueAt: string | null;
+    quiz: QuizResponse | null;
+    quizStartAt: string | null;
+    quizEndAt: string | null;
 }
 
 export interface AssignLectureRequest {
@@ -39,46 +45,46 @@ export interface AssignQuizRequest {
 
 export const lessonApi = {
     // Assign lecture to classroom
-    assignLecture: async (data: AssignLectureRequest): Promise<ApiResponse<LessonResponse>> => {
-        return await apiService.post<ApiResponse<LessonResponse>>(
+    assignLecture: async (data: AssignLectureRequest): Promise<LessonResponse> => {
+        return await apiService.post<LessonResponse>(
             API_ENDPOINTS.lessons.assignLecture,
             data
         );
     },
 
     // Assign exercise to classroom
-    assignExercise: async (data: AssignExerciseRequest): Promise<ApiResponse<LessonResponse>> => {
-        return await apiService.post<ApiResponse<LessonResponse>>(
+    assignExercise: async (data: AssignExerciseRequest): Promise<LessonResponse> => {
+        return await apiService.post<LessonResponse>(
             API_ENDPOINTS.lessons.assignExercise,
             data
         );
     },
 
     // Assign quiz to classroom
-    assignQuiz: async (data: AssignQuizRequest): Promise<ApiResponse<LessonResponse>> => {
-        return await apiService.post<ApiResponse<LessonResponse>>(
+    assignQuiz: async (data: AssignQuizRequest): Promise<LessonResponse> => {
+        return await apiService.post<LessonResponse>(
             API_ENDPOINTS.lessons.assignQuiz,
             data
         );
     },
 
     // Delete lesson
-    delete: async (lessonId: number | string): Promise<ApiResponse<any>> => {
-        return await apiService.delete<ApiResponse<any>>(
+    delete: async (lessonId: number | string): Promise<{ message: string }> => {
+        return await apiService.delete<{ message: string }>(
             API_ENDPOINTS.lessons.delete(lessonId)
         );
     },
 
     // Get lessons by classroom
-    getByClassroom: async (classroomId: number | string): Promise<ApiResponse<LessonResponse[]>> => {
-        return await apiService.get<ApiResponse<LessonResponse[]>>(
+    getByClassroom: async (classroomId: number | string): Promise<LessonResponse[]> => {
+        return await apiService.get<LessonResponse[]>(
             API_ENDPOINTS.lessons.getByClassroom(classroomId)
         );
     },
 
     // Get public lessons by classroom
-    getByClassroomPublic: async (classroomId: number | string): Promise<ApiResponse<LessonResponse[]>> => {
-        return await apiService.get<ApiResponse<LessonResponse[]>>(
+    getByClassroomPublic: async (classroomId: number | string): Promise<LessonResponse[]> => {
+        return await apiService.get<LessonResponse[]>(
             API_ENDPOINTS.lessons.getByClassroomPublic(classroomId)
         );
     },

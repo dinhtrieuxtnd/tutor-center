@@ -73,7 +73,7 @@ export const fetchClassroomJoinRequests = createAsyncThunk<
 
 // Tutor: Update join request status
 export const updateJoinRequestStatus = createAsyncThunk<
-    { joinRequestId: number | string; status: 'accepted' | 'rejected' },
+    { joinRequestId: number | string; status: 'approved' | 'rejected' },
     { joinRequestId: number | string; data: UpdateJoinRequestStatusRequest }
 >(
     "joinRequest/updateJoinRequestStatus",
