@@ -59,6 +59,7 @@ export function MyEnrolledClassesSection({
               key={classItem.classroomId}
               classItem={classItem}
               viewMode="grid"
+              isEnrolled={true}
             />
           ))}
         </div>

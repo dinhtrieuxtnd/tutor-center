@@ -34,3 +34,27 @@ export default function StudentLayout({
     </div>
   );
 }
+
+// 'use client';
+
+// import { Header, StudentSidebar } from '@/components/layout';
+// import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+
+// export default function StudentLayout({
+//   children,
+// }: {
+//   children: React.ReactNode;
+// }) {
+//   return (
+//     <ProtectedRoute fallbackUrl="/auth/login">
+//       <div className="min-h-screen bg-gray-50">
+//         <Header userRole="student" />
+//         <StudentSidebar />
+//         <main className="ml-64 mt-16">
+//           {children}
+//         </main>
+//       </div>
+//     </ProtectedRoute>
+//   );
+// }
+

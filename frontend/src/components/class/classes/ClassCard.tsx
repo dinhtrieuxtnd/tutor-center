@@ -31,6 +31,12 @@ export function ClassCard({
 }: ClassCardProps) {
   const router = useRouter();
 
+  const handleCardClick = () => {
+    if (isEnrolled) {
+      router.push(`/student/class/${classItem.classroomId}`);
+    }
+  };
+
   const handleEnrollClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onEnroll && !isEnrolled && joinRequestStatus !== 'pending') {
@@ -165,7 +171,12 @@ export function ClassCard({
 
   if (viewMode === "list") {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-primary/50 transition-all">
+      <div 
+        onClick={handleCardClick}
+        className={`bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-primary/50 transition-all ${
+          isEnrolled ? 'cursor-pointer' : ''
+        }`}
+      >
         <div className="flex items-start gap-6">
           {/* Cover Image */}
           <div className="w-32 h-24 rounded-lg bg-gradient-to-br from-primary to-blue-600 flex-shrink-0 flex items-center justify-center">
@@ -231,7 +242,12 @@ export function ClassCard({
 
   // Grid view
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md hover:border-primary/50 transition-all">
+    <div 
+      onClick={handleCardClick}
+      className={`bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md hover:border-primary/50 transition-all ${
+        isEnrolled ? 'cursor-pointer' : ''
+      }`}
+    >
       {/* Cover */}
       <div className="h-40 bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center relative">
         <BookOpen className="w-16 h-16 text-white" />

@@ -185,13 +185,6 @@ export default function ClassDetailPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 font-open-sans">
-      {/* Header */}
-      <AppHeader
-        currentPage="classes"
-        userName="Nguyễn Văn A"
-        userRole="Học sinh"
-        onLogout={handleLogout}
-      />
 
       {/* Back Button Bar */}
       <div className="bg-white border-b border-gray-200">
