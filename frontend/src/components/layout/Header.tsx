@@ -43,7 +43,7 @@ export function Header({
   userAvatar: userAvatarProp
 }: HeaderProps) {
   const router = useRouter();
-  const { student, logout } = useAuth();
+  const { user, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -52,9 +52,9 @@ export function Header({
 
   const config = ROLE_CONFIG[userRole];
 
-  // Get user info from props (passed from layout) or Redux store (for student) or fallback to label
-  const userName = userNameProp || (userRole === 'student' ? student?.fullName : null) || config.label;
-  const userAvatar = userAvatarProp || (userRole === 'student' ? student?.imageUrls?.url : null);
+  // Get user info from props (passed from layout) or Redux store or fallback to label
+  const userName = userNameProp || user?.fullName || config.label;
+  const userAvatar = userAvatarProp || (user?.avatarMediaId ? `/api/media/${user.avatarMediaId}` : null);
 
   // Mock notifications data
   const notifications = [
@@ -121,8 +121,17 @@ export function Header({
 
   const handleLogout = async () => {
     setShowUserMenu(false);
-    await logout();
-    router.push('/auth/login');
+    try {
+      console.log('Logging out...');
+      await logout();
+      console.log('Logout successful, redirecting to login page...');
+      // Force redirect after logout
+      router.replace('/auth/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if logout API fails, still redirect to login
+      router.replace('/auth/login');
+    }
   };
 
   const getNotificationIcon = (type: string) => {

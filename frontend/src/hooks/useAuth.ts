@@ -14,7 +14,7 @@ export const useAuth = () => {
 
   // Lấy state từ slice
   const {
-    student,
+    user,
     accessToken,
     refreshToken: rToken,
     isLoading,
@@ -60,7 +60,7 @@ export const useAuth = () => {
   )
 
   return {
-    student,
+    user,
     accessToken,
     refreshToken: rToken,
     isLoading,
@@ -73,5 +73,8 @@ export const useAuth = () => {
     logout: handleLogout,
     forgotPassword: handleForgotPassword,
     resetPassword: handleResetPassword,
+    
+    // Legacy alias for backward compatibility
+    student: user,
   }
 }

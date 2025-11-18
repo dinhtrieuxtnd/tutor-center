@@ -1,5 +1,5 @@
 import {
-    Student,
+    User,
 } from '@/types'
 import { GENDER } from '@/constants'
 
@@ -36,7 +36,7 @@ export interface Tokens {
 // Login response trả về sau khi đăng nhập
 export interface LoginResponse {
     tokens: Tokens
-    user: Student
+    user: User
 }
 
 
@@ -49,9 +49,13 @@ export interface AuthState {
   isAuthenticated: boolean;
 }
 
-export interface StudentAuthState extends AuthState {
-    student: Student | null
+// UserAuthState - used for all roles (student, tutor, admin)
+export interface UserAuthState extends AuthState {
+    user: User | null
 }
+
+// Legacy alias for backward compatibility
+export type StudentAuthState = UserAuthState;
 
 // Role Types
 export interface Role {

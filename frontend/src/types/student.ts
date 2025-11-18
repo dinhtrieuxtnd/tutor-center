@@ -1,9 +1,3 @@
-import { User } from "./user"
-
-export interface Student extends User {
-    studentId: number
-    studentPhone?: string
-    parentPhone?: string
-    grade: number
-    school?: string
-}
+// Student type is now just User with role="student"
+// No separate Student entity anymore
+export type Student = never;

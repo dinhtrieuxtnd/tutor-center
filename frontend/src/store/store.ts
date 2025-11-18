@@ -5,13 +5,17 @@ import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import counterReducer from './features/counter/counterSlice';
 import notificationReducer from './features/notification/notificationSlice'
 import authReducer from './features/auth/authSlice'
+import classroomReducer from './features/classroom/classroomSlice'
+import joinRequestReducer from './features/joinRequest/joinRequestSlice'
 
 export const store = configureStore({
     reducer: {
         // Add your reducers here
         counter: counterReducer,
         notification: notificationReducer,
-        auth: authReducer
+        auth: authReducer,
+        classroom: classroomReducer,
+        joinRequest: joinRequestReducer
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({

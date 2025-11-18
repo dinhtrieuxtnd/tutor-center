@@ -9,11 +9,11 @@ import {
     ApiResponse
 } from "@/types"
 import { auth, createAsyncThunkHandler, createAuthThunkHandler, authCookies } from "@/utils"
-import { StudentAuthState } from "@/types"
-import { Student } from "@/types"
+import { UserAuthState } from "@/types"
+import { User } from "@/types"
 
-const initialState: StudentAuthState = {
-    student: null,
+const initialState: UserAuthState = {
+    user: null,
     accessToken: null,
     refreshToken: null,
     isLoading: false,
@@ -167,20 +167,62 @@ export const fetchUserInfo = createAsyncThunk<
     )
 );
 
-// Student Auth slice
+// User Auth slice - supports all roles (student, tutor, admin)
 const authSlice = createSlice({
     name: 'auth',
     initialState,
     reducers: {
+        clearError: (state) => {
+            state.error = null;
+        },
+        setUser: (state, action: PayloadAction<User>) => {
+            state.user = action.payload;
+            state.isAuthenticated = true;
+        },
+        clearAuth: (state) => {
+            state.user = null;
+            state.accessToken = null;
+            state.isAuthenticated = false;
+            state.error = null;
+            auth.clearAll()
+            authCookies.clearAuthCookies()
+        },
+        initializeAuthState: (state) => {
+            const accessToken = auth.getAccessToken()
+            const refreshToken = auth.getRefreshToken()
+            console.log('🔄 Initializing auth from localStorage:', { hasAccessToken: !!accessToken, hasRefreshToken: !!refreshToken });
+            if (accessToken && refreshToken) {
+                state.accessToken = accessToken;
+                state.refreshToken = refreshToken;
+                state.isAuthenticated = true;
+                console.log('✅ Auth initialized successfully');
+            } else {
+                console.log('❌ No tokens found in localStorage');
+                state.isAuthenticated = false;
+            }
+        },
+        setAccessToken: (state, action: PayloadAction<string>) => {
+            state.accessToken = action.payload;
+        },
+        setRefreshToken: (state, action: PayloadAction<string>) => {
+            state.refreshToken = action.payload;
+        },
+        updateUserAvatar: (state, action: PayloadAction<number>) => {
+            if (state.user) {
+                state.user.avatarMediaId = action.payload;
+            }
+        },
+
+        // Legacy aliases for backward compatibility
         clearStudentError: (state) => {
             state.error = null;
         },
-        setStudentUser: (state, action: PayloadAction<Student>) => {
-            state.student = action.payload;
+        setStudentUser: (state, action: PayloadAction<User>) => {
+            state.user = action.payload;
             state.isAuthenticated = true;
         },
         clearStudentAuth: (state) => {
-            state.student = null;
+            state.user = null;
             state.accessToken = null;
             state.isAuthenticated = false;
             state.error = null;
@@ -207,19 +249,6 @@ const authSlice = createSlice({
         setStudentRefreshToken: (state, action: PayloadAction<string>) => {
             state.refreshToken = action.payload;
         },
-        updateUserAvatar: (state, action: PayloadAction<ImageUrl>) => {
-            if (state.student) {
-                if (state.student.imageUrls) {
-                    state.student.imageUrls.url = action.payload.url;
-                } else {
-                    state.student.imageUrls = {
-                        url: action.payload.url,
-                        anotherUrl: action.payload.anotherUrl
-                    };
-                }
-            }
-        }
-
     },
     extraReducers: (builder) => {
         // Login
@@ -237,7 +266,7 @@ const authSlice = createSlice({
                     return;
                 }
                 if (user) {
-                    state.student = user;
+                    state.user = user;
                     // Set cookies dựa trên role của user
                     const role = user.role || 'student';
                     authCookies.setAuthCookies(role);
@@ -270,7 +299,7 @@ const authSlice = createSlice({
                 state.accessToken = data.accessToken;
                 state.refreshToken = data.refreshToken;
                 if (user) {
-                    state.student = user;
+                    state.user = user;
                     // Set cookies dựa trên role của user
                     const role = user.role || 'student';
                     authCookies.setAuthCookies(role);
@@ -291,16 +320,18 @@ const authSlice = createSlice({
             })
             .addCase(logout.fulfilled, (state) => {
                 state.isLoading = false;
-                state.student = null;
+                state.user = null;
                 state.accessToken = null;
+                state.refreshToken = null;
                 state.isAuthenticated = false;
                 state.error = null;
                 authCookies.clearAuthCookies();
             })
             .addCase(logout.rejected, (state) => {
                 state.isLoading = false;
-                state.student = null;
+                state.user = null;
                 state.accessToken = null;
+                state.refreshToken = null;
                 state.isAuthenticated = false;
                 state.error = null;
                 authCookies.clearAuthCookies();
@@ -316,7 +347,7 @@ const authSlice = createSlice({
                 if (action.payload) {
                     state.accessToken = action.payload.accessToken;
                     state.refreshToken = action.payload.refreshToken;
-                    state.student = action.payload.user;
+                    state.user = action.payload.user;
                     state.isAuthenticated = true;
                     console.log('✅ Auth initialized with user:', action.payload.user);
                 } else {
@@ -325,7 +356,7 @@ const authSlice = createSlice({
             })
             .addCase(initializeAuth.rejected, (state) => {
                 state.isLoading = false;
-                state.student = null;
+                state.user = null;
                 state.accessToken = null;
                 state.refreshToken = null;
                 state.isAuthenticated = false;
@@ -354,7 +385,7 @@ const authSlice = createSlice({
             .addCase(resetPassword.fulfilled, (state) => {
                 state.isLoading = false;
                 state.error = null;
-                state.student = null; // bắt buộc login lại
+                state.user = null; // bắt buộc login lại
                 state.accessToken = null;
                 state.refreshToken = null;
                 state.isAuthenticated = false;
@@ -366,5 +397,21 @@ const authSlice = createSlice({
     },
 });
 
-export const { clearStudentError, setStudentUser, clearStudentAuth, initializeStudentAuth, setStudentAccessToken, setStudentRefreshToken, updateUserAvatar } = authSlice.actions;
+// Export new action names
+export const { 
+    clearError, 
+    setUser, 
+    clearAuth, 
+    initializeAuthState, 
+    setAccessToken, 
+    setRefreshToken, 
+    updateUserAvatar,
+    // Legacy aliases for backward compatibility
+    clearStudentError, 
+    setStudentUser, 
+    clearStudentAuth, 
+    initializeStudentAuth, 
+    setStudentAccessToken, 
+    setStudentRefreshToken 
+} = authSlice.actions;
 export default authSlice.reducer;

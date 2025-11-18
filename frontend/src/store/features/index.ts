@@ -1,2 +1,5 @@
 export * from './notification/notificationSlice'
 export * from './auth/authSlice'
+export * from './counter/counterSlice'
+export * from './classroom/classroomSlice'
+export * from './joinRequest/joinRequestSlice'

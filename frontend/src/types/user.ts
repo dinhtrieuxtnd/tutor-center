@@ -8,19 +8,13 @@ export interface ImageUrl {
 
 export interface User {
     userId: number
-    username: string
-    email?: string
-    firstName: string
-    lastName: string
     fullName: string
-    gender?: Gender
-    dateOfBirth?: string // backend trả Date → FE nhận string (ISO format)
+    email: string
+    passwordHash: string
+    phoneNumber: string
+    role: UserRole
+    avatarMediaId?: number
     isActive: boolean
-    isEmailVerified: boolean
-    imageUrls?: ImageUrl
-    emailVerifiedAt?: string
-    lastLoginAt?: string
     createdAt: string
     updatedAt: string
-    role?: UserRole // Role của user để xác định quyền truy cập
 }
