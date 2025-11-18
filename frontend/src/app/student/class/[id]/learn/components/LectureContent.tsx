@@ -5,9 +5,9 @@ import {
     User,
     FileText,
     Download,
-    Eye,
-    X,
+    ChevronDown,
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { LessonResponse } from '@/services/lessonApi';
 import { useMedia } from '@/hooks';
 import { MarkdownViewer, PDFViewer } from '@/components/view';
@@ -21,7 +21,7 @@ export function LectureContent({ lesson, lectureId }: LectureContentProps) {
     const [mediaUrl, setMediaUrl] = useState<string | null>(null);
     const [mediaType, setMediaType] = useState<string | null>(null);
     const [showPDFPreview, setShowPDFPreview] = useState<boolean>(false);
-    const { fetchPresignedUrl } = useMedia();
+    const { fetchPresignedUrl, downloadMedia } = useMedia();
 
     const lecture = lectureId
         ? lesson.lecture?.children?.find((child) => child.lectureId === lectureId)
@@ -34,7 +34,7 @@ export function LectureContent({ lesson, lectureId }: LectureContentProps) {
                     const result = await fetchPresignedUrl(lecture.mediaId);
                     if (result.payload && typeof result.payload === 'object' && 'url' in result.payload) {
                         setMediaUrl(result.payload.url as string);
-                        
+
                         // Detect media type from URL or mimeType
                         const url = result.payload.url as string;
                         if ('mimeType' in result.payload) {
@@ -119,59 +119,60 @@ export function LectureContent({ lesson, lectureId }: LectureContentProps) {
                     </div>
 
                     {mediaUrl ? (
-                        <>
-                            <div className="flex items-center gap-3">
-                                {/* Download Button */}
-                                <a
-                                    href={mediaUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex-1 flex items-center gap-3 p-4 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors group"
-                                >
-                                    <Download className="w-5 h-5 text-blue-600 group-hover:scale-110 transition-transform" />
-                                    <div className="flex-1">
-                                        <p className="font-medium text-blue-600 font-poppins">Tải xuống tài liệu</p>
-                                        <p className="text-sm text-gray-600 font-open-sans">Click để tải xuống</p>
-                                    </div>
-                                </a>
-
-                                {/* Preview Button for PDF */}
-                                {mediaType === 'application/pdf' && (
-                                    <button
-                                        onClick={() => setShowPDFPreview(true)}
-                                        className="flex items-center gap-2 px-4 py-4 rounded-lg bg-primary hover:bg-blue-700 text-white transition-colors font-poppins font-medium"
-                                    >
-                                        <Eye className="w-5 h-5" />
-                                        <span>Xem trước</span>
-                                    </button>
-                                )}
-                            </div>
-
-                            {/* PDF Preview Modal */}
-                            {showPDFPreview && mediaType === 'application/pdf' && (
-                                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                                    <div className="bg-white rounded-xl w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden">
-                                        {/* Modal Header */}
-                                        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                                            <h3 className="font-bold text-lg text-gray-900 font-poppins">
-                                                Xem trước PDF
-                                            </h3>
-                                            <button
-                                                onClick={() => setShowPDFPreview(false)}
-                                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                            >
-                                                <X className="w-5 h-5" />
-                                            </button>
-                                        </div>
-
-                                        {/* PDF Viewer */}
-                                        <div className="flex-1 overflow-hidden">
-                                            <PDFViewer url={mediaUrl} fileName={`lecture-${lecture.lectureId}.pdf`} />
-                                        </div>
-                                    </div>
+                        <div className="flex flex-col gap-3">
+                            {/* Download Button */}
+                            <button
+                                onClick={() => lecture.mediaId && downloadMedia(lecture.mediaId)}
+                                className="w-full flex items-center gap-3 p-4 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors group cursor-pointer"
+                            >
+                                <Download className="w-5 h-5 text-blue-600 group-hover:scale-110 transition-transform" />
+                                <div className="flex-1 flex justify-between items-center">
+                                    <p className="font-medium text-blue-600 font-poppins">Tải xuống tài liệu</p>
+                                    <p className="text-sm text-gray-600 font-open-sans">Click để tải xuống</p>
                                 </div>
+                            </button>
+
+                            {/* Preview Button for PDF */}
+                            {mediaType === 'application/pdf' && (
+                                <>
+                                    <button
+                                        onClick={() => setShowPDFPreview(!showPDFPreview)}
+                                        className="cursor-pointer w-full flex items-center text-sm justify-center gap-1 p-1 rounded-lg bg-gray-300 hover:bg-gray-400 text-white transition-colors font-poppins font-medium"
+                                    >
+                                        <span>Xem trước</span>
+                                        <motion.div
+                                            animate={{ rotate: showPDFPreview ? 180 : 0 }}
+                                            transition={{ duration: 0.3 }}
+                                        >
+                                            <ChevronDown className="w-4 h-4" />
+                                        </motion.div>
+                                    </button>
+
+                                    {/* PDF Preview - Dropdown Style with Animation */}
+                                    <AnimatePresence>
+                                        {showPDFPreview && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: 600, opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                                                className="overflow-hidden flex min-h-[90vh]"
+                                            >
+                                                <div className="border-t border-gray-200 pt-4 flex-1">
+                                                    <div className="bg-gray-50 rounded-lg overflow-hidden h-full flex-1">
+                                                        <PDFViewer 
+                                                            url={mediaUrl} 
+                                                            mediaId={lecture.mediaId}
+                                                            fileName={`lecture-${lecture.lectureId}.pdf`} 
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </>
                             )}
-                        </>
+                        </div>
                     ) : (
                         <div className="text-center py-4 text-gray-500">Đang tải tài liệu...</div>
                     )}

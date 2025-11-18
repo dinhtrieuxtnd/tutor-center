@@ -112,4 +112,33 @@ export const mediaApi = {
         const url = `${API_ENDPOINTS.media.getPresigned(mediaId)}?expirySeconds=${expirySeconds}`;
         return await apiService.get<PresignedUrlResponse>(url);
     },
+
+    // Download media file directly (binary stream)
+    download: async (mediaId: number | string): Promise<{ blob: Blob; filename: string }> => {
+        const response = await fetch(`${API_ENDPOINTS.media.download(mediaId)}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to download media: ${response.status}`);
+        }
+
+        // Get filename from Content-Disposition header
+        const contentDisposition = response.headers.get('content-disposition');
+        let filename = 'download.pdf';
+        
+        if (contentDisposition) {
+            const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+            if (filenameMatch) {
+                filename = filenameMatch[1];
+            }
+        }
+
+        const blob = await response.blob();
+        
+        return { blob, filename };
+    },
 };

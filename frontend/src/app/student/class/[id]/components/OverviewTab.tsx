@@ -51,25 +51,23 @@ export function OverviewTab({ classData, lessons, onViewAllLessons, isLoading }:
     return (
         <div className="space-y-6">
             {/* Today's Lesson */}
-            {todayLessons.length > 0 && (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h2 className="text-lg font-bold text-gray-900 mb-4 font-poppins flex items-center gap-2">
-                        <Clock className="w-5 h-5 text-primary" />
-                        Bài học hôm nay
-                    </h2>
-                    {isLoading ? (
-                        <LessonListSkeleton />
-                    ) : todayLessons.length === 0 ? (
-                        <p className="text-gray-500 text-center py-4">Không có bài học nào hôm nay</p>
-                    ) : (
-                        <div className="space-y-3">
-                            {todayLessons.map((lesson) => (
-                               <LessonCard key={lesson.lessonId} lesson={lesson} />
-                            ))}
-                        </div>
-                    )}
-                </div>
-            )}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h2 className="text-lg font-bold text-gray-900 mb-4 font-poppins flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-primary" />
+                    Bài học hôm nay
+                </h2>
+                {isLoading ? (
+                    <LessonListSkeleton />
+                ) : todayLessons.length === 0 ? (
+                    <p className="text-gray-500 text-center py-4">Không có bài học nào hôm nay</p>
+                ) : (
+                    <div className="space-y-3">
+                        {todayLessons.map((lesson) => (
+                            <LessonCard key={lesson.lessonId} lesson={lesson} />
+                        ))}
+                    </div>
+                )}
+            </div>
 
             {/* About */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -114,7 +112,7 @@ export function OverviewTab({ classData, lessons, onViewAllLessons, isLoading }:
                 )}
                 <button
                     onClick={onViewAllLessons}
-                    className="mt-4 text-sm text-primary hover:text-blue-700 font-medium font-open-sans"
+                    className="cursor-pointer hover:underline mt-4 text-sm text-primary hover:text-blue-700 font-medium font-open-sans"
                 >
                     Xem tất cả bài học →
                 </button>

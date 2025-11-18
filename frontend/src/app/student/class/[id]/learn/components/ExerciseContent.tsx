@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { LessonResponse } from '@/services/lessonApi';
 import { useMedia } from '@/hooks';
+import { RichTextEditor, FileDropZone } from '@/components/input';
 
 interface ExerciseContentProps {
     lesson: LessonResponse;
@@ -18,8 +19,9 @@ interface ExerciseContentProps {
 export function ExerciseContent({ lesson }: ExerciseContentProps) {
     const [mediaUrl, setMediaUrl] = useState<string | null>(null);
     const [answer, setAnswer] = useState('');
+    const [attachedFile, setAttachedFile] = useState<File | null>(null);
     const [isSubmitted, setIsSubmitted] = useState(false);
-    const { fetchPresignedUrl } = useMedia();
+    const { fetchPresignedUrl, downloadMedia } = useMedia();
 
     const exercise = lesson.exercise;
 
@@ -122,18 +124,16 @@ export function ExerciseContent({ lesson }: ExerciseContentProps) {
                     </div>
 
                     {mediaUrl ? (
-                        <a
-                            href={mediaUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-3 p-4 rounded-lg bg-orange-50 hover:bg-orange-100 transition-colors group"
+                        <button
+                            onClick={() => exercise.attachMediaId && downloadMedia(exercise.attachMediaId)}
+                            className="w-full flex items-center gap-3 p-4 rounded-lg bg-orange-50 hover:bg-orange-100 transition-colors group cursor-pointer"
                         >
                             <Download className="w-5 h-5 text-orange-600 group-hover:scale-110 transition-transform" />
-                            <div className="flex-1">
+                            <div className="flex-1 text-left">
                                 <p className="font-medium text-orange-600 font-poppins">Tải xuống tài liệu</p>
-                                <p className="text-sm text-gray-600 font-open-sans">Click để tải xuống hoặc xem</p>
+                                <p className="text-sm text-gray-600 font-open-sans">Click để tải xuống</p>
                             </div>
-                        </a>
+                        </button>
                     ) : (
                         <div className="text-center py-4 text-gray-500">Đang tải tài liệu...</div>
                     )}
@@ -159,28 +159,48 @@ export function ExerciseContent({ lesson }: ExerciseContentProps) {
                         </p>
                     </div>
                 ) : (
-                    <>
-                        <textarea
-                            value={answer}
-                            onChange={(e) => setAnswer(e.target.value)}
-                            placeholder="Nhập câu trả lời của bạn tại đây..."
-                            className="w-full h-64 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none font-open-sans"
-                        />
+                    <div className="space-y-6">
+                        {/* Text Editor */}
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2 font-poppins">
+                                Câu trả lời của bạn
+                            </label>
+                            <RichTextEditor
+                                value={answer}
+                                onChange={setAnswer}
+                                placeholder="Nhập câu trả lời của bạn tại đây..."
+                                minHeight="250px"
+                                maxHeight="600px"
+                                maxLength={5000}
+                            />
+                        </div>
 
-                        <div className="mt-4 flex items-center justify-between">
-                            <p className="text-sm text-gray-500 font-open-sans">
-                                Bạn có thể đính kèm file hoặc nhập văn bản
-                            </p>
+                        {/* File Attachment */}
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2 font-poppins">
+                                Đính kèm file (tùy chọn)
+                            </label>
+                            <FileDropZone
+                                onFileSelect={setAttachedFile}
+                                onFileRemove={() => setAttachedFile(null)}
+                                selectedFile={attachedFile}
+                                accept=".pdf,.doc,.docx,.txt,.zip,.jpg,.jpeg,.png"
+                                maxSize={10}
+                            />
+                        </div>
+
+                        {/* Submit Button */}
+                        <div className="flex items-center justify-end">
                             <button
                                 onClick={handleSubmit}
-                                disabled={!answer.trim()}
+                                disabled={!answer.trim() && !attachedFile}
                                 className="px-6 py-3 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors flex items-center gap-2 font-poppins"
                             >
                                 <Send className="w-5 h-5" />
                                 Nộp bài
                             </button>
                         </div>
-                    </>
+                    </div>
                 )}
             </div>
         </div>

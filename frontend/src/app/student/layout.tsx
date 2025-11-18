@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Header, StudentSidebar } from '@/components/layout';
 import { PageLoadingScreen } from '@/components/loading';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useAuth } from '@/hooks';
 import { motion } from 'framer-motion';
 
@@ -34,55 +35,35 @@ export default function StudentLayout({
   // 🧠 Với trang learn: KHÔNG header, KHÔNG sidebar
   if (isLearnPage) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        {children}
-      </div>
+      <ProtectedRoute allowedRoles={['student']}>
+        <div className="min-h-screen bg-gray-50">
+          {children}
+        </div>
+      </ProtectedRoute>
     );
   }
 
   // 🧱 Các trang student khác: có header + sidebar như bình thường
   return (
-    <div className="min-h-screen bg-gray-50 relative">
-      <Header userRole="student" />
+    <ProtectedRoute allowedRoles={['student']}>
+      <div className="min-h-screen bg-gray-50 relative">
+        <Header userRole="student" />
 
-      <StudentSidebar
-        isOpen={sidebarOpen}
-        setIsOpen={setSidebarOpen}
-      />
+        <StudentSidebar
+          isOpen={sidebarOpen}
+          setIsOpen={setSidebarOpen}
+        />
 
-      <motion.main
-        initial={false}
-        animate={{ marginLeft: sidebarOpen ? 256 : 80 }}
-        transition={{ duration: 0.3, ease: 'easeInOut' }}
-        className="mt-16 z-30 relative"
-      >
-        {children}
-      </motion.main>
-    </div>
+        <motion.main
+          initial={false}
+          animate={{ marginLeft: sidebarOpen ? 256 : 80 }}
+          transition={{ duration: 0.3, ease: 'easeInOut' }}
+          className="mt-16 z-30 relative"
+        >
+          {children}
+        </motion.main>
+      </div>
+    </ProtectedRoute>
   );
 }
-
-
-// 'use client';
-
-// import { Header, StudentSidebar } from '@/components/layout';
-// import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-
-// export default function StudentLayout({
-//   children,
-// }: {
-//   children: React.ReactNode;
-// }) {
-//   return (
-//     <ProtectedRoute fallbackUrl="/auth/login">
-//       <div className="min-h-screen bg-gray-50">
-//         <Header userRole="student" />
-//         <StudentSidebar />
-//         <main className="ml-64 mt-16">
-//           {children}
-//         </main>
-//       </div>
-//     </ProtectedRoute>
-//   );
-// }
 

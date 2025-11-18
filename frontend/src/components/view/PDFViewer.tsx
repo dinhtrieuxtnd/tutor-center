@@ -7,14 +7,17 @@ import {
     Loader2,
     ExternalLink,
 } from 'lucide-react';
+import { useMedia } from '@/hooks';
 
 interface PDFViewerProps {
     url: string;
+    mediaId?: number | string;
     fileName?: string;
     className?: string;
 }
 
-export function PDFViewer({ url, fileName = 'document.pdf', className = '' }: PDFViewerProps) {
+export function PDFViewer({ url, mediaId, fileName = 'document.pdf', className = '' }: PDFViewerProps) {
+    const { downloadMedia } = useMedia();
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [iframeUrl, setIframeUrl] = useState<string>('');
@@ -53,11 +56,25 @@ export function PDFViewer({ url, fileName = 'document.pdf', className = '' }: PD
         }
     }, [url]);
 
-    const handleDownload = () => {
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = fileName;
-        link.click();
+    const handleDownload = async () => {
+        if (mediaId) {
+            try {
+                await downloadMedia(mediaId);
+            } catch (error) {
+                console.error('Download failed:', error);
+                // Fallback to direct download if API fails
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                link.click();
+            }
+        } else {
+            // Fallback if no mediaId provided
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            link.click();
+        }
     };
 
     const handleOpenNewTab = () => {
@@ -89,7 +106,7 @@ export function PDFViewer({ url, fileName = 'document.pdf', className = '' }: PD
     }
 
     return (
-        <div className={`pdf-viewer flex flex-col h-full ${className}`}>
+        <div className={`flex flex-col h-full ${className}`}>
             {/* Toolbar */}
             <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10">
                 <div className="flex items-center gap-2">
@@ -103,7 +120,8 @@ export function PDFViewer({ url, fileName = 'document.pdf', className = '' }: PD
                     {/* Open in new tab */}
                     <button
                         onClick={handleOpenNewTab}
-                        className="p-2 rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-1"
+                        disabled={isLoading}
+                        className="p-2 rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                         title="Mở tab mới"
                     >
                         <ExternalLink className="w-5 h-5" />
@@ -116,7 +134,8 @@ export function PDFViewer({ url, fileName = 'document.pdf', className = '' }: PD
                     {/* Download */}
                     <button
                         onClick={handleDownload}
-                        className="p-2 rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-1"
+                        disabled={isLoading}
+                        className="p-2 rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                         title="Tải xuống"
                     >
                         <Download className="w-5 h-5" />
@@ -135,6 +154,7 @@ export function PDFViewer({ url, fileName = 'document.pdf', className = '' }: PD
                 ) : (
                     <iframe
                         src={iframeUrl}
+                        // src='/HUCE-2023-SINH VIÊN THAM KHẢO.pdf'
                         className="w-full h-full border-0"
                         title={fileName}
                         onError={() => {

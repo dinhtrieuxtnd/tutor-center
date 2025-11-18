@@ -122,6 +122,7 @@ export const API_ENDPOINTS = {
         delete: (mediaId: number | string) => `${MEDIA_BASE}/${mediaId}`, // DELETE /Media/:mediaId
         getByUser: (userId: number | string) => `${MEDIA_BASE}/user/${userId}`, // GET /Media/user/:userId
         getPresigned: (mediaId: number | string) => `${MEDIA_BASE}/${mediaId}/presigned`, // GET /Media/:mediaId/presigned
+        download: (mediaId: number | string) => `${MEDIA_BASE}/${mediaId}/download`, // GET /Media/:mediaId/download
     },
 
     questionGroups: {

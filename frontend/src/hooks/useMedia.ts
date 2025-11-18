@@ -17,6 +17,7 @@ import {
     setUploadProgress,
 } from "@/store/features/media/mediaSlice";
 import {
+    mediaApi,
     ListMediaRequest,
     UploadMediaRequest,
     UpdateMediaRequest,
@@ -62,8 +63,15 @@ export const useMedia = () => {
     );
 
     const handleUploadMedia = useCallback(
-        (data: UploadMediaRequest) => {
-            return dispatch(uploadMedia(data));
+        async (data: UploadMediaRequest, onProgress?: (progress: number) => void) => {
+            try {
+                dispatch(setUploadProgress(0));
+                const result = await mediaApi.upload(data, onProgress);
+                return result;
+            } catch (error) {
+                console.error('Upload media error:', error);
+                throw error;
+            }
         },
         [dispatch]
     );
@@ -122,6 +130,32 @@ export const useMedia = () => {
         [dispatch]
     );
 
+    const handleDownloadMedia = useCallback(
+        async (mediaId: number | string) => {
+            try {
+                const { blob, filename } = await mediaApi.download(mediaId);
+                
+                // Create download link
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                
+                // Cleanup
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                
+                return { success: true, filename };
+            } catch (error) {
+                console.error('Download media error:', error);
+                throw error;
+            }
+        },
+        []
+    );
+
     return {
         // State
         mediaList,
@@ -140,6 +174,7 @@ export const useMedia = () => {
         fetchMediaById: handleFetchMediaById,
         fetchUserMedia: handleFetchUserMedia,
         uploadMedia: handleUploadMedia,
+        downloadMedia: handleDownloadMedia,
         updateMedia: handleUpdateMedia,
         deleteMedia: handleDeleteMedia,
         fetchPresignedUrl: handleFetchPresignedUrl,
