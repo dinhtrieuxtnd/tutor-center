@@ -19,18 +19,18 @@ namespace api_backend.Services.Implements
             _optionRepo = optionRepo;
         }
 
-        public async Task<QuestionOptionDto> CreateOptionAsync(QuestionOptionCreateDto dto, int tutorId, CancellationToken ct)
+        public async Task<QuestionOptionDto> CreateOptionAsync(int questionId, QuestionOptionCreateDto dto, int tutorId, CancellationToken ct)
         {
             var question = await _db.QuizQuestions
                 .Include(q => q.Quiz)
-                .FirstOrDefaultAsync(q => q.QuestionId == dto.QuestionId, ct);
+                .FirstOrDefaultAsync(q => q.QuestionId == questionId, ct);
             
             if (question == null || question.Quiz.CreatedBy != tutorId || question.Quiz.DeletedAt != null)
                 throw new UnauthorizedAccessException("Question không tồn tại hoặc bạn không có quyền.");
 
             var option = new QuizOption
             {
-                QuestionId = dto.QuestionId,
+                QuestionId = questionId,
                 Content = dto.Content,
                 IsCorrect = dto.IsCorrect,
                 OrderIndex = dto.OrderIndex

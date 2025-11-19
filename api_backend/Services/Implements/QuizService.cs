@@ -66,10 +66,33 @@ namespace api_backend.Services.Implements
             };
         }
 
-        public async Task<QuizDetailDto?> GetQuizDetailAsync(int quizId, int tutorId, CancellationToken ct)
+        public async Task<QuizDetailDto?> GetQuizDetailAsync(int quizId, int userId, CancellationToken ct)
         {
             var quiz = await _quizRepo.GetByIdWithDetailsAsync(quizId, ct);
-            if (quiz == null || quiz.CreatedBy != tutorId)
+            if (quiz == null)
+                return null;
+
+            // Kiểm tra quyền truy cập: user là tutor tạo quiz HOẶC là học sinh trong lớp học có quiz này
+            bool isTutor = quiz.CreatedBy == userId;
+            bool isStudent = false;
+
+            if (!isTutor)
+            {
+                // Kiểm tra xem user có phải là học sinh trong bất kỳ lớp nào có quiz này không
+                // và kiểm tra thời gian: chỉ cho phép truy cập khi đã đến giờ kiểm tra
+                var now = DateTime.UtcNow;
+                isStudent = await _db.Lessons
+                    .Where(l => l.QuizId == quizId 
+                        && l.QuizStartAt.HasValue 
+                        && l.QuizStartAt.Value <= now)
+                    .Join(_db.ClassroomStudents,
+                        l => l.ClassroomId,
+                        cs => cs.ClassroomId,
+                        (l, cs) => new { l, cs })
+                    .AnyAsync(x => x.cs.StudentId == userId, ct);
+            }
+
+            if (!isTutor && !isStudent)
                 return null;
 
             return new QuizDetailDto

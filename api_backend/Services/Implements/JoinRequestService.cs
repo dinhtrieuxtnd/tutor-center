@@ -80,10 +80,10 @@ namespace api_backend.Services.Implements
             return list.Select(Map).ToList();
         }
 
-        public async Task<bool> UpdateStatusAsync(int joinRequestId, string status, int handlerUserId, string? note, CancellationToken ct)
+        public async Task<bool> UpdateStatusAsync(int joinRequestId, string status, int handlerUserId, CancellationToken ct)
         {
             status = status.ToLowerInvariant();
-            if (status != "accepted" && status != "denied")
+            if (status != "approved" && status != "rejected")
                 throw new ArgumentException("Trạng thái không hợp lệ.");
 
             var jr = await _jr.GetByIdAsync(joinRequestId, ct);
@@ -95,7 +95,7 @@ namespace api_backend.Services.Implements
             jr.Status = status;
             jr.HandledAt = DateTime.UtcNow;
 
-            if (status == "accepted" && !await _cr.StudentAlreadyInClassAsync(jr.ClassroomId, jr.StudentId, ct))
+            if (status == "approved" && !await _cr.StudentAlreadyInClassAsync(jr.ClassroomId, jr.StudentId, ct))
             {
                 await _cr.AddStudentAsync(jr.ClassroomId, jr.StudentId, ct);
             }

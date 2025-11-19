@@ -2,7 +2,6 @@ namespace api_backend.DTOs.Request.Quizzes
 {
     public class QuestionCreateDto
     {
-        public int QuizId { get; set; }
         public int? SectionId { get; set; }
         public int? GroupId { get; set; }
         public string Content { get; set; } = null!;

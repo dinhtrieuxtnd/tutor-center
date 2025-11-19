@@ -5,7 +5,7 @@ namespace api_backend.Services.Abstracts
 {
     public interface IQuestionGroupService
     {
-        Task<QuestionGroupDto> CreateQuestionGroupAsync(QuestionGroupCreateDto dto, int tutorId, CancellationToken ct);
+        Task<QuestionGroupDto> CreateQuestionGroupAsync(int quizId, QuestionGroupCreateDto dto, int tutorId, CancellationToken ct);
         Task<bool> UpdateQuestionGroupAsync(int groupId, QuestionGroupUpdateDto dto, int tutorId, CancellationToken ct);
         Task<bool> DeleteQuestionGroupAsync(int groupId, int tutorId, CancellationToken ct);
         Task<bool> AttachMediaToGroupAsync(int groupId, int mediaId, int tutorId, CancellationToken ct);

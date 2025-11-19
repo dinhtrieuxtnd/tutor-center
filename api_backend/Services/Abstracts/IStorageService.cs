@@ -33,6 +33,14 @@ public interface IStorageService
     /// <param name="path">The path/key of the file to check</param>
     /// <param name="bucket">Optional bucket name, if not provided uses default bucket</param>
     Task<bool> FileExistsAsync(string path, string? bucket = null);
-    
+
+    /// <summary>
+    /// Download file from storage
+    /// </summary>
+    /// <param name="path">The path/key of the file to download</param>
+    /// <param name="bucket">Optional bucket name, if not provided uses default bucket</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Stream of the file</returns>
+    Task<Stream> DownloadFileAsync(string path, string? bucket = null, CancellationToken cancellationToken = default);
 
 }

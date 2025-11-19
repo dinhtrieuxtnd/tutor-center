@@ -19,15 +19,15 @@ namespace api_backend.Services.Implements
             _sectionRepo = sectionRepo;
         }
 
-        public async Task<QuizSectionDto> CreateSectionAsync(QuizSectionCreateDto dto, int tutorId, CancellationToken ct)
+        public async Task<QuizSectionDto> CreateSectionAsync(int quizId, QuizSectionCreateDto dto, int tutorId, CancellationToken ct)
         {
-            var quiz = await _db.Quizzes.FirstOrDefaultAsync(q => q.QuizId == dto.QuizId && q.DeletedAt == null, ct);
+            var quiz = await _db.Quizzes.FirstOrDefaultAsync(q => q.QuizId == quizId && q.DeletedAt == null, ct);
             if (quiz == null || quiz.CreatedBy != tutorId)
                 throw new UnauthorizedAccessException("Quiz không tồn tại hoặc bạn không có quyền.");
 
             var section = new QuizSection
             {
-                QuizId = dto.QuizId,
+                QuizId = quizId,
                 Title = dto.Title,
                 Description = dto.Description,
                 OrderIndex = dto.OrderIndex
