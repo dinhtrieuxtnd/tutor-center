@@ -21,9 +21,9 @@ public class QuestionOptionsController : ControllerBase
     private int ActorId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     [HttpPost]
-    public async Task<IActionResult> CreateOption([FromBody] QuestionOptionCreateDto dto, CancellationToken ct)
+    public async Task<IActionResult> CreateOption(int questionId, [FromBody] QuestionOptionCreateDto dto, CancellationToken ct)
     {
-        var result = await _service.CreateOptionAsync(dto, ActorId(), ct);
+        var result = await _service.CreateOptionAsync(questionId, dto, ActorId(), ct);
         return Ok(result);
     }
 

@@ -93,4 +93,18 @@ public class S3StorageService : IStorageService
             return false;
         }
     }
+
+    public async Task<Stream> DownloadFileAsync(string path, string? bucket = null, CancellationToken cancellationToken = default)
+    {
+        bucket ??= _settings.DefaultBucket;
+
+        var request = new GetObjectRequest
+        {
+            BucketName = bucket,
+            Key = path
+        };
+
+        var response = await _s3Client.GetObjectAsync(request, cancellationToken);
+        return response.ResponseStream;
+    }
 }

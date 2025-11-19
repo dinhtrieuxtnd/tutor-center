@@ -21,9 +21,9 @@ public class QuestionGroupsController : ControllerBase
     private int ActorId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     [HttpPost]
-    public async Task<IActionResult> CreateQuestionGroup([FromBody] QuestionGroupCreateDto dto, CancellationToken ct)
+    public async Task<IActionResult> CreateQuestionGroup(int quizId, [FromBody] QuestionGroupCreateDto dto, CancellationToken ct)
     {
-        var result = await _service.CreateQuestionGroupAsync(dto, ActorId(), ct);
+        var result = await _service.CreateQuestionGroupAsync(quizId, dto, ActorId(), ct);
         return Ok(result);
     }
 

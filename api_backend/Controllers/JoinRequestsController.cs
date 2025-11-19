@@ -58,7 +58,7 @@ namespace api_backend.Controllers
             var actorId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             try
             {
-                var ok = await _service.UpdateStatusAsync(joinRequestId, dto.Status, actorId, dto.Note, ct);
+                var ok = await _service.UpdateStatusAsync(joinRequestId, dto.Status, actorId, ct);
                 return ok ? NoContent() : NotFound();
             }
             catch (UnauthorizedAccessException ex)

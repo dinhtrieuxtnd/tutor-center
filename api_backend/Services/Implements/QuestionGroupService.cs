@@ -19,15 +19,15 @@ namespace api_backend.Services.Implements
             _groupRepo = groupRepo;
         }
 
-        public async Task<QuestionGroupDto> CreateQuestionGroupAsync(QuestionGroupCreateDto dto, int tutorId, CancellationToken ct)
+        public async Task<QuestionGroupDto> CreateQuestionGroupAsync(int quizId, QuestionGroupCreateDto dto, int tutorId, CancellationToken ct)
         {
-            var quiz = await _db.Quizzes.FirstOrDefaultAsync(q => q.QuizId == dto.QuizId && q.DeletedAt == null, ct);
+            var quiz = await _db.Quizzes.FirstOrDefaultAsync(q => q.QuizId == quizId && q.DeletedAt == null, ct);
             if (quiz == null || quiz.CreatedBy != tutorId)
                 throw new UnauthorizedAccessException("Quiz không tồn tại hoặc bạn không có quyền.");
 
             var group = new QuizQuestionGroup
             {
-                QuizId = dto.QuizId,
+                QuizId = quizId,
                 SectionId = dto.SectionId,
                 Title = dto.Title,
                 IntroText = dto.IntroText,

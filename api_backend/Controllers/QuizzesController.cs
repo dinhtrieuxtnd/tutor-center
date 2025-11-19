@@ -8,7 +8,6 @@ namespace api_backend.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "tutor")]
 public class QuizzesController : ControllerBase
 {
     private readonly IQuizService _service;
@@ -21,6 +20,8 @@ public class QuizzesController : ControllerBase
     private int ActorId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     [HttpGet]
+    [Authorize(Roles = "tutor")]
+
     public async Task<IActionResult> SearchQuizzes([FromQuery] QuizSearchDto dto, CancellationToken ct)
     {
         var result = await _service.SearchQuizzesAsync(dto, ActorId(), ct);
@@ -28,6 +29,7 @@ public class QuizzesController : ControllerBase
     }
 
     [HttpGet("{id:int}")]
+    [Authorize(Roles = "tutor,student")]
     public async Task<IActionResult> GetQuizDetail(int id, CancellationToken ct)
     {
         var result = await _service.GetQuizDetailAsync(id, ActorId(), ct);
@@ -35,6 +37,7 @@ public class QuizzesController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "tutor")]
     public async Task<IActionResult> CreateQuiz([FromBody] QuizCreateDto dto, CancellationToken ct)
     {
         var result = await _service.CreateQuizAsync(dto, ActorId(), ct);
@@ -42,6 +45,7 @@ public class QuizzesController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Roles = "tutor")]
     public async Task<IActionResult> UpdateQuiz(int id, [FromBody] QuizUpdateDto dto, CancellationToken ct)
     {
         var ok = await _service.UpdateQuizAsync(id, dto, ActorId(), ct);
@@ -49,6 +53,7 @@ public class QuizzesController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = "tutor")]
     public async Task<IActionResult> DeleteQuiz(int id, CancellationToken ct)
     {
         var ok = await _service.DeleteQuizAsync(id, ActorId(), ct);

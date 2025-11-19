@@ -21,9 +21,9 @@ public class QuizQuestionsController : ControllerBase
     private int ActorId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     [HttpPost]
-    public async Task<IActionResult> CreateQuestion([FromBody] QuestionCreateDto dto, CancellationToken ct)
+    public async Task<IActionResult> CreateQuestion(int quizId, [FromBody] QuestionCreateDto dto, CancellationToken ct)
     {
-        var result = await _service.CreateQuestionAsync(dto, ActorId(), ct);
+        var result = await _service.CreateQuestionAsync(quizId, dto, ActorId(), ct);
         return Ok(result);
     }
 

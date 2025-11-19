@@ -39,10 +39,10 @@ public class MediaController : ControllerBase
             .AnyAsync(cs => cs.ClassroomId == classroomId && cs.StudentId == uid, ct);
         if (inMembers) return true;
 
-        // Fallback: JoinRequests accepted
-        var accepted = await _db.JoinRequests.AsNoTracking()
-            .AnyAsync(j => j.ClassroomId == classroomId && j.StudentId == uid && j.Status == "accepted", ct);
-        return accepted;
+        // Fallback: JoinRequests approved
+        var approved = await _db.JoinRequests.AsNoTracking()
+            .AnyAsync(j => j.ClassroomId == classroomId && j.StudentId == uid && j.Status == "approved", ct);
+        return approved;
     }
 
     /// <summary>
@@ -228,5 +228,114 @@ public class MediaController : ControllerBase
         var url = _storage.GetFileUrl(m.ObjectKey, m.Bucket, TimeSpan.FromSeconds(sec));
 
         return Ok(new { url, expirySeconds = sec });
+    }
+
+    /// <summary>
+    /// Tải xuống file trực tiếp (với kiểm tra quyền truy cập)
+    /// </summary>
+    [HttpGet("{mediaId:int}/download")]
+    public async Task<IActionResult> Download(int mediaId, CancellationToken ct = default)
+    {
+        var uid = ActorId();
+
+        // Lấy Media
+        var m = await _db.Media.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.MediaId == mediaId, ct);
+        if (m == null) return NotFound(new { message = "Media không tồn tại." });
+        if (m.DeletedAt != null) return NotFound(new { message = "Media đã bị xóa." });
+        if (string.IsNullOrWhiteSpace(m.ObjectKey))
+            return BadRequest(new { message = "Media thiếu objectKey." });
+
+        bool allowed = false;
+
+        // Nếu public → cho phép tải
+        if (string.Equals(m.Visibility, "public", StringComparison.OrdinalIgnoreCase))
+        {
+            allowed = true;
+        }
+
+        // Kiểm tra ownership
+        if (!allowed && m.UploadedBy == uid)
+            allowed = true;
+
+        // File là đề bài (Exercises.AttachMediaId)
+        if (!allowed)
+        {
+            var ex = await _db.Exercises.AsNoTracking()
+                .Include(e => e.Lessons)
+                .Where(e => e.AttachMediaId == mediaId)
+                .FirstOrDefaultAsync(ct);
+
+            if (ex != null && ex.Lessons.Any())
+            {
+                var lessonId = ex.Lessons.First().LessonId;
+                var classroomId = await _db.Lessons.AsNoTracking()
+                    .Where(l => l.LessonId == lessonId)
+                    .Select(l => l.ClassroomId)
+                    .FirstOrDefaultAsync(ct);
+
+                if (classroomId != 0)
+                {
+                    if (await IsTeacherAsync(classroomId, uid, ct)) allowed = true;
+                    if (!allowed && await IsStudentAsync(classroomId, uid, ct)) allowed = true;
+                }
+            }
+        }
+
+        // File là bài nộp (ExerciseSubmissions.MediaId)
+        if (!allowed)
+        {
+            var sub = await _db.ExerciseSubmissions
+                .Include(s => s.Exercise)
+                    .ThenInclude(e => e.Lessons)
+                .AsNoTracking()
+                .Where(s => s.MediaId == mediaId)
+                .FirstOrDefaultAsync(ct);
+
+            if (sub != null)
+            {
+                if (sub.StudentId == uid) allowed = true;
+
+                if (!allowed && sub.Exercise.Lessons.Any())
+                {
+                    var lessonId = sub.Exercise.Lessons.First().LessonId;
+                    var classroomId = await _db.Lessons.AsNoTracking()
+                        .Where(l => l.LessonId == lessonId)
+                        .Select(l => l.ClassroomId)
+                        .FirstOrDefaultAsync(ct);
+
+                    if (classroomId != 0 && await IsTeacherAsync(classroomId, uid, ct))
+                        allowed = true;
+                }
+            }
+        }
+
+        // Không có quyền
+        if (!allowed)
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new { message = "Không có quyền tải media này." });
+
+        // Tải file từ storage
+        try
+        {
+            var fileStream = await _storage.DownloadFileAsync(m.ObjectKey, m.Bucket, ct);
+            
+            // Xác định Content-Type
+            var contentType = !string.IsNullOrWhiteSpace(m.MimeType) 
+                ? m.MimeType 
+                : "application/octet-stream";
+
+            // Xác định tên file để download (lấy từ ObjectKey)
+            var fileName = Path.GetFileName(m.ObjectKey);
+            if (string.IsNullOrWhiteSpace(fileName))
+                fileName = $"file_{mediaId}";
+
+            return File(fileStream, contentType, fileName);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new { message = $"Không thể tải file: {ex.Message}" });
+        }
     }
 }

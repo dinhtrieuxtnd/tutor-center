@@ -8,6 +8,6 @@ namespace api_backend.Services.Abstracts
         Task<JoinRequestDto> CreateAsync(JoinRequestCreateDto dto, CancellationToken ct);
         Task<List<JoinRequestDto>> GetByClassroomAsync(int classroomId, int actorUserId, CancellationToken ct);
         Task<List<JoinRequestDto>> GetMineAsync(int studentId, CancellationToken ct);
-        Task<bool> UpdateStatusAsync(int joinRequestId, string status, int handlerUserId, string? note, CancellationToken ct);
+        Task<bool> UpdateStatusAsync(int joinRequestId, string status, int handlerUserId, CancellationToken ct);
     }
 }
