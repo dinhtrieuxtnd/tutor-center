@@ -19,7 +19,6 @@ import {
   BookOpen,
   DollarSign
 } from 'lucide-react';
-import { Header } from '@/components/layout';
 import { profileApi, ProfileResponse, UpdateProfileRequest, ChangePasswordRequest } from '@/services/profileApi';
 
 interface PasswordForm {
@@ -166,14 +165,11 @@ export default function AdminProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Header userRole="admin" />
-        <div className="max-w-7xl mx-auto py-8 px-4">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto" />
-              <p className="mt-4 text-gray-600">Đang tải...</p>
-            </div>
+      <div className="max-w-7xl mx-auto py-8 px-4">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto" />
+            <p className="mt-4 text-gray-600">Đang tải...</p>
           </div>
         </div>
       </div>
@@ -182,28 +178,22 @@ export default function AdminProfilePage() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Header userRole="admin" />
-        <div className="max-w-7xl mx-auto py-8 px-4">
-          <div className="bg-white rounded-lg shadow p-8 text-center">
-            <p className="text-gray-600">Không thể tải thông tin người dùng</p>
-            <button
-              onClick={fetchProfile}
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              Thử lại
-            </button>
-          </div>
+      <div className="max-w-7xl mx-auto py-8 px-4">
+        <div className="bg-white rounded-lg shadow p-8 text-center">
+          <p className="text-gray-600">Không thể tải thông tin người dùng</p>
+          <button
+            onClick={fetchProfile}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Thử lại
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header userRole="admin" />
-
-      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 font-poppins">
             Thông tin cá nhân
@@ -521,7 +511,6 @@ export default function AdminProfilePage() {
                 </div>
               </div>
             )}
-          </div>
         </div>
       </div>
     </div>

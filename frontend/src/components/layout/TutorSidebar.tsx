@@ -15,7 +15,7 @@ export function TutorSidebar() {
     },
     {
       name: 'Quản lý lớp học',
-      href: '/tutor/classrooms',
+      href: '/tutor/classes',
       icon: GraduationCap
     },
     {

@@ -1,6 +1,5 @@
 "use client";
 
-import { Header, AdminSidebar } from "@/components/layout";
 import { GraduationCap, Users, BookOpen, FileText, ClipboardCheck, Brain } from "lucide-react";
 
 export default function AdminDashboardPage() {
@@ -134,16 +133,7 @@ export default function AdminDashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <Header userRole="admin" />
-
-      {/* Sidebar */}
-      <AdminSidebar />
-
-      {/* Main Content */}
-      <div className="ml-64 pt-16">
-        <div className="p-8">
+    <div className="p-8">
           {/* Page Title */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
@@ -239,8 +229,6 @@ export default function AdminDashboardPage() {
               </button>
             </div>
           </div>
-        </div>
-      </div>
     </div>
   );
 }
