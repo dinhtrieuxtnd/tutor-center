@@ -83,7 +83,7 @@ export default function LearnPage() {
                 <div className="px-6 py-4">
                     <div className="flex items-center gap-2 text-sm font-open-sans">
                         <button
-                            onClick={() => router.push('/student/class')}
+                            onClick={() => router.push('/student/class/' + classId)}
                             className="cursor-pointer flex items-center gap-1 text-gray-600 hover:text-primary transition-colors"
                         >
                             <Home className="w-4 h-4" />
