@@ -9,7 +9,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { LessonResponse } from '@/services/lessonApi';
-
+import { useRouter } from 'next/navigation';
 interface QuizContentProps {
   lesson: LessonResponse;
 }
@@ -18,6 +18,7 @@ export function QuizContent({ lesson }: QuizContentProps) {
   const [isStarted, setIsStarted] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [score, setScore] = useState(0);
+  const router = useRouter();
 
   const quiz = lesson.quiz;
 
@@ -50,7 +51,8 @@ export function QuizContent({ lesson }: QuizContentProps) {
   };
 
   const handleStart = () => {
-    setIsStarted(true);
+    // setIsStarted(true);
+    router.push(`/student/quiz/${lesson.lessonId}`);
     // TODO: Implement quiz start logic
   };
 
@@ -196,7 +198,7 @@ export function QuizContent({ lesson }: QuizContentProps) {
         <div className="text-center">
           <button
             onClick={handleStart}
-            className="px-8 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-lg rounded-xl transition-colors flex items-center gap-3 mx-auto font-poppins shadow-lg"
+            className="cursor-pointer px-8 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-lg rounded-xl transition-colors flex items-center gap-3 mx-auto font-poppins shadow-lg"
           >
             <PlayCircle className="w-6 h-6" />
             Bắt đầu làm bài

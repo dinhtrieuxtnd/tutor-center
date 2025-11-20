@@ -6,16 +6,21 @@ import { useAuth } from "@/hooks/useAuth";
 
 export default function Home() {
   const router = useRouter();
-  const { isAuthenticated, student } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
-    // Middleware sẽ xử lý redirect dựa trên cookies
-    // Component này chỉ cần đảm bảo không render gì
-    // Middleware sẽ redirect về:
-    // - /auth/login nếu chưa đăng nhập
-    // - /student/dashboard, /tutor/dashboard, hoặc /admin/dashboard nếu đã đăng nhập
-  }, [router, isAuthenticated, student]);
+    // Khi auth đã load xong
+    if (!isLoading) {
+      // Nếu chưa đăng nhập → đá về /auth/login
+      if (!isAuthenticated) {
+        router.replace("/auth/login");
+      } else {
+        // Nếu đã đăng nhập → điều hướng vào dashboard (hoặc trang bạn muốn)
+        router.replace("/student/dashboard");
+      }
+    }
+  }, [isAuthenticated, isLoading, router]);
 
-  // Trong lúc kiểm tra auth và redirect, không hiển thị gì
+  // Trong lúc auth đang load hoặc đang redirect → không render gì
   return null;
 }

@@ -31,9 +31,11 @@ export default function StudentLayout({
   // 👉 Trang learn: /student/class/[id]/learn
   const isLearnPage =
     pathname.startsWith('/student/class/') && pathname.endsWith('/learn');
-
+  
+  const isQuizPage =
+    pathname.startsWith('/student/quiz/');
   // 🧠 Với trang learn: KHÔNG header, KHÔNG sidebar
-  if (isLearnPage) {
+  if (isLearnPage || isQuizPage) {
     return (
       <ProtectedRoute allowedRoles={['student']}>
         <div className="min-h-screen bg-gray-50">
