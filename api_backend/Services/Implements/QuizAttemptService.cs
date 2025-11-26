@@ -49,7 +49,27 @@ namespace api_backend.Services.Implements
             // Check if student already has an attempt for this lesson
             var existingAttempt = await _attemptRepo.GetByStudentAndLessonAsync(studentId, lessonId, ct);
             if (existingAttempt != null)
-                throw new InvalidOperationException("Bạn đã có attempt cho lesson này");
+            {
+                // Return existing attempt if it's still in progress
+                if (existingAttempt.Status == "in_progress")
+                {
+                    return new QuizAttemptDto
+                    {
+                        QuizAttemptId = existingAttempt.QuizAttemptId,
+                        LessonId = existingAttempt.LessonId,
+                        QuizId = existingAttempt.QuizId,
+                        StudentId = existingAttempt.StudentId,
+                        StartedAt = existingAttempt.StartedAt,
+                        SubmittedAt = existingAttempt.SubmittedAt,
+                        Status = existingAttempt.Status,
+                        ScoreRaw = existingAttempt.ScoreRaw,
+                        ScoreScaled10 = existingAttempt.ScoreScaled10
+                    };
+                }
+                
+                // If already submitted, cannot create new attempt for same lesson
+                throw new InvalidOperationException("Bạn đã hoàn thành bài kiểm tra này");
+            }
 
             // Check max attempts
             var attemptCount = await _attemptRepo.CountAttemptsByStudentAndQuizAsync(studentId, quiz.QuizId, ct);

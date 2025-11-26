@@ -69,7 +69,7 @@ export default function ProfileScreen() {
         <Text style={styles.value}>{user.email}</Text>
         
         <Text style={styles.label}>Vai trò:</Text>
-        <Text style={styles.value}>{user.roleName}</Text>
+        <Text style={styles.value}>{user.role}</Text>
       </View>
 
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>

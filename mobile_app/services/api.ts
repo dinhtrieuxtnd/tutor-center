@@ -11,7 +11,24 @@ export interface RegisterRequest {
   fullName: string;
   email: string;
   password: string;
-  phone?: string;
+  confirmPassword: string;
+  phoneNumber: string;
+  otpCode: string;
+}
+
+export interface SendOtpRequest {
+  email: string;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  email: string;
+  otpCode: string;
+  newPassword: string;
+  confirmNewPassword: string;
 }
 
 export interface AuthTokens {
@@ -71,18 +88,41 @@ class ApiService {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), config.REQUEST_TIMEOUT);
     
+    console.log('🌐 API Request:', url);
+    console.log('📤 Request options:', JSON.stringify(options, null, 2));
+    
     try {
       const response = await fetch(url, {
         ...options,
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
+      console.log('✅ Response status:', response.status);
       return response;
     } catch (error: any) {
       clearTimeout(timeoutId);
+      console.error('❌ Fetch error:', error);
+      
       if (error.name === 'AbortError') {
-        throw new Error('Kết nối mạng quá chậm, vui lòng thử lại');
+        throw new Error(
+          `Kết nối đến server quá chậm (timeout ${config.REQUEST_TIMEOUT / 1000}s).\n` +
+          `Kiểm tra:\n` +
+          `1. Backend đã chạy chưa?\n` +
+          `2. IP trong config có đúng không? (${config.API_BASE_URL})`
+        );
       }
+      
+      if (error.message.includes('Network request failed')) {
+        throw new Error(
+          `Không thể kết nối đến server.\n` +
+          `Kiểm tra:\n` +
+          `1. Backend đã chạy ở ${config.API_BASE_URL}?\n` +
+          `2. IP có đúng không? (Windows: ipconfig, Mac: ifconfig)\n` +
+          `3. Firewall có chặn không?\n` +
+          `4. Cùng mạng WiFi với máy chạy backend?`
+        );
+      }
+      
       throw error;
     }
   }
@@ -114,11 +154,30 @@ class ApiService {
     }
   }
 
+  async sendOtpRegister(data: SendOtpRequest): Promise<{ message: string }> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseURL}/Auth/send-otp-register`, {
+        method: 'POST',
+        headers: config.DEFAULT_HEADERS,
+        body: JSON.stringify(data),
+      });
+
+      const result = await this.handleResponse<{ message: string }>(response);
+      return result;
+    } catch (error: any) {
+      console.error('Send OTP error:', error);
+      if (error.message.includes('fetch')) {
+        throw new Error('Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.');
+      }
+      throw error;
+    }
+  }
+
   async register(registerData: RegisterRequest): Promise<AuthTokens> {
     try {
       const response = await this.fetchWithTimeout(`${this.baseURL}/Auth/register`, {
         method: 'POST',
-        headers: await this.getAuthHeaders(),
+        headers: config.DEFAULT_HEADERS,
         body: JSON.stringify(registerData),
       });
 
@@ -133,6 +192,44 @@ class ApiService {
       return result;
     } catch (error: any) {
       console.error('Register error:', error);
+      if (error.message.includes('fetch')) {
+        throw new Error('Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.');
+      }
+      throw error;
+    }
+  }
+
+  async forgotPassword(data: ForgotPasswordRequest): Promise<{ message: string }> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseURL}/Auth/forgot-password`, {
+        method: 'POST',
+        headers: config.DEFAULT_HEADERS,
+        body: JSON.stringify(data),
+      });
+
+      const result = await this.handleResponse<{ message: string }>(response);
+      return result;
+    } catch (error: any) {
+      console.error('Forgot password error:', error);
+      if (error.message.includes('fetch')) {
+        throw new Error('Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.');
+      }
+      throw error;
+    }
+  }
+
+  async resetPassword(data: ResetPasswordRequest): Promise<{ message: string }> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseURL}/Auth/reset-password`, {
+        method: 'POST',
+        headers: config.DEFAULT_HEADERS,
+        body: JSON.stringify(data),
+      });
+
+      const result = await this.handleResponse<{ message: string }>(response);
+      return result;
+    } catch (error: any) {
+      console.error('Reset password error:', error);
       if (error.message.includes('fetch')) {
         throw new Error('Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.');
       }
@@ -180,7 +277,7 @@ class ApiService {
 
   async getMe(): Promise<any> {
     try {
-      const response = await this.fetchWithTimeout(`${this.baseURL}/Auth/me`, {
+      const response = await this.fetchWithTimeout(`${this.baseURL}/Profile/me`, {
         method: 'GET',
         headers: await this.getAuthHeaders(),
       });

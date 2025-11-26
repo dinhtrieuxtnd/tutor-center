@@ -15,31 +15,86 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAuth } from '../contexts/AuthContext';
+import * as validate from '../utils/validate';
 
 export default function RegisterScreen() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [otpCode, setOtpCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { register } = useAuth();
+  const [otpSent, setOtpSent] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+  const [success, setSuccess] = useState(false);
+  const { register, sendOtpRegister } = useAuth();
 
-  const handleRegister = async () => {
-    if (!fullName || !email || !password || !confirmPassword) {
-      Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ thông tin');
+  const handleSendOtp = async () => {
+    // Validate email trước khi gửi OTP
+    if (!validate.validateEmail(email)) {
+      Alert.alert('Lỗi', 'Vui lòng nhập email hợp lệ');
       return;
     }
 
-    if (password !== confirmPassword) {
+    setSendingOtp(true);
+    try {
+      const response = await sendOtpRegister(email.trim());
+      setOtpSent(true);
+      setCountdown(60); // Đếm ngược 60 giây
+
+      // Đếm ngược
+      const timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      Alert.alert('Thành công', response.message || 'Mã OTP đã được gửi đến email của bạn.');
+    } catch (error: any) {
+      Alert.alert('Lỗi', error.message || 'Gửi OTP thất bại. Vui lòng thử lại.');
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const handleRegister = async () => {
+    // Validate các trường
+    if (!validate.validateFullName(fullName)) {
+      Alert.alert('Lỗi', 'Vui lòng nhập họ và tên hợp lệ (ít nhất 2 ký tự)');
+      return;
+    }
+
+    if (!validate.validateEmail(email)) {
+      Alert.alert('Lỗi', 'Vui lòng nhập email hợp lệ');
+      return;
+    }
+
+    if (!validate.validatePassword(password)) {
+      Alert.alert('Lỗi', 'Mật khẩu phải có ít nhất 6 ký tự');
+      return;
+    }
+
+    if (!validate.validateConfirmPassword(password, confirmPassword)) {
       Alert.alert('Lỗi', 'Mật khẩu xác nhận không khớp');
       return;
     }
 
-    if (password.length < 6) {
-      Alert.alert('Lỗi', 'Mật khẩu phải có ít nhất 6 ký tự');
+    if (!validate.validatePhoneNumber(phoneNumber)) {
+      Alert.alert('Lỗi', 'Vui lòng nhập số điện thoại hợp lệ');
+      return;
+    }
+
+    if (!validate.validateOtpCode(otpCode)) {
+      Alert.alert('Lỗi', 'Mã OTP phải có 6 chữ số');
       return;
     }
 
@@ -50,24 +105,21 @@ export default function RegisterScreen() {
 
     setIsLoading(true);
     
-    // Set timeout để hiển thị thông báo nếu quá lâu
     const timeoutId = setTimeout(() => {
       Alert.alert('Thông báo', 'Đang xử lý đăng ký, vui lòng đợi...');
     }, 3000);
 
     try {
-      await register(fullName.trim(), email.trim(), password);
+      await register(
+        fullName.trim(),
+        email.trim(),
+        password,
+        confirmPassword,
+        phoneNumber.trim(),
+        otpCode.trim()
+      );
       clearTimeout(timeoutId);
-      
-      Alert.alert('Thành công', 'Đăng ký thành công! Chào mừng bạn đến với Tutor Center.', [
-        {
-          text: 'OK',
-          onPress: () => {
-            // Navigate to main app or dashboard
-            router.replace('/(tabs)');
-          }
-        }
-      ]);
+      setSuccess(true);
     } catch (error: any) {
       clearTimeout(timeoutId);
       Alert.alert('Lỗi đăng ký', error.message || 'Đã xảy ra lỗi, vui lòng thử lại');
@@ -84,6 +136,31 @@ export default function RegisterScreen() {
   const handleLogin = () => {
     router.push('/login');
   };
+
+  // Success screen
+  if (success) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.successContainer}>
+          <View style={styles.successContent}>
+            <View style={styles.successIconContainer}>
+              <Ionicons name="checkmark-circle" size={80} color="#10B981" />
+            </View>
+            <Text style={styles.successTitle}>Đăng ký thành công!</Text>
+            <Text style={styles.successText}>
+              Tài khoản của bạn đã được tạo thành công. Bạn có thể đăng nhập ngay bây giờ.
+            </Text>
+            <TouchableOpacity 
+              style={styles.successButton} 
+              onPress={() => router.replace('/login')}
+            >
+              <Text style={styles.successButtonText}>Đăng nhập ngay</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -127,17 +204,63 @@ export default function RegisterScreen() {
               />
             </View>
 
-            {/* Email Input */}
+            {/* Email Input with OTP Button */}
             <View style={styles.inputContainer}>
               <Text style={styles.inputLabel}>Email</Text>
+              <View style={styles.emailOtpContainer}>
+                <TextInput
+                  style={styles.emailInput}
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder=""
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                />
+                <TouchableOpacity
+                  style={[
+                    styles.otpButton,
+                    (sendingOtp || countdown > 0 || !email) && styles.otpButtonDisabled
+                  ]}
+                  onPress={handleSendOtp}
+                  disabled={sendingOtp || countdown > 0 || !email}
+                >
+                  <Text style={styles.otpButtonText}>
+                    {sendingOtp
+                      ? 'Đang gửi...'
+                      : countdown > 0
+                      ? `${countdown}s`
+                      : otpSent
+                      ? 'Gửi lại'
+                      : 'Gửi OTP'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* OTP Code Input */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Mã OTP</Text>
               <TextInput
                 style={styles.input}
-                value={email}
-                onChangeText={setEmail}
+                value={otpCode}
+                onChangeText={setOtpCode}
                 placeholder=""
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoComplete="email"
+                keyboardType="number-pad"
+                maxLength={6}
+              />
+            </View>
+
+            {/* Phone Number Input */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Số điện thoại</Text>
+              <TextInput
+                style={styles.input}
+                value={phoneNumber}
+                onChangeText={setPhoneNumber}
+                placeholder=""
+                keyboardType="phone-pad"
+                autoComplete="tel"
               />
             </View>
 
@@ -423,14 +546,14 @@ const styles = StyleSheet.create({
   },
   googleButton: {
     height: 48,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#D1D5DB',
     borderRadius: 8,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    marginBottom: 32,
+    marginBottom: 24,
   },
   googleButtonText: {
     fontSize: 16,
@@ -449,18 +572,89 @@ const styles = StyleSheet.create({
   },
   loginLink: {
     fontSize: 14,
+    fontWeight: '600',
     color: '#4F46E5',
-    fontWeight: '500',
   },
   loadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
   },
   loadingText: {
+    marginLeft: 8,
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
-    marginLeft: 8,
+  },
+  emailOtpContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  emailInput: {
+    flex: 1,
+    height: 48,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: '#111827',
+    backgroundColor: '#FFFFFF',
+  },
+  otpButton: {
+    height: 48,
+    paddingHorizontal: 16,
+    backgroundColor: '#4F46E5',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 90,
+  },
+  otpButtonDisabled: {
+    backgroundColor: '#9CA3AF',
+  },
+  otpButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  successContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  successContent: {
+    alignItems: 'center',
+    gap: 24,
+  },
+  successIconContainer: {
+    marginBottom: 16,
+  },
+  successTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#111827',
+    textAlign: 'center',
+  },
+  successText: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  successButton: {
+    height: 48,
+    backgroundColor: '#4F46E5',
+    borderRadius: 8,
+    paddingHorizontal: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  successButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });

@@ -2,6 +2,7 @@
 using Amazon.S3;
 using api_backend.Configurations;
 using api_backend.DbContexts;
+using api_backend.Middleware;
 using api_backend.Repositories.Abstracts;
 using api_backend.Repositories.Implements;
 using api_backend.Services.Abstracts;
@@ -173,7 +174,7 @@ namespace api_backend
             {
                 options.AddDefaultPolicy(policy =>
                 {
-                    policy.WithOrigins("http://localhost:3000", "http://127.0.0.1:3000")
+                    policy.SetIsOriginAllowed(origin => true) // Allow all origins for development
                           .AllowAnyHeader()
                           .AllowAnyMethod()
                           .AllowCredentials();
@@ -181,6 +182,9 @@ namespace api_backend
             });
 
             var app = builder.Build();
+
+            // Add global exception handler
+            app.UseMiddleware<GlobalExceptionHandler>();
 
             if (app.Environment.IsDevelopment())
             {

@@ -118,6 +118,17 @@ namespace api_backend.Services.Implements
             return ToDto(submission);
         }
 
+        // Student: Get submission by lesson
+        public async Task<ExerciseSubmissionDto?> GetSubmissionByStudentAndLessonAsync(int lessonId, int studentId, CancellationToken ct)
+        {
+            var submission = await _repo.GetByStudentAndLessonAsync(studentId, lessonId, ct);
+
+            if (submission == null)
+                return null;
+
+            return ToDto(submission);
+        }
+
         // Tutor: Get submissions by lesson
         public async Task<List<ExerciseSubmissionDto>> GetSubmissionsByLessonAsync(int lessonId, int tutorId, CancellationToken ct)
         {

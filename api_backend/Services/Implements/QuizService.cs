@@ -79,17 +79,38 @@ namespace api_backend.Services.Implements
             if (!isTutor)
             {
                 // Kiểm tra xem user có phải là học sinh trong bất kỳ lớp nào có quiz này không
-                // và kiểm tra thời gian: chỉ cho phép truy cập khi đã đến giờ kiểm tra
                 var now = DateTime.UtcNow;
-                isStudent = await _db.Lessons
-                    .Where(l => l.QuizId == quizId 
-                        && l.QuizStartAt.HasValue 
-                        && l.QuizStartAt.Value <= now)
-                    .Join(_db.ClassroomStudents,
-                        l => l.ClassroomId,
-                        cs => cs.ClassroomId,
-                        (l, cs) => new { l, cs })
-                    .AnyAsync(x => x.cs.StudentId == userId, ct);
+                
+                // Student có quyền xem nếu:
+                // 1. Đã đến giờ kiểm tra, HOẶC
+                // 2. Đã có attempt cho quiz này (đã bắt đầu làm bài)
+                var hasAttempt = await _db.QuizAttempts
+                    .AnyAsync(qa => qa.QuizId == quizId && qa.StudentId == userId, ct);
+                
+                if (hasAttempt)
+                {
+                    // Nếu đã có attempt, kiểm tra có enrolled không
+                    isStudent = await _db.Lessons
+                        .Where(l => l.QuizId == quizId)
+                        .Join(_db.ClassroomStudents,
+                            l => l.ClassroomId,
+                            cs => cs.ClassroomId,
+                            (l, cs) => new { l, cs })
+                        .AnyAsync(x => x.cs.StudentId == userId, ct);
+                }
+                else
+                {
+                    // Nếu chưa có attempt, kiểm tra thời gian
+                    isStudent = await _db.Lessons
+                        .Where(l => l.QuizId == quizId 
+                            && l.QuizStartAt.HasValue 
+                            && l.QuizStartAt.Value <= now)
+                        .Join(_db.ClassroomStudents,
+                            l => l.ClassroomId,
+                            cs => cs.ClassroomId,
+                            (l, cs) => new { l, cs })
+                        .AnyAsync(x => x.cs.StudentId == userId, ct);
+                }
             }
 
             if (!isTutor && !isStudent)
@@ -240,3 +261,4 @@ namespace api_backend.Services.Implements
         }
     }
 }
+

@@ -6,7 +6,8 @@ interface User {
   userId: number;
   fullName: string;
   email: string;
-  roleName: string;
+  role: string;
+  phoneNumber?: string;
   avatarUrl?: string;
 }
 
@@ -15,7 +16,10 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (fullName: string, email: string, password: string) => Promise<void>;
+  register: (fullName: string, email: string, password: string, confirmPassword: string, phoneNumber: string, otpCode: string) => Promise<void>;
+  sendOtpRegister: (email: string) => Promise<{ message: string }>;
+  forgotPassword: (email: string) => Promise<{ message: string }>;
+  resetPassword: (email: string, otpCode: string, newPassword: string, confirmNewPassword: string) => Promise<{ message: string }>;
   logout: () => Promise<void>;
   refreshUserData: () => Promise<void>;
 }
@@ -95,9 +99,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const register = async (fullName: string, email: string, password: string) => {
+  const register = async (
+    fullName: string,
+    email: string,
+    password: string,
+    confirmPassword: string,
+    phoneNumber: string,
+    otpCode: string
+  ) => {
     try {
-      const result = await apiService.register({ fullName, email, password });
+      const result = await apiService.register({
+        fullName,
+        email,
+        password,
+        confirmPassword,
+        phoneNumber,
+        otpCode,
+      });
       
       if (result.accessToken) {
         // Get user data after successful registration
@@ -105,6 +123,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(userData);
         setIsAuthenticated(true);
       }
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const sendOtpRegister = async (email: string): Promise<{ message: string }> => {
+    try {
+      return await apiService.sendOtpRegister({ email });
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const forgotPassword = async (email: string): Promise<{ message: string }> => {
+    try {
+      return await apiService.forgotPassword({ email });
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const resetPassword = async (
+    email: string,
+    otpCode: string,
+    newPassword: string,
+    confirmNewPassword: string
+  ): Promise<{ message: string }> => {
+    try {
+      return await apiService.resetPassword({
+        email,
+        otpCode,
+        newPassword,
+        confirmNewPassword,
+      });
     } catch (error) {
       throw error;
     }
@@ -137,6 +189,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isAuthenticated,
     login,
     register,
+    sendOtpRegister,
+    forgotPassword,
+    resetPassword,
     logout,
     refreshUserData,
   };

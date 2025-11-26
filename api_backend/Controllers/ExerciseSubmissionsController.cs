@@ -93,6 +93,27 @@ namespace api_backend.Controllers
             }
         }
 
+        /// <summary>
+        /// Student: Get own submission for a lesson
+        /// </summary>
+        [HttpGet("lessons/{lessonId:int}/my-submission")]
+        [Authorize(Roles = "student")]
+        public async Task<IActionResult> GetMySubmissionByLesson(int lessonId, CancellationToken ct)
+        {
+            try
+            {
+                var result = await _service.GetSubmissionByStudentAndLessonAsync(lessonId, ActorId(), ct);
+                if (result == null)
+                    return NotFound(new { message = "Chưa có bài nộp" });
+
+                return Ok(result);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+        }
+
         // ===== TUTOR APIs =====
 
         /// <summary>
