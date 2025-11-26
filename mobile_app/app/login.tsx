@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAuth } from '../contexts/AuthContext';
+import * as validate from '../utils/validate';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -24,8 +25,19 @@ export default function LoginScreen() {
   const { login } = useAuth();
 
   const handleLogin = async () => {
+    // Validation
     if (!email || !password) {
       Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ thông tin');
+      return;
+    }
+
+    if (!validate.validateEmail(email)) {
+      Alert.alert('Lỗi', 'Email không hợp lệ');
+      return;
+    }
+
+    if (!validate.validatePassword(password)) {
+      Alert.alert('Lỗi', 'Mật khẩu phải có ít nhất 6 ký tự');
       return;
     }
 
@@ -37,8 +49,8 @@ export default function LoginScreen() {
         {
           text: 'OK',
           onPress: () => {
-            // Navigate to main app or dashboard
-            router.replace('/(tabs)');
+            // Navigate to dashboard
+            router.replace('/(tabs)/dashboard');
           }
         }
       ]);
@@ -55,7 +67,7 @@ export default function LoginScreen() {
   };
 
   const handleForgotPassword = () => {
-    Alert.alert('Quên mật khẩu', 'Chức năng đang phát triển');
+    router.push('/forgot-password');
   };
 
   const handleSignUp = () => {

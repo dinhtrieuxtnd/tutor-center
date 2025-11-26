@@ -9,6 +9,7 @@ namespace api_backend.Services.Abstracts
         Task<ExerciseSubmissionDto> SubmitExerciseAsync(int lessonId, SubmitExerciseDto dto, int studentId, CancellationToken ct);
         Task<bool> DeleteSubmissionAsync(int submissionId, int studentId, CancellationToken ct);
         Task<ExerciseSubmissionDto?> GetSubmissionInfoAsync(int submissionId, int studentId, CancellationToken ct);
+        Task<ExerciseSubmissionDto?> GetSubmissionByStudentAndLessonAsync(int lessonId, int studentId, CancellationToken ct);
 
         // Tutor APIs
         Task<List<ExerciseSubmissionDto>> GetSubmissionsByLessonAsync(int lessonId, int tutorId, CancellationToken ct);
