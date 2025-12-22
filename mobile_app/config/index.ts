@@ -12,7 +12,7 @@ const config = {
   // - 192.168.123.2 = WiFi/Ethernet (KHUYẾN NGHỊ cho điện thoại thật)
   // - 172.21.224.1 = Virtual network (WSL/Docker/VPN)
   // - 172.20.10.8 = Your current WiFi/Network IP
-  API_BASE_URL: 'http://172.20.10.8:5293/api',
+  API_BASE_URL: 'http://192.168.123.12:5293/api',
   
   // Alternative URLs for different environments
   // Local only: 'http://localhost:5293/api' (work trên Android Emulator)
