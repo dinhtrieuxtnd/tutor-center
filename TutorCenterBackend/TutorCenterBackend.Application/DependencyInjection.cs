@@ -34,6 +34,11 @@ namespace TutorCenterBackend.Application
             services.AddScoped<IQGroupService, QGroupService>();
             services.AddScoped<IQuestionService, QuestionService>();
             services.AddScoped<IOptionService, OptionService>();
+            services.AddScoped<ILessonService, LessonService>();
+            services.AddScoped<IExerciseSubmissionService, ExerciseSubmissionService>();
+            services.AddScoped<IQuizAttemptService, QuizAttemptService>();
+            services.AddScoped<IQuizAnswerService, QuizAnswerService>();
+            services.AddScoped<IClassroomChatService, ClassroomChatService>();
             return services;
         }
     }

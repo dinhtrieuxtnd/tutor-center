@@ -36,5 +36,33 @@ namespace TutorCenterBackend.Presentation.Controllers
             var result = await _questionService.DeleteQuestionAsync(questionId, ct);
             return Ok(result);
         }
+
+        [HttpPost("{questionId}/media")]
+        [RequirePermission("quiz.edit")]
+        [ValidateId("questionId")]
+        public async Task<IActionResult> AttachMediaToQuestion(int questionId, [FromBody] AttachMediaToQuestionRequestDto dto, CancellationToken ct)
+        {
+            var result = await _questionService.AttachMediaToQuestionAsync(questionId, dto, ct);
+            return Ok(result);
+        }
+
+        [HttpDelete("{questionId}/media/{mediaId}")]
+        [RequirePermission("quiz.edit")]
+        [ValidateId("questionId")]
+        [ValidateId("mediaId")]
+        public async Task<IActionResult> DetachMediaFromQuestion(int questionId, int mediaId, CancellationToken ct)
+        {
+            var result = await _questionService.DetachMediaFromQuestionAsync(questionId, mediaId, ct);
+            return Ok(result);
+        }
+
+        [HttpGet("{questionId}/media")]
+        [RequirePermission("quiz.view")]
+        [ValidateId("questionId")]
+        public async Task<IActionResult> GetQuestionMedias(int questionId, CancellationToken ct)
+        {
+            var result = await _questionService.GetQuestionMediasAsync(questionId, ct);
+            return Ok(result);
+        }
     }
 }

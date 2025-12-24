@@ -17,6 +17,55 @@ namespace TutorCenterBackend.Infrastructure.Repositories
                 .FirstOrDefaultAsync(q => q.QuizId == quizId && q.DeletedAt == null, ct);
         }
 
+        public async Task<Quiz?> GetQuizDetailAsync(int quizId, CancellationToken ct = default)
+        {
+            return await _context.Quizzes
+                .Include(q => q.QuizSections.OrderBy(s => s.OrderIndex))
+                    .ThenInclude(s => s.QuestionGroups.OrderBy(g => g.OrderIndex))
+                        .ThenInclude(g => g.QuestionGroupMedia)
+                            .ThenInclude(gm => gm.Media)
+                .Include(q => q.QuizSections.OrderBy(s => s.OrderIndex))
+                    .ThenInclude(s => s.QuestionGroups.OrderBy(g => g.OrderIndex))
+                        .ThenInclude(g => g.Questions.OrderBy(q => q.OrderIndex))
+                            .ThenInclude(q => q.QuestionMedia)
+                                .ThenInclude(qm => qm.Media)
+                .Include(q => q.QuizSections.OrderBy(s => s.OrderIndex))
+                    .ThenInclude(s => s.QuestionGroups.OrderBy(g => g.OrderIndex))
+                        .ThenInclude(g => g.Questions.OrderBy(q => q.OrderIndex))
+                            .ThenInclude(q => q.QuestionOptions.OrderBy(o => o.OrderIndex))
+                                .ThenInclude(o => o.QuestionOptionMedia)
+                                    .ThenInclude(om => om.Media)
+                .Include(q => q.QuizSections.OrderBy(s => s.OrderIndex))
+                    .ThenInclude(s => s.Questions.OrderBy(q => q.OrderIndex))
+                        .ThenInclude(q => q.QuestionMedia)
+                            .ThenInclude(qm => qm.Media)
+                .Include(q => q.QuizSections.OrderBy(s => s.OrderIndex))
+                    .ThenInclude(s => s.Questions.OrderBy(q => q.OrderIndex))
+                        .ThenInclude(q => q.QuestionOptions.OrderBy(o => o.OrderIndex))
+                            .ThenInclude(o => o.QuestionOptionMedia)
+                                .ThenInclude(om => om.Media)
+                .Include(q => q.QuestionGroups.Where(g => g.SectionId == null).OrderBy(g => g.OrderIndex))
+                    .ThenInclude(g => g.QuestionGroupMedia)
+                        .ThenInclude(gm => gm.Media)
+                .Include(q => q.QuestionGroups.Where(g => g.SectionId == null).OrderBy(g => g.OrderIndex))
+                    .ThenInclude(g => g.Questions.OrderBy(q => q.OrderIndex))
+                        .ThenInclude(q => q.QuestionMedia)
+                            .ThenInclude(qm => qm.Media)
+                .Include(q => q.QuestionGroups.Where(g => g.SectionId == null).OrderBy(g => g.OrderIndex))
+                    .ThenInclude(g => g.Questions.OrderBy(q => q.OrderIndex))
+                        .ThenInclude(q => q.QuestionOptions.OrderBy(o => o.OrderIndex))
+                            .ThenInclude(o => o.QuestionOptionMedia)
+                                .ThenInclude(om => om.Media)
+                .Include(q => q.Questions.Where(q => q.SectionId == null && q.GroupId == null).OrderBy(q => q.OrderIndex))
+                    .ThenInclude(q => q.QuestionMedia)
+                        .ThenInclude(qm => qm.Media)
+                .Include(q => q.Questions.Where(q => q.SectionId == null && q.GroupId == null).OrderBy(q => q.OrderIndex))
+                    .ThenInclude(q => q.QuestionOptions.OrderBy(o => o.OrderIndex))
+                        .ThenInclude(o => o.QuestionOptionMedia)
+                            .ThenInclude(om => om.Media)
+                .FirstOrDefaultAsync(q => q.QuizId == quizId && q.DeletedAt == null, ct);
+        }
+
         public async Task AddAsync(Quiz quiz, CancellationToken ct = default)
         {
             await _context.Quizzes.AddAsync(quiz, ct);

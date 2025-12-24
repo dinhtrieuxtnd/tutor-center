@@ -36,5 +36,33 @@ namespace TutorCenterBackend.Presentation.Controllers
             var result = await _qGroupService.DeleteQGroupAsync(qGroupId, ct);
             return Ok(result);
         }
+
+        [HttpPost("{qGroupId}/media")]
+        [RequirePermission("quiz.edit")]
+        [ValidateId("qGroupId")]
+        public async Task<IActionResult> AttachMediaToQGroup(int qGroupId, [FromBody] AttachMediaToQGroupRequestDto dto, CancellationToken ct = default)
+        {
+            var result = await _qGroupService.AttachMediaToQGroupAsync(qGroupId, dto, ct);
+            return Ok(result);
+        }
+
+        [HttpDelete("{qGroupId}/media/{mediaId}")]
+        [RequirePermission("quiz.edit")]
+        [ValidateId("qGroupId")]
+        [ValidateId("mediaId")]
+        public async Task<IActionResult> DetachMediaFromQGroup(int qGroupId, int mediaId, CancellationToken ct = default)
+        {
+            var result = await _qGroupService.DetachMediaFromQGroupAsync(qGroupId, mediaId, ct);
+            return Ok(result);
+        }
+
+        [HttpGet("{qGroupId}/media")]
+        [RequirePermission("quiz.view")]
+        [ValidateId("qGroupId")]
+        public async Task<IActionResult> GetQGroupMedias(int qGroupId, CancellationToken ct = default)
+        {
+            var result = await _qGroupService.GetQGroupMediasAsync(qGroupId, ct);
+            return Ok(result);
+        }
     }
 }

@@ -48,5 +48,13 @@ namespace TutorCenterBackend.Infrastructure.Repositories
             await _context.SaveChangesAsync(ct);
             return classroomStudent;
         }
+
+        public async Task<bool> ExistsByClassroomAndStudentAsync(int classroomId, int studentId, CancellationToken ct = default)
+        {
+            return await _context.ClassroomStudents
+                .AnyAsync(cs => cs.ClassroomId == classroomId 
+                    && cs.StudentId == studentId 
+                    && cs.DeletedAt == null, ct);
+        }
     }
 }

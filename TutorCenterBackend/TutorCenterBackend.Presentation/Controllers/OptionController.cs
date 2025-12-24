@@ -34,7 +34,35 @@ namespace TutorCenterBackend.Presentation.Controllers
         public async Task<IActionResult> DeleteOption(int optionId, CancellationToken ct)
         {
             var result = await _optionService.DeleteOptionAsync(optionId, ct);
-            return Ok(new { message = result });
+            return Ok(result);
+        }
+
+        [HttpPost("{optionId}/media")]
+        [RequirePermission("quiz.edit")]
+        [ValidateId("optionId")]
+        public async Task<IActionResult> AttachMediaToOption(int optionId, [FromBody] AttachMediaToOptionRequestDto dto, CancellationToken ct)
+        {
+            var result = await _optionService.AttachMediaToOptionAsync(optionId, dto, ct);
+            return Ok(result);
+        }
+
+        [HttpDelete("{optionId}/media/{mediaId}")]
+        [RequirePermission("quiz.edit")]
+        [ValidateId("optionId")]
+        [ValidateId("mediaId")]
+        public async Task<IActionResult> DetachMediaFromOption(int optionId, int mediaId, CancellationToken ct)
+        {
+            var result = await _optionService.DetachMediaFromOptionAsync(optionId, mediaId, ct);
+            return Ok(result);
+        }
+
+        [HttpGet("{optionId}/media")]
+        [RequirePermission("quiz.view")]
+        [ValidateId("optionId")]
+        public async Task<IActionResult> GetOptionMedias(int optionId, CancellationToken ct)
+        {
+            var result = await _optionService.GetOptionMediasAsync(optionId, ct);
+            return Ok(result);
         }
     }
 }
