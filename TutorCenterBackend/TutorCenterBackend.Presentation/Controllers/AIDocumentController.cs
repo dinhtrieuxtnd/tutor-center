@@ -28,15 +28,15 @@ public class AIDocumentController : ControllerBase
     /// Upload a document for AI question generation
     /// </summary>
     [HttpPost("upload")]
+    [Consumes("multipart/form-data")]
     [RequirePermission("ai_document.create")]
     public async Task<IActionResult> UploadDocumentAsync(
-        [FromForm] IFormFile file,
-        [FromForm] int? classroomId,
+        [FromForm] UploadDocumentRequestDto request,
         CancellationToken ct)
     {
         var userId = GetCurrentUserHelper.GetCurrentUserId(_httpContextAccessor.HttpContext);
 
-        var result = await _documentService.UploadDocumentAsync(file, userId, classroomId, ct);
+        var result = await _documentService.UploadDocumentAsync(request.File, userId, request.ClassroomId, ct);
         return Ok(result);
     }
 
