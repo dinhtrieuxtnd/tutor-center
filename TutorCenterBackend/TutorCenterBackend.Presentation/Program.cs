@@ -69,7 +69,7 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddInfrastructure(builder.Configuration);
 
 // Register Application layer (Business Logic Services, AutoMapper & FluentValidation)
-builder.Services.AddApplication();
+builder.Services.AddApplication(builder.Configuration);
 
 // Add SignalR
 builder.Services.AddSignalR();

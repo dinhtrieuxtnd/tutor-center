@@ -22,6 +22,14 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<Aiconversation> Aiconversations { get; set; }
 
+    public virtual DbSet<Aidocument> Aidocuments { get; set; }
+
+    public virtual DbSet<AigeneratedQuestion> AigeneratedQuestions { get; set; }
+
+    public virtual DbSet<AigeneratedQuestionOption> AigeneratedQuestionOptions { get; set; }
+
+    public virtual DbSet<AigenerationJob> AigenerationJobs { get; set; }
+
     public virtual DbSet<Aimessage> Aimessages { get; set; }
 
     public virtual DbSet<AimessageMedia> AimessageMedias { get; set; }
@@ -155,6 +163,174 @@ public partial class AppDbContext : DbContext
                 .HasForeignKey(d => d.OwnerUserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_AIConversations_Owner");
+        });
+
+        modelBuilder.Entity<Aidocument>(entity =>
+        {
+            entity.HasKey(e => e.DocumentId);
+
+            entity.ToTable("AIDocuments");
+
+            entity.HasIndex(e => e.ClassroomId, "IX_AIDocuments_Classroom")
+                .HasFilter("([ClassroomId] IS NOT NULL)");
+
+            entity.HasIndex(e => e.UploadedBy, "IX_AIDocuments_UploadedBy");
+
+            entity.HasIndex(e => e.ProcessingStatus, "IX_AIDocuments_Status");
+
+            entity.HasIndex(e => e.CreatedAt, "IX_AIDocuments_CreatedAt").IsDescending();
+
+            entity.Property(e => e.ProcessingStatus)
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasDefaultValue("pending");
+
+            entity.Property(e => e.FileType)
+                .HasMaxLength(10)
+                .IsUnicode(false);
+
+            entity.Property(e => e.ErrorMessage).HasMaxLength(500);
+
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysutcdatetime())");
+
+            entity.Property(e => e.ProcessedAt).HasPrecision(0);
+
+            entity.HasOne(d => d.Media).WithMany()
+                .HasForeignKey(d => d.MediaId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_AIDocuments_Media");
+
+            entity.HasOne(d => d.Classroom).WithMany()
+                .HasForeignKey(d => d.ClassroomId)
+                .HasConstraintName("FK_AIDocuments_Classroom");
+
+            entity.HasOne(d => d.UploadedByUser).WithMany()
+                .HasForeignKey(d => d.UploadedBy)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_AIDocuments_User");
+        });
+
+        modelBuilder.Entity<AigeneratedQuestion>(entity =>
+        {
+            entity.HasKey(e => e.GeneratedQuestionId);
+
+            entity.ToTable("AIGeneratedQuestions");
+
+            entity.HasIndex(e => e.DocumentId, "IX_AIGenQuestions_Document");
+
+            entity.HasIndex(e => e.IsImported, "IX_AIGenQuestions_IsImported");
+
+            entity.HasIndex(e => e.QuestionType, "IX_AIGenQuestions_Type");
+
+            entity.HasIndex(e => e.DifficultyLevel, "IX_AIGenQuestions_Difficulty")
+                .HasFilter("([DifficultyLevel] IS NOT NULL)");
+
+            entity.Property(e => e.QuestionType)
+                .HasMaxLength(20)
+                .IsUnicode(false);
+
+            entity.Property(e => e.DifficultyLevel)
+                .HasMaxLength(20)
+                .IsUnicode(false);
+
+            entity.Property(e => e.Topic).HasMaxLength(200);
+
+            entity.Property(e => e.IsImported).HasDefaultValue(false);
+
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysutcdatetime())");
+
+            entity.Property(e => e.ImportedAt).HasPrecision(0);
+
+            entity.HasOne(d => d.Document).WithMany(p => p.AigeneratedQuestions)
+                .HasForeignKey(d => d.DocumentId)
+                .HasConstraintName("FK_AIGenQuestions_Document");
+
+            entity.HasOne(d => d.ImportedQuestion).WithMany()
+                .HasForeignKey(d => d.ImportedQuestionId)
+                .HasConstraintName("FK_AIGenQuestions_ImportedQ");
+        });
+
+        modelBuilder.Entity<AigeneratedQuestionOption>(entity =>
+        {
+            entity.HasKey(e => e.OptionId);
+
+            entity.ToTable("AIGeneratedQuestionOptions");
+
+            entity.HasIndex(e => e.GeneratedQuestionId, "IX_AIGenOptions_Question");
+
+            entity.HasIndex(e => new { e.GeneratedQuestionId, e.Order }, "IX_AIGenOptions_Order");
+
+            entity.Property(e => e.OptionText).HasMaxLength(500);
+
+            entity.Property(e => e.IsCorrect).HasDefaultValue(false);
+
+            entity.Property(e => e.Order).HasDefaultValue(0);
+
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysutcdatetime())");
+
+            entity.HasOne(d => d.GeneratedQuestion).WithMany(p => p.AigeneratedQuestionOptions)
+                .HasForeignKey(d => d.GeneratedQuestionId)
+                .HasConstraintName("FK_AIGenOptions_Question");
+        });
+
+        modelBuilder.Entity<AigenerationJob>(entity =>
+        {
+            entity.HasKey(e => e.JobId);
+
+            entity.ToTable("AIGenerationJobs");
+
+            entity.HasIndex(e => e.DocumentId, "IX_AIGenJobs_Document");
+
+            entity.HasIndex(e => e.RequestedBy, "IX_AIGenJobs_RequestedBy");
+
+            entity.HasIndex(e => e.JobStatus, "IX_AIGenJobs_Status");
+
+            entity.HasIndex(e => e.CreatedAt, "IX_AIGenJobs_CreatedAt").IsDescending();
+
+            entity.Property(e => e.QuestionType)
+                .HasMaxLength(20)
+                .IsUnicode(false);
+
+            entity.Property(e => e.DifficultyLevel)
+                .HasMaxLength(20)
+                .IsUnicode(false);
+
+            entity.Property(e => e.Language)
+                .HasMaxLength(10)
+                .IsUnicode(false)
+                .HasDefaultValue("vi");
+
+            entity.Property(e => e.JobStatus)
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasDefaultValue("pending");
+
+            entity.Property(e => e.GeneratedCount).HasDefaultValue(0);
+
+            entity.Property(e => e.ErrorMessage).HasMaxLength(500);
+
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysutcdatetime())");
+
+            entity.Property(e => e.StartedAt).HasPrecision(0);
+
+            entity.Property(e => e.CompletedAt).HasPrecision(0);
+
+            entity.HasOne(d => d.Document).WithMany(p => p.AigenerationJobs)
+                .HasForeignKey(d => d.DocumentId)
+                .HasConstraintName("FK_AIGenJobs_Document");
+
+            entity.HasOne(d => d.RequestedByUser).WithMany()
+                .HasForeignKey(d => d.RequestedBy)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_AIGenJobs_User");
         });
 
         modelBuilder.Entity<Aimessage>(entity =>
