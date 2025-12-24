@@ -32,6 +32,14 @@ public static class DependencyInjection
         services.AddScoped<IQGroupRepository, QGroupRepository>();
         services.AddScoped<IQuestionRepository, QuestionRepository>();
         services.AddScoped<IOptionRepository, OptionRepository>();
+        services.AddScoped<IQGroupMediaRepository, QGroupMediaRepository>();
+        services.AddScoped<IQuestionMediaRepository, QuestionMediaRepository>();
+        services.AddScoped<IQuestionOptionMediaRepository, QuestionOptionMediaRepository>();
+        services.AddScoped<ILessonRepository, LessonRepository>();
+        services.AddScoped<IExerciseSubmissionRepository, ExerciseSubmissionRepository>();
+        services.AddScoped<IQuizAttemptRepository, QuizAttemptRepository>();
+        services.AddScoped<IQuizAnswerRepository, QuizAnswerRepository>();
+        services.AddScoped<IClassroomChatRepository, ClassroomChatRepository>();
 
         // Register HttpClient for Resend
         services.AddHttpClient<IResend, ResendClient>();

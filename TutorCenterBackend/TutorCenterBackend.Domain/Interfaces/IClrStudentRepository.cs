@@ -9,5 +9,6 @@ namespace TutorCenterBackend.Domain.Interfaces
         Task<ClassroomStudent?> FindByStudentAndClassroomIdAsync(int studentId, int classroomId, CancellationToken ct = default);
         Task RemoveAsync(int classroomId, int studentId, CancellationToken ct = default);
         Task<ClassroomStudent> UpdateAsync(ClassroomStudent classroomStudent, CancellationToken ct = default);
+        Task<bool> ExistsByClassroomAndStudentAsync(int classroomId, int studentId, CancellationToken ct = default);
     }
 }

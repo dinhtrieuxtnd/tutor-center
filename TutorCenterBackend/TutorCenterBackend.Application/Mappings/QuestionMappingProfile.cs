@@ -17,6 +17,13 @@ namespace TutorCenterBackend.Application.Mappings
                 .ForMember(dest => dest.QuestionType, opt => opt.MapFrom(src => src.QuestionType.ToString()))
                 .ForMember(dest => dest.Points, opt => opt.MapFrom(src => src.Points))
                 .ForMember(dest => dest.OrderIndex, opt => opt.MapFrom(src => src.OrderIndex));
+
+            CreateMap<QuestionMedia, QuestionMediaResponseDto>()
+                .ForMember(dest => dest.QuestionMediaId, opt => opt.MapFrom(src => src.QuestionMediaId))
+                .ForMember(dest => dest.QuestionId, opt => opt.MapFrom(src => src.QuestionId))
+                .ForMember(dest => dest.MediaId, opt => opt.MapFrom(src => src.MediaId))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt))
+                .ForMember(dest => dest.MediaUrl, opt => opt.Ignore()); // Set manually in service
         }
     }
 }

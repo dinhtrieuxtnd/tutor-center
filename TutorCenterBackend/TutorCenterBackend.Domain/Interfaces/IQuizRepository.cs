@@ -6,6 +6,7 @@ namespace TutorCenterBackend.Domain.Interfaces
     public interface IQuizRepository
     {
         Task<Quiz?> GetByIdAsync(int quizId, CancellationToken ct = default);
+        Task<Quiz?> GetQuizDetailAsync(int quizId, CancellationToken ct = default);
         Task AddAsync(Quiz quiz, CancellationToken ct = default);
         Task UpdateAsync(Quiz quiz, CancellationToken ct = default);
         Task<(IEnumerable<Quiz> quizzes, int total)> GetByTutorAsync(

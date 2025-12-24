@@ -4,6 +4,7 @@ using TutorCenterBackend.Infrastructure;
 using TutorCenterBackend.Infrastructure.DataAccess;
 using TutorCenterBackend.Presentation.Middlewares;
 using TutorCenterBackend.Presentation.Filters;
+using TutorCenterBackend.Presentation.Hubs;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -44,6 +45,24 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey!)),
         ClockSkew = TimeSpan.Zero
     };
+
+    // Configure JWT for SignalR
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            
+            // If the request is for our hub and has a token
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+            {
+                context.Token = accessToken;
+            }
+            
+            return Task.CompletedTask;
+        }
+    };
 });
 
 // Register Infrastructure layer (Repositories & Data Access Services)
@@ -51,6 +70,9 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 // Register Application layer (Business Logic Services, AutoMapper & FluentValidation)
 builder.Services.AddApplication();
+
+// Add SignalR
+builder.Services.AddSignalR();
 
 // Add controllers with automatic FluentValidation
 builder.Services.AddControllers(options =>
@@ -88,5 +110,8 @@ app.UseAuthorization();
 app.UseMiddleware<PermissionMiddleware>();
 
 app.MapControllers();
+// Map SignalR Hub
+app.MapHub<ClassroomChatHub>("/hubs/classroom-chat");
+
 
 app.Run();
