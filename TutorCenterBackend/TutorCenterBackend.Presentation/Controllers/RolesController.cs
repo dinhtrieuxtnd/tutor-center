@@ -133,7 +133,7 @@ public class RolesController(
     }
 
     /// <summary>
-    /// Assign permissions to role (Admin only)
+    /// Assign permissions to role (Admin only) - Replace all existing permissions
     /// </summary>
     [HttpPost("{id}/permissions")]
     [RequirePermission("role.manage")]
@@ -156,6 +156,34 @@ public class RolesController(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error assigning permissions to role {Id}", id);
+            return StatusCode(500, new { success = false, message = "Internal server error" });
+        }
+    }
+
+    /// <summary>
+    /// Toggle permission for role (Admin only) - Add if not exists, remove if exists
+    /// </summary>
+    [HttpPost("{id}/permissions/{permissionId}/toggle")]
+    [RequirePermission("role.manage")]
+    public async Task<IActionResult> TogglePermission(int id, int permissionId)
+    {
+        try
+        {
+            var request = new TogglePermissionRequestDto
+            {
+                RoleId = id,
+                PermissionId = permissionId
+            };
+
+            var result = await _roleService.TogglePermissionAsync(request);
+            if (!result)
+                return NotFound(new { success = false, message = "Role or Permission not found" });
+
+            return Ok(new { success = true, message = "Permission toggled successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error toggling permission {PermissionId} for role {RoleId}", permissionId, id);
             return StatusCode(500, new { success = false, message = "Internal server error" });
         }
     }

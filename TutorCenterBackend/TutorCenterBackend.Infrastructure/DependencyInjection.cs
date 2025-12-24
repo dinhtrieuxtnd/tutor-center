@@ -7,7 +7,6 @@ using TutorCenterBackend.Application.Options;
 using TutorCenterBackend.Domain.Interfaces;
 using TutorCenterBackend.Infrastructure.ExternalServices;
 using TutorCenterBackend.Infrastructure.Repositories;
-using InfraS3Settings = TutorCenterBackend.Infrastructure.Options.S3Settings;
 using TutorCenterBackend.Infrastructure.Options;
 using Amazon.S3;
 
@@ -82,12 +81,12 @@ public static class DependencyInjection
         services.AddScoped<IVNPayService, VNPayService>();
 
         // Register S3 Settings
-        services.Configure<InfraS3Settings>(configuration.GetSection("S3Storage"));
+        services.Configure<S3Settings>(configuration.GetSection("S3Storage"));
 
         // Register AWS S3 Client
         services.AddSingleton<IAmazonS3>(sp =>
         {
-            var s3Settings = sp.GetRequiredService<IOptions<InfraS3Settings>>().Value;
+            var s3Settings = sp.GetRequiredService<IOptions<S3Settings>>().Value;
             
             if (string.IsNullOrEmpty(s3Settings.ServiceUrl))
                 throw new InvalidOperationException("S3Storage:ServiceUrl is required in configuration");

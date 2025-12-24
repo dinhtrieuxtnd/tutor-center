@@ -11,4 +11,5 @@ public interface IRoleManagementService
     Task<RoleResponseDto> UpdateRoleAsync(int id, UpdateRoleRequestDto request);
     Task<bool> DeleteRoleAsync(int id);
     Task<bool> AssignPermissionsToRoleAsync(AssignPermissionsToRoleRequestDto request);
+    Task<bool> TogglePermissionAsync(TogglePermissionRequestDto request);
 }

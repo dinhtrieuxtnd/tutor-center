@@ -16,7 +16,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
 
         [HttpPost("upload")]
-        [RequirePermission("media.upload")]
+        // [RequirePermission("media.upload")]
         [Consumes("multipart/form-data")]
         public async Task<ActionResult<UploadMediaResultDto>> Upload(
             [FromForm] UploadMediaRequest request,
@@ -28,7 +28,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         }
 
         [HttpGet("{mediaId}")]
-        [RequirePermission("media.view")]
+        // [RequirePermission("media.view")]
         [ValidateId("mediaId")]
         public async Task<ActionResult<MediaResponseDto>> GetById(int mediaId, CancellationToken ct = default)
         {
@@ -44,7 +44,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         }
 
         [HttpGet]
-        [RequirePermission("media.view")]
+        // [RequirePermission("media.view")]
         public async Task<ActionResult<PageResultDto<MediaResponseDto>>> GetPaged(
             [FromQuery] ListMediaForm form,
             CancellationToken ct = default)
@@ -55,7 +55,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         }
 
         [HttpGet("user/{userId}")]
-        [RequirePermission("media.view")]
+        // [RequirePermission("media.view")]
         [ValidateId("userId")]
         public async Task<ActionResult<List<MediaResponseDto>>> GetUserMedia(
             int userId,
@@ -66,7 +66,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         }
 
         [HttpPut("{mediaId}")]
-        [RequirePermission("media.edit")]
+        // [RequirePermission("media.edit")]
         [ValidateId("mediaId")]
         public async Task<ActionResult<MediaResponseDto>> Update(
             int mediaId,
@@ -85,7 +85,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         }
 
         [HttpDelete("{mediaId}")]
-        [RequirePermission("media.delete")]
+        // [RequirePermission("media.delete")]
         [ValidateId("mediaId")]
         public async Task<ActionResult> Delete(int mediaId, CancellationToken ct = default)
         {

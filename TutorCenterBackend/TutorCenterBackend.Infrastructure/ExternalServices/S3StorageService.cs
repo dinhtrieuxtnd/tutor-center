@@ -53,8 +53,12 @@ namespace TutorCenterBackend.Infrastructure.ExternalServices
         {
             bucket ??= _settings.DefaultBucket;
 
-            var isHttp = _settings.ServiceUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase);
-
+            // Use PublicUrl if available, otherwise use ServiceUrl
+            var baseUrl = string.IsNullOrEmpty(_settings.PublicUrl) 
+                ? _settings.ServiceUrl 
+                : _settings.PublicUrl;
+            
+            var isHttp = baseUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase);
 
             if (expiry.HasValue)
             {
@@ -63,16 +67,14 @@ namespace TutorCenterBackend.Infrastructure.ExternalServices
                     BucketName = bucket,
                     Key = path,
                     Expires = DateTime.UtcNow.Add(expiry.Value),
-
-                    // ÉP giao thức đúng với MinIO đang chạy
                     Protocol = isHttp ? Protocol.HTTP : Protocol.HTTPS
                 };
 
                 return _s3Client.GetPreSignedURL(request);
             }
 
-            // For public files, return direct URL
-            return $"{_settings.ServiceUrl.TrimEnd('/')}/{bucket}/{path}";
+            // For public files, return direct URL using public URL
+            return $"{baseUrl.TrimEnd('/')}/{bucket}/{path}";
         }
 
         public async Task<bool> FileExistsAsync(string path, string? bucket = null)
