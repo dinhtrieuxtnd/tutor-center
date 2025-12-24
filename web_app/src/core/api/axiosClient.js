@@ -122,7 +122,8 @@ axiosClient.interceptors.response.use(
     }
 
     // Return error with formatted message
-    const errorMessage = error.response?.data?.message 
+    const errorMessage = error.response?.data?.detail
+      || error.response?.data?.message 
       || error.response?.data?.title
       || error.message 
       || 'Đã có lỗi xảy ra';

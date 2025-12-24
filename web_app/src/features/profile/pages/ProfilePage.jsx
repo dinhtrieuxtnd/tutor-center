@@ -8,7 +8,7 @@ export const ProfilePage = () => {
     const [activeTab, setActiveTab] = useState('info'); // 'info' or 'password'
 
     return (
-        <ProfileLayout>
+        <>
             <div className="min-w-[56rem] max-w-4xl mx-auto">
                 {/* Tabs */}
                 <div className="bg-primary border border-border rounded-sm mb-6">
@@ -43,6 +43,6 @@ export const ProfilePage = () => {
                 {/* Tab Content */}
                 {activeTab === 'info' ? <ProfileInfoTab /> : <ChangePasswordTab />}
             </div>
-        </ProfileLayout>
+        </>
     );
 };

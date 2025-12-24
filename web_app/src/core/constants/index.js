@@ -45,6 +45,12 @@ export const API_ENDPOINTS = {
     UPDATE: (permissionId) => `/Permissions/${permissionId}`,
     DELETE: (permissionId) => `/Permissions/${permissionId}`,
   },
+  // User endpoints
+  USERS: {
+    GET_ALL: '/User',
+    CREATE_TUTOR: '/User/tutors',
+    CHANGE_STATUS: (userId) => `/User/${userId}/status`,
+  },
   // Classroom endpoints
   CLASSROOMS: {
     GET_ALL: '/Classroom',
@@ -56,6 +62,18 @@ export const API_ENDPOINTS = {
     TOGGLE_ARCHIVE: (classroomId) => `/Classroom/${classroomId}/archive-status`,
     DELETE: (classroomId) => `/Classroom/${classroomId}`,
     RESTORE: (classroomId) => `/Classroom/${classroomId}/restore`,
+  },
+  // Classroom Student endpoints
+  CLASSROOM_STUDENTS: {
+    GET_STUDENTS: (classroomId) => `/ClrStudent/${classroomId}/students`,
+    REMOVE_STUDENT: (classroomId, studentId) => `/ClrStudent/${classroomId}/students/${studentId}`,
+  },
+  // Classroom Chat endpoints
+  CLASSROOM_CHAT: {
+    SEND_MESSAGE: '/ClassroomChat/send',
+    EDIT_MESSAGE: '/ClassroomChat/edit',
+    DELETE_MESSAGE: (messageId) => `/ClassroomChat/${messageId}`,
+    GET_MESSAGES: '/ClassroomChat/messages',
   },
 };
 
@@ -70,7 +88,12 @@ export const ROUTES = {
   ADMIN_ROLES: '/admin/roles',
   ADMIN_PERMISSIONS: '/admin/permissions',
   ADMIN_CLASSROOMS: '/admin/classrooms',
+  ADMIN_CLASSROOM_DETAIL: '/admin/classrooms/:id',
+  ADMIN_TUTORS: '/admin/tutors',
+  ADMIN_STUDENTS: '/admin/students',
   TUTOR_DASHBOARD: '/tutor/dashboard',
+  TUTOR_CLASSROOMS: '/tutor/classrooms',
+  TUTOR_CLASSROOM_DETAIL: '/tutor/classrooms/:id',
   TUTOR_PROFILE: '/tutor/profile',
   USERS: '/users',
   USER_DETAIL: '/users/:id',

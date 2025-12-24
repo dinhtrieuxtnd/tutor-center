@@ -11,7 +11,7 @@ export const TutorSidebar = () => {
     },
     {
       name: 'Quản lý lớp học',
-      href: '/tutor/classes',
+      href: '/tutor/classrooms',
       icon: GraduationCap
     },
     {

@@ -1,3 +1,3 @@
 export * from './Dashboard';
-export * from './RolesManagement';
-export * from './PermissionsManagement';
+export * from '../../role/pages/RolesManagement';
+export * from '../../permission/pages/PermissionsManagement';

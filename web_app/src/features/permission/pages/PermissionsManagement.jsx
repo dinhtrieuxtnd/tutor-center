@@ -1,10 +1,10 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../core/store/hooks';
-import { 
-    getAllPermissionsAsync, 
-    getPermissionByIdAsync, 
-    createPermissionAsync, 
-    updatePermissionAsync, 
+import {
+    getAllPermissionsAsync,
+    getPermissionByIdAsync,
+    createPermissionAsync,
+    updatePermissionAsync,
     deletePermissionAsync,
     setSearchTerm,
     setFilter,
@@ -13,28 +13,28 @@ import {
     resetFilters,
     selectPaginatedPermissions,
     selectPaginationInfo,
-} from '../../../features/permission/store/permissionSlice';
+} from '../store/permissionSlice';
 import { Key, Plus, Lock, Filter } from 'lucide-react';
-import { Button, ConfirmModal, SearchInput, Dropdown, Pagination } from '../../../shared/components/ui';
-import { AddPermissionPanel, EditPermissionPanel, PermissionsTable } from '../../../features/permission/components';
+import { Button, ConfirmModal, SearchInput, Dropdown, Pagination, StatCard } from '../../../shared/components';
+import { AddPermissionPanel, EditPermissionPanel, PermissionsTable } from '../components';
 
 export const PermissionsManagement = () => {
     const dispatch = useAppDispatch();
-    const { 
-        permissions, 
-        loading, 
-        createLoading, 
-        deleteLoading, 
-        updateLoading, 
-        currentPermission, 
+    const {
+        permissions,
+        loading,
+        createLoading,
+        deleteLoading,
+        updateLoading,
+        currentPermission,
         permissionDetailLoading,
         searchTerm,
         filters,
     } = useAppSelector((state) => state.permission);
-    
+
     const paginatedData = useAppSelector(selectPaginatedPermissions);
     const { totalItems, totalOriginalItems, totalPages, currentPage, itemsPerPage } = useAppSelector(selectPaginationInfo);
-    
+
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [isEditPanelOpen, setIsEditPanelOpen] = useState(false);
     const [deletingPermissionId, setDeletingPermissionId] = useState(null);
@@ -142,40 +142,31 @@ export const PermissionsManagement = () => {
             </div>
 
             <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="bg-primary border border-border rounded-sm p-4">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-gray-100 rounded-sm">
-                            <Key size={20} className="text-foreground" />
-                        </div>
-                        <div>
-                            <p className="text-xs text-foreground-light">Tổng quyền</p>
-                            <p className="text-xl font-semibold text-foreground">{permissions.length}</p>
-                        </div>
-                    </div>
-                </div>
-                <div className="bg-primary border border-border rounded-sm p-4">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-info-bg rounded-sm">
-                            <Lock size={20} className="text-info" />
-                        </div>
-                        <div>
-                            <p className="text-xs text-foreground-light">Số module</p>
-                            <p className="text-xl font-semibold text-foreground">{moduleCount}</p>
-                        </div>
-                    </div>
-                </div>
-                <div className="bg-primary border border-border rounded-sm p-4">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-success-bg rounded-sm">
-                            <Key size={20} className="text-success" />
-                        </div>
-                        <div>
-                            <p className="text-xs text-foreground-light">Quyền đang dùng</p>
-                            <p className="text-xl font-semibold text-foreground">{permissions.length}</p>
-                        </div>
-                    </div>
-                </div>
+                <StatCard
+                    icon={Key}
+                    label="Tổng quyền"
+                    value={permissions.length}
+                    iconBg="bg-gray-100"
+                    iconColor="text-foreground"
+                />
+
+                <StatCard
+                    icon={Lock}
+                    label="Số module"
+                    value={moduleCount}
+                    iconBg="bg-info-bg"
+                    iconColor="text-info"
+                />
+
+                <StatCard
+                    icon={Key}
+                    label="Quyền đang dùng"
+                    value={permissions.length}
+                    iconBg="bg-success-bg"
+                    iconColor="text-success"
+                />
             </div>
+
 
             <div>
                 <div className="bg-primary border border-border rounded-sm p-4 mb-4">

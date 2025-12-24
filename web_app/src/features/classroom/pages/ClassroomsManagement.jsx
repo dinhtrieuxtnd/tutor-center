@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../../core/store/hooks';
 import {
     getAllClassroomsAsync,
@@ -11,11 +12,16 @@ import {
     setPagination,
 } from '../../../features/classroom/store/classroomSlice';
 import { School, Plus, Archive, Filter } from 'lucide-react';
-import { Button, ConfirmModal, SearchInput, Dropdown, Pagination } from '../../../shared/components/ui';
+import { Button, ConfirmModal, SearchInput, Dropdown, Pagination, StatCard } from '../../../shared/components';
 import { ClassroomsTable } from '../../../features/classroom/components/ClassroomsTable';
+import { AddClassroomPanel } from '../../../features/classroom/components/AddClassroomPanel';
+import { ROUTES } from '../../../core/constants';
 
 export const ClassroomsManagement = () => {
+    const navigate = useNavigate();
+    const location = useLocation();
     const dispatch = useAppDispatch();
+    const profile = useAppSelector((state) => state.profile.profile);
     const {
         classrooms,
         loading,
@@ -29,8 +35,10 @@ export const ClassroomsManagement = () => {
         pagination,
     } = useAppSelector((state) => state.classroom);
 
+    // Check if tutor role and tutor route
+    const isTutor = profile?.roleId === 2 && location.pathname.startsWith('/tutor');
+
     const [isPanelOpen, setIsPanelOpen] = useState(false);
-    const [isEditPanelOpen, setIsEditPanelOpen] = useState(false);
     const [deletingClassroomId, setDeletingClassroomId] = useState(null);
     const [archivingClassroomId, setArchivingClassroomId] = useState(null);
     const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, classroom: null });
@@ -70,13 +78,22 @@ export const ClassroomsManagement = () => {
         dispatch(setFilters({ searchTerm: '', status: null }));
     };
 
-    const handleAddClassroom = () => {
+    const handleOpenAddPanel = () => {
         setIsPanelOpen(true);
     };
 
-    const handleEditClassroom = async (classroom) => {
-        await dispatch(getClassroomByIdAsync(classroom.id));
-        setIsEditPanelOpen(true);
+    const handleAddClassroom = async (formData) => {
+        const result = await dispatch(createClassroomAsync(formData));
+        if (result.type.endsWith('/fulfilled')) {
+            setIsPanelOpen(false);
+            fetchClassrooms();
+        }
+    };
+
+    const handleViewClassroom = (classroom) => {
+        const baseRoute = isTutor ? ROUTES.TUTOR_CLASSROOMS : ROUTES.ADMIN_CLASSROOMS;
+        // console.log('Navigating to classroom:', baseRoute, classroom.id);
+        navigate(`${baseRoute}/${classroom.id}`);
     };
 
     const handleToggleArchive = async (classroom) => {
@@ -135,48 +152,40 @@ export const ClassroomsManagement = () => {
                             Quản lý các lớp học trong hệ thống
                         </p>
                     </div>
-                    <Button onClick={handleAddClassroom}>
-                        <Plus size={16} />
-                        Thêm lớp học
-                    </Button>
+                    {!isTutor && (
+                        <Button onClick={handleOpenAddPanel}>
+                            <Plus size={16} />
+                            Thêm lớp học
+                        </Button>
+                    )}
                 </div>
             </div>
 
             {/* Stats */}
             <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="bg-primary border border-border rounded-sm p-4">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-gray-100 rounded-sm">
-                            <School size={20} className="text-foreground" />
-                        </div>
-                        <div>
-                            <p className="text-xs text-foreground-light">Tổng lớp học</p>
-                            <p className="text-xl font-semibold text-foreground">{pagination.totalCount}</p>
-                        </div>
-                    </div>
-                </div>
-                <div className="bg-primary border border-border rounded-sm p-4">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-success-bg rounded-sm">
-                            <School size={20} className="text-success" />
-                        </div>
-                        <div>
-                            <p className="text-xs text-foreground-light">Đang hoạt động</p>
-                            <p className="text-xl font-semibold text-foreground">{activeClassrooms}</p>
-                        </div>
-                    </div>
-                </div>
-                <div className="bg-primary border border-border rounded-sm p-4">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-gray-100 rounded-sm">
-                            <Archive size={20} className="text-foreground-light" />
-                        </div>
-                        <div>
-                            <p className="text-xs text-foreground-light">Đã lưu trữ</p>
-                            <p className="text-xl font-semibold text-foreground">{archivedClassrooms}</p>
-                        </div>
-                    </div>
-                </div>
+                <StatCard
+                    icon={School}
+                    label="Tổng lớp học"
+                    value={pagination.totalCount}
+                    iconBg="bg-gray-100"
+                    iconColor="text-foreground"
+                />
+
+                <StatCard
+                    icon={School}
+                    label="Đang hoạt động"
+                    value={activeClassrooms}
+                    iconBg="bg-success-bg"
+                    iconColor="text-success"
+                />
+
+                <StatCard
+                    icon={Archive}
+                    label="Đã lưu trữ"
+                    value={archivedClassrooms}
+                    iconBg="bg-gray-100"
+                    iconColor="text-foreground-light"
+                />
             </div>
 
             {/* Filters */}
@@ -215,7 +224,7 @@ export const ClassroomsManagement = () => {
                     <ClassroomsTable
                         classrooms={classrooms}
                         loading={loading}
-                        onEdit={handleEditClassroom}
+                        onView={handleViewClassroom}
                         onDelete={handleDeleteClassroom}
                         onToggleArchive={handleToggleArchive}
                         deletingClassroomId={deletingClassroomId}
@@ -235,6 +244,15 @@ export const ClassroomsManagement = () => {
                     )}
                 </div>
             </div>
+
+            {!isTutor && (
+                <AddClassroomPanel
+                    isOpen={isPanelOpen}
+                    onClose={() => setIsPanelOpen(false)}
+                    onSubmit={handleAddClassroom}
+                    isLoading={createLoading}
+                />
+            )}
 
             <ConfirmModal
                 isOpen={confirmDelete.isOpen}
