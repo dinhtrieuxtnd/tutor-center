@@ -83,7 +83,11 @@ builder.Services.AddControllers(options =>
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    // Add support for file uploads
+    options.OperationFilter<FileUploadOperationFilter>();
+});
 
 var app = builder.Build();
 
