@@ -105,7 +105,7 @@ public class RoleRepository(AppDbContext context) : IRoleRepository
         return true;
     }
 
-    public async Task<bool> RemovePermissionAsync(int roleId, int permissionId)
+    public async Task<bool> TogglePermissionAsync(int roleId, int permissionId)
     {
         var role = await _context.Roles
             .Include(r => r.Permissions)
@@ -114,14 +114,32 @@ public class RoleRepository(AppDbContext context) : IRoleRepository
         if (role == null)
             return false;
 
-        var permission = role.Permissions.FirstOrDefault(p => p.PermissionId == permissionId);
-        if (permission != null)
+        var existingPermission = role.Permissions.FirstOrDefault(p => p.PermissionId == permissionId);
+
+        if (existingPermission != null)
         {
-            role.Permissions.Remove(permission);
-            role.UpdatedAt = DateTime.Now;
-            await _context.SaveChangesAsync();
+            // Permission exists, remove it
+            role.Permissions.Remove(existingPermission);
+        }
+        else
+        {
+            // Permission doesn't exist, add it
+            var permission = await _context.Permissions
+                .FirstOrDefaultAsync(p => p.PermissionId == permissionId && p.DeletedAt == null);
+
+            if (permission != null)
+            {
+                role.Permissions.Add(permission);
+            }
+            else
+            {
+                return false; // Permission not found
+            }
         }
 
+        role.UpdatedAt = DateTime.Now;
+        await _context.SaveChangesAsync();
+        
         return true;
     }
 }

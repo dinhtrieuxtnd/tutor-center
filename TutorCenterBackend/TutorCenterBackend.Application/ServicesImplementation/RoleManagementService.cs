@@ -96,6 +96,19 @@ public class RoleManagementService(
         return result;
     }
 
+    public async Task<bool> TogglePermissionAsync(TogglePermissionRequestDto request)
+    {
+        var result = await _roleRepository.TogglePermissionAsync(request.RoleId, request.PermissionId);
+        
+        if (result)
+        {
+            // Clear cache for all users with this role
+            ClearRoleCache();
+        }
+        
+        return result;
+    }
+
     private void ClearRoleCache()
     {
         // Clear all user role caches

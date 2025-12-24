@@ -13,5 +13,5 @@ public interface IRoleRepository
     Task<bool> DeleteAsync(int id);
     Task<bool> ExistsAsync(string name);
     Task<bool> AssignPermissionsAsync(int roleId, List<int> permissionIds);
-    Task<bool> RemovePermissionAsync(int roleId, int permissionId);
+    Task<bool> TogglePermissionAsync(int roleId, int permissionId);
 }
