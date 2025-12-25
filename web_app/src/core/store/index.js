@@ -9,6 +9,10 @@ import permissionReducer from '../../features/permission/store/permissionSlice';
 import classroomReducer from '../../features/classroom/store/classroomSlice';
 import clrStudentReducer from '../../features/classroom/store/clrStudentSlice';
 import classroomChatReducer from '../../features/classroom/store/classroomChatSlice';
+import lessonReducer from '../../features/lesson/store/lessonSlice';
+import lectureReducer from '../../features/lecture/store/lectureSlice';
+import exerciseReducer from '../../features/exercise/store/exerciseSlice';
+import quizReducer from '../../features/quiz/store/quizSlice';
 
 export const store = configureStore({
   reducer: {
@@ -22,5 +26,9 @@ export const store = configureStore({
     classroom: classroomReducer,
     clrStudent: clrStudentReducer,
     classroomChat: classroomChatReducer,
+    lesson: lessonReducer,
+    lecture: lectureReducer,
+    exercise: exerciseReducer,
+    quiz: quizReducer,
   },
 });

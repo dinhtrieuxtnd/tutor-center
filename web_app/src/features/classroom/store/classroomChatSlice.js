@@ -173,8 +173,9 @@ const classroomChatSlice = createSlice({
       })
       .addCase(deleteMessageAsync.fulfilled, (state, action) => {
         state.deleteLoading = false;
-        // Remove message from list or mark as deleted
-        // Depending on backend implementation
+        // Remove message from list
+        const messageId = action.meta.arg;
+        state.messages = state.messages.filter(m => m.messageId !== messageId);
         state.error = null;
       })
       .addCase(deleteMessageAsync.rejected, (state, action) => {

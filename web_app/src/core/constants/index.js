@@ -70,10 +70,42 @@ export const API_ENDPOINTS = {
   },
   // Classroom Chat endpoints
   CLASSROOM_CHAT: {
-    SEND_MESSAGE: '/ClassroomChat/send',
-    EDIT_MESSAGE: '/ClassroomChat/edit',
-    DELETE_MESSAGE: (messageId) => `/ClassroomChat/${messageId}`,
+    SEND_MESSAGE: '/ClassroomChat/messages/send',
+    EDIT_MESSAGE: '/ClassroomChat/messages/edit',
+    DELETE_MESSAGE: (messageId) => `/ClassroomChat/messages/${messageId}`,
     GET_MESSAGES: '/ClassroomChat/messages',
+  },
+  // Lesson endpoints
+  LESSONS: {
+    ASSIGN_LECTURE: '/Lesson/assign-lecture',
+    ASSIGN_EXERCISE: '/Lesson/assign-exercise',
+    ASSIGN_QUIZ: '/Lesson/assign-quiz',
+    GET_BY_CLASSROOM: (classroomId) => `/Lesson/classroom/${classroomId}`,
+  },
+  // Lecture endpoints
+  LECTURES: {
+    GET_ALL: '/Lecture',
+    GET_BY_ID: (lectureId) => `/Lecture/${lectureId}`,
+    CREATE: '/Lecture',
+    UPDATE: (lectureId) => `/Lecture/${lectureId}`,
+    DELETE: (lectureId) => `/Lecture/${lectureId}`,
+  },
+  // Exercise endpoints
+  EXERCISES: {
+    GET_ALL: '/Exercise',
+    GET_BY_ID: (exerciseId) => `/Exercise/${exerciseId}`,
+    CREATE: '/Exercise',
+    UPDATE: (exerciseId) => `/Exercise/${exerciseId}`,
+    DELETE: (exerciseId) => `/Exercise/${exerciseId}`,
+  },
+  // Quiz endpoints
+  QUIZZES: {
+    GET_ALL: '/Quiz',
+    GET_BY_ID: (quizId) => `/Quiz/${quizId}`,
+    GET_DETAIL: (quizId) => `/Quiz/${quizId}/detail`,
+    GET_FOR_STUDENT: (lessonId) => `/Quiz/lesson/${lessonId}/student`,
+    CREATE: '/Quiz',
+    UPDATE: (quizId) => `/Quiz/${quizId}`,
   },
 };
 
@@ -95,6 +127,8 @@ export const ROUTES = {
   TUTOR_CLASSROOMS: '/tutor/classrooms',
   TUTOR_CLASSROOM_DETAIL: '/tutor/classrooms/:id',
   TUTOR_PROFILE: '/tutor/profile',
+  TUTOR_LECTURES: '/tutor/lectures',
+  TUTOR_EXERCISES: '/tutor/exercises',
   USERS: '/users',
   USER_DETAIL: '/users/:id',
   NOT_FOUND: '/404',

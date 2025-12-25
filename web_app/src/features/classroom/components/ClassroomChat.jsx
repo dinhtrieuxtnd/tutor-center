@@ -3,18 +3,24 @@ import { useAppDispatch, useAppSelector } from '../../../core/store/hooks';
 import {
     getMessagesAsync,
     sendMessageAsync,
+    editMessageAsync,
+    deleteMessageAsync,
     clearMessages,
 } from '../store/classroomChatSlice';
-import { MessageCircle, Send, Image as ImageIcon, User } from 'lucide-react';
+import { MessageCircle, Send, Image as ImageIcon, User, Edit2, Trash2, X, Check } from 'lucide-react';
 import { Spinner } from '../../../shared/components/loading/Loading';
 
 export const ClassroomChat = ({ classroomId }) => {
     const dispatch = useAppDispatch();
-    const { messages, loading, sendLoading } = useAppSelector((state) => state.classroomChat);
-    const { user } = useAppSelector((state) => state.auth);
+    const { messages, loading, sendLoading, editLoading, deleteLoading } = useAppSelector((state) => state.classroomChat);
+    const { profile } = useAppSelector((state) => state.profile);
     const [messageContent, setMessageContent] = useState('');
+    const [editingMessageId, setEditingMessageId] = useState(null);
+    const [editContent, setEditContent] = useState('');
+    const [deletingMessageId, setDeletingMessageId] = useState(null);
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
+    const editInputRef = useRef(null);
 
     useEffect(() => {
         if (classroomId) {
@@ -76,7 +82,49 @@ export const ClassroomChat = ({ classroomId }) => {
     };
 
     const isOwnMessage = (message) => {
-        return message.senderId === user?.userId;
+        return message.senderId == profile?.userId;
+    };
+
+    const handleStartEdit = (message) => {
+        setEditingMessageId(message.messageId);
+        setEditContent(message.content);
+        setTimeout(() => editInputRef.current?.focus(), 0);
+    };
+
+    const handleCancelEdit = () => {
+        setEditingMessageId(null);
+        setEditContent('');
+    };
+
+    const handleSaveEdit = async (messageId) => {
+        if (!editContent.trim() || editLoading) return;
+
+        const result = await dispatch(
+            editMessageAsync({
+                messageId,
+                content: editContent.trim(),
+                mediaIds: [],
+            })
+        );
+
+        if (result.type.endsWith('/fulfilled')) {
+            setEditingMessageId(null);
+            setEditContent('');
+        }
+    };
+
+    const handleDeleteMessage = async (messageId) => {
+        if (deleteLoading) return;
+
+        setDeletingMessageId(messageId);
+        const result = await dispatch(deleteMessageAsync(messageId));
+
+        if (result.type.endsWith('/fulfilled')) {
+            // Remove message from UI
+            setDeletingMessageId(null);
+        } else {
+            setDeletingMessageId(null);
+        }
     };
 
     /* ================= LOADING ================= */
@@ -92,7 +140,7 @@ export const ClassroomChat = ({ classroomId }) => {
     }
 
     return (
-        <div className="flex flex-col h-[600px] bg-background border border-border rounded-sm">
+        <div className="flex flex-col h-[600px] bg-primary border border-border rounded-sm">
             {/* Header */}
             <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-gray-50">
                 <MessageCircle size={18} className="text-foreground" />
@@ -151,45 +199,107 @@ export const ClassroomChat = ({ classroomId }) => {
                                                 {message.senderName}
                                             </span>
                                         )}
-                                        
-                                        <div
-                                            className={`px-3 py-2 rounded-sm ${
-                                                isOwn
-                                                    ? 'bg-foreground text-white'
-                                                    : 'bg-gray-100 text-foreground'
-                                            }`}
-                                        >
-                                            <p className="text-sm break-words whitespace-pre-wrap">
-                                                {message.content}
-                                            </p>
-                                            
-                                            {/* Media attachments */}
-                                            {message.media && message.media.length > 0 && (
-                                                <div className="mt-2 space-y-2">
-                                                    {message.media.map((media) => (
-                                                        <div key={media.mediaId}>
-                                                            {media.mediaType.startsWith('image/') ? (
-                                                                <img
-                                                                    src={media.mediaUrl}
-                                                                    alt="Attachment"
-                                                                    className="max-w-full rounded"
-                                                                />
-                                                            ) : (
-                                                                <a
-                                                                    href={media.mediaUrl}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    className="text-xs underline"
-                                                                >
-                                                                    File đính kèm
-                                                                </a>
-                                                            )}
-                                                        </div>
-                                                    ))}
+
+                                        {/* Edit mode */}
+                                        {isOwn && editingMessageId === message.messageId ? (
+                                            <div className="w-full">
+                                                <textarea
+                                                    ref={editInputRef}
+                                                    value={editContent}
+                                                    onChange={(e) => setEditContent(e.target.value)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                                            e.preventDefault();
+                                                            handleSaveEdit(message.messageId);
+                                                        }
+                                                        if (e.key === 'Escape') {
+                                                            handleCancelEdit();
+                                                        }
+                                                    }}
+                                                    className="w-full px-3 py-2 text-sm border border-border rounded-sm focus:outline-none focus:border-foreground bg-primary resize-none"
+                                                    rows={2}
+                                                    disabled={editLoading}
+                                                />
+                                                <div className="flex gap-2 mt-2">
+                                                    <button
+                                                        onClick={() => handleSaveEdit(message.messageId)}
+                                                        disabled={!editContent.trim() || editLoading}
+                                                        className="px-3 py-1 text-xs bg-foreground text-white rounded-sm hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                                                    >
+                                                        {editLoading ? <Spinner size="xs" /> : <Check size={14} />}
+                                                        Lưu
+                                                    </button>
+                                                    <button
+                                                        onClick={handleCancelEdit}
+                                                        disabled={editLoading}
+                                                        className="px-3 py-1 text-xs bg-gray-200 text-foreground rounded-sm hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                                                    >
+                                                        <X size={14} />
+                                                        Hủy
+                                                    </button>
                                                 </div>
-                                            )}
-                                        </div>
-                                        
+                                            </div>
+                                        ) : (
+                                            <div className="group relative">
+                                                <div
+                                                    className={`px-3 py-2 rounded-sm ${isOwn
+                                                        ? 'bg-foreground text-white'
+                                                        : 'bg-gray-100 text-foreground'
+                                                        } ${deletingMessageId === message.messageId ? 'opacity-50' : ''}`}
+                                                >
+                                                    <p className="text-sm break-words whitespace-pre-wrap">
+                                                        {message.content}
+                                                    </p>
+
+                                                    {/* Media attachments */}
+                                                    {message.media && message.media.length > 0 && (
+                                                        <div className="mt-2 space-y-2">
+                                                            {message.media.map((media) => (
+                                                                <div key={media.mediaId}>
+                                                                    {media.mediaType.startsWith('image/') ? (
+                                                                        <img
+                                                                            src={media.mediaUrl}
+                                                                            alt="Attachment"
+                                                                            className="max-w-full rounded"
+                                                                        />
+                                                                    ) : (
+                                                                        <a
+                                                                            href={media.mediaUrl}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            className="text-xs underline"
+                                                                        >
+                                                                            File đính kèm
+                                                                        </a>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Action buttons for own messages */}
+                                                {isOwn && !deletingMessageId && (
+                                                    <div className="absolute -bottom-6 right-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-white rounded-sm shadow-sm border border-gray-200 p-1">
+                                                        <button
+                                                            onClick={() => handleStartEdit(message)}
+                                                            className="p-1.5 hover:bg-gray-100 rounded-sm text-gray-600 hover:text-foreground transition-colors"
+                                                            title="Chỉnh sửa"
+                                                        >
+                                                            <Edit2 size={14} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteMessage(message.messageId)}
+                                                            className="p-1.5 hover:bg-red-50 rounded-sm text-gray-600 hover:text-red-600 transition-colors"
+                                                            title="Xóa"
+                                                        >
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
                                         <span className="text-xs text-foreground-lighter mt-1">
                                             {formatTime(message.sentAt)}
                                             {message.isEdited && ' (đã chỉnh sửa)'}
@@ -213,7 +323,7 @@ export const ClassroomChat = ({ classroomId }) => {
                     >
                         <ImageIcon size={20} />
                     </button>
-                    
+
                     <div className="flex-1 relative">
                         <textarea
                             ref={inputRef}
@@ -227,11 +337,11 @@ export const ClassroomChat = ({ classroomId }) => {
                             }}
                             placeholder="Nhập tin nhắn... (Enter để gửi, Shift+Enter để xuống dòng)"
                             rows={1}
-                            className="w-full px-3 py-2 text-sm border border-border rounded-sm focus:outline-none focus:border-foreground bg-background resize-none"
+                            className="w-full px-3 py-2 text-sm border border-border rounded-sm focus:outline-none focus:border-foreground bg-primary resize-none"
                             disabled={sendLoading}
                         />
                     </div>
-                    
+
                     <button
                         type="submit"
                         disabled={!messageContent.trim() || sendLoading}

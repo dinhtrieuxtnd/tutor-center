@@ -42,7 +42,7 @@ export const ClassroomInfo = ({ classroom }) => {
 
                     {/* Giáo viên */}
                     {classroom.tutor && (
-                        <div className="bg-background border border-border rounded-sm p-4">
+                        <div className="bg-primary border border-border rounded-sm p-4">
                             <h2 className="text-base font-semibold text-foreground mb-4">Giáo viên phụ trách</h2>
                             <div className="flex items-start gap-3">
                                 {classroom.tutor.avatarUrl ? (
@@ -85,7 +85,7 @@ export const ClassroomInfo = ({ classroom }) => {
                 {/* Right Column - Metadata */}
                 <div className="col-span-1 space-y-4">
                     {/* Trạng thái */}
-                    <div className="bg-background border border-border rounded-sm p-4">
+                    <div className="bg-primary border border-border rounded-sm p-4">
                         <h3 className="text-sm font-semibold text-foreground mb-3">Trạng thái</h3>
                         <div className="space-y-2">
                             <div>
@@ -105,7 +105,7 @@ export const ClassroomInfo = ({ classroom }) => {
                     </div>
 
                     {/* Thời gian */}
-                    <div className="bg-background border border-border rounded-sm p-4">
+                    <div className="bg-primary border border-border rounded-sm p-4">
                         <h3 className="text-sm font-semibold text-foreground mb-3">Thời gian</h3>
                         <div className="space-y-3">
                             <div>
@@ -137,7 +137,7 @@ export const ClassroomInfo = ({ classroom }) => {
 
                     {/* Cover Image Info */}
                     {classroom.coverMediaId && (
-                        <div className="bg-background border border-border rounded-sm p-4">
+                        <div className="bg-primary border border-border rounded-sm p-4">
                             <h3 className="text-sm font-semibold text-foreground mb-3">Ảnh bìa</h3>
                             <p className="text-xs text-foreground-light">
                                 Media ID: {classroom.coverMediaId}

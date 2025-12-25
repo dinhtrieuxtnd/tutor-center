@@ -2,16 +2,18 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../../core/store/hooks';
 import { getClassroomByIdAsync } from '../../../features/classroom/store/classroomSlice';
-import { School, ArrowLeft, Info, Users, MessageCircle } from 'lucide-react';
+import { School, ArrowLeft, Info, Users, MessageCircle, BookOpen } from 'lucide-react';
 import { Spinner } from '../../../shared/components/loading/Loading';
 import { Button } from '../../../shared/components';
 import { ROUTES } from '../../../core/constants';
 import { ClassroomInfo } from '../components/ClassroomInfo';
 import { ClassroomStudents } from '../components/ClassroomStudents';
 import { ClassroomChat } from '../components/ClassroomChat';
+import { ClassroomLessons } from '../components/lessons/ClassroomLessons';
 
 const TABS = {
     INFO: 'info',
+    LESSONS: 'lessons',
     STUDENTS: 'students',
     CHAT: 'chat',
 };
@@ -41,6 +43,7 @@ export const ClassroomsDetail = () => {
 
     const tabs = [
         { id: TABS.INFO, label: 'Thông tin', icon: Info },
+        { id: TABS.LESSONS, label: 'Buổi học', icon: BookOpen },
         { id: TABS.STUDENTS, label: 'Học sinh', icon: Users },
         { id: TABS.CHAT, label: 'Phòng chat', icon: MessageCircle },
     ];
@@ -76,7 +79,7 @@ export const ClassroomsDetail = () => {
     return (
         <div className="">
             {/* Cover Image Header */}
-            <div className="relative w-full h-64 mb-6 rounded-sm overflow-hidden">
+            <div className="relative w-full h-64 mb-6 rounded-sm">
                 {/* Background Image */}
                 {currentClassroom.coverImageUrl ? (
                     <img
@@ -155,6 +158,7 @@ export const ClassroomsDetail = () => {
             {/* Tab Content */}
             <div className='w-full'>
                 {activeTab === TABS.INFO && <ClassroomInfo classroom={currentClassroom} />}
+                {activeTab === TABS.LESSONS && <ClassroomLessons classroomId={currentClassroom.id} />}
                 {activeTab === TABS.STUDENTS && <ClassroomStudents classroomId={currentClassroom.id} />}
                 {activeTab === TABS.CHAT && <ClassroomChat classroomId={currentClassroom.id} />}
             </div>

@@ -12,9 +12,9 @@
 ### Màu chính
 ```jsx
 // Background
-bg-background         // #FFFFFF - Nền trắng
-bg-background-dark    // #F8F9FA - Nền xám nhạt
-bg-background-darker  // #E9ECEF - Nền xám đậm hơn
+bg-primary         // #FFFFFF - Nền trắng
+bg-primary-dark    // #F8F9FA - Nền xám nhạt
+bg-primary-darker  // #E9ECEF - Nền xám đậm hơn
 
 // Text
 text-foreground        // #212529 - Chữ đen
@@ -165,7 +165,7 @@ import { Checkbox } from '@/shared/components/ui';
 
 ### Card
 ```jsx
-<div className="bg-background border border-border rounded-sm p-4">
+<div className="bg-primary border border-border rounded-sm p-4">
   <h3 className="text-base font-semibold mb-2">Card Title</h3>
   <p className="text-sm text-foreground-light">Card content...</p>
 </div>
@@ -220,7 +220,7 @@ import { Checkbox } from '@/shared/components/ui';
 ```jsx
 <div className="flex h-screen">
   {/* Sidebar */}
-  <aside className="w-64 bg-background-dark border-r border-border">
+  <aside className="w-64 bg-primary-dark border-r border-border">
     <nav className="p-4 space-y-1">
       <a className="block px-3 py-2 text-sm font-medium text-foreground hover:bg-gray-100 rounded-sm">
         Menu Item

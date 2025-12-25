@@ -84,7 +84,7 @@ export const ClassroomStudents = ({ classroomId }) => {
                             placeholder="Tìm học sinh..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-9 pr-3 py-2 text-sm border border-border rounded-sm focus:outline-none focus:border-foreground bg-background"
+                            className="w-full pl-9 pr-3 py-2 text-sm border border-border rounded-sm focus:outline-none focus:border-foreground bg-primary"
                         />
                     </div>
                 )}
@@ -92,7 +92,7 @@ export const ClassroomStudents = ({ classroomId }) => {
 
             {/* Empty state */}
             {students.length === 0 ? (
-                <div className="flex items-center justify-center py-12 bg-background border border-border rounded-sm">
+                <div className="flex items-center justify-center py-12 bg-primary border border-border rounded-sm">
                     <div className="text-center">
                         <Users size={48} className="text-gray-300 mx-auto mb-3" />
                         <p className="text-sm text-foreground-light">Chưa có học sinh nào trong lớp</p>
@@ -105,7 +105,7 @@ export const ClassroomStudents = ({ classroomId }) => {
                         {filteredStudents.map((student) => (
                             <div
                                 key={student.userId}
-                                className="bg-background border border-border rounded-sm p-4 hover:border-gray-300 transition-colors"
+                                className="bg-primary border border-border rounded-sm p-4 hover:border-gray-300 transition-colors"
                             >
                                 <div className="flex items-start justify-between">
                                     <div className="flex items-center gap-3 flex-1">
@@ -153,7 +153,7 @@ export const ClassroomStudents = ({ classroomId }) => {
 
                     {/* No results */}
                     {filteredStudents.length === 0 && searchTerm && (
-                        <div className="flex items-center justify-center py-12 bg-background border border-border rounded-sm">
+                        <div className="flex items-center justify-center py-12 bg-primary border border-border rounded-sm">
                             <div className="text-center">
                                 <Search size={48} className="text-gray-300 mx-auto mb-3" />
                                 <p className="text-sm text-foreground-light">

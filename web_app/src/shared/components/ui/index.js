@@ -8,3 +8,4 @@ export { Switch } from './Switch';
 export { SearchInput } from './SearchInput';
 export { Dropdown } from './Dropdown';
 export { Pagination } from './Pagination';
+export { DateTimePicker } from './DateTimePicker';

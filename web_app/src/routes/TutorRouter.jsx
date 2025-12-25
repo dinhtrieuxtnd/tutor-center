@@ -2,6 +2,8 @@ import { Dashboard } from "../features/tutor/pages";
 import { ProfilePage } from '../features/profile/pages';
 import { ClassroomsManagement, ClassroomsDetail } from '../features/classroom/pages';
 import { TutorLayout } from '../features/tutor/layouts';
+import { LecturesManagement } from "../features/lecture/pages/LecturesManagement";
+import { ExercisesManagement } from "../features/exercise/pages/ExercisesManagement";
 import { ROUTES } from '../core/constants';
 import { Outlet } from 'react-router-dom';
 
@@ -29,6 +31,14 @@ export const tutorRouter = [
             {
                 path: ROUTES.TUTOR_PROFILE,
                 element: <ProfilePage />,
+            },
+            {
+                path: ROUTES.TUTOR_LECTURES,
+                element: <LecturesManagement />,
+            },
+            {
+                path: ROUTES.TUTOR_EXERCISES,
+                element: <ExercisesManagement />,
             },
         ],
     },
