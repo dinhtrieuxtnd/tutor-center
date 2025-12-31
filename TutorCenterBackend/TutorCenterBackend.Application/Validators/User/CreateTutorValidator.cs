@@ -20,7 +20,7 @@ namespace TutorCenterBackend.Application.Validators.Users
                 .MinimumLength(6).WithMessage("Mật khẩu phải có ít nhất 6 ký tự.");
             RuleFor(x => x.PhoneNumber)
                 .NotEmpty().WithMessage("Số điện thoại là bắt buộc.")
-                .Matches(@"^\+?[1-9]\d{1,14}$").WithMessage("Số điện thoại không hợp lệ.");
+                .Matches(@"^(\+84|0)[0-9]{9,10}$").WithMessage("Số điện thoại không hợp lệ.");
         }
     }
 }
