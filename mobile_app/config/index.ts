@@ -9,7 +9,7 @@ const config = {
   // 
   // 💡 PRODUCTION: Thay bằng domain thật
   // API_BASE_URL: 'https://api.tutorcenter.com/api',
-  API_BASE_URL: 'http://YOUR_IP_HERE:5038/api',
+  API_BASE_URL: 'http://192.168.1.137:5038/api',
 
   // Alternative URLs for different environments
   // Local only: 'http://localhost:5293/api' (work trên Android Emulator)

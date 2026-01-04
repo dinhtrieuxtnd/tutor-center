@@ -77,11 +77,22 @@ class ApiService {
       throw new Error(errorMessage);
     }
 
-    if (contentType && contentType.includes('application/json')) {
-      return await response.json();
+    // Check if response has content
+    const text = await response.text();
+
+    if (!text || text.trim() === '') {
+      console.warn('⚠️ Empty response body from:', response.url);
+      return {} as T;
     }
 
-    return {} as T;
+    // Try to parse JSON
+    try {
+      return JSON.parse(text);
+    } catch (error) {
+      console.error('❌ JSON parse error:', error);
+      console.error('Response text:', text);
+      throw new Error('Server trả về dữ liệu không hợp lệ');
+    }
   }
 
   private async fetchWithTimeout(url: string, options: RequestInit = {}): Promise<Response> {

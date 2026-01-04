@@ -2,16 +2,27 @@ import config from '../config';
 
 // Types
 export interface ClassroomResponse {
-  classroomId: number;
+  id: number; // Backend uses 'id', not 'classroomId'
+  classroomId?: number; // Keep for backward compatibility
   name: string;
   description?: string;
   tutorId: number;
-  tutorName: string;
+  tutorName?: string; // Optional, might come from tutor object
+  tutor?: {
+    userId: number;
+    fullName: string;
+    email: string;
+    avatarUrl?: string;
+    avatarMediaId?: number;
+  };
   isArchived: boolean;
-  studentCount: number;
+  studentCount?: number;
   price: number;
   coverMediaId?: number;
+  coverImageUrl?: string;
   createdAt: string;
+  updatedAt?: string;
+  deletedAt?: string;
 }
 
 export interface ClassroomQueryRequest {

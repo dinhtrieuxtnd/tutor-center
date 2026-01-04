@@ -12,10 +12,10 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { 
-  classroomService, 
+import {
+  classroomService,
   ClassroomResponse,
-  ClassroomQueryRequest 
+  ClassroomQueryRequest
 } from '../../services/classroomService';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -24,24 +24,24 @@ type TabType = 'enrolled' | 'all';
 export default function ClassroomsScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  
+
   // Tab state
   const [activeTab, setActiveTab] = useState<TabType>('enrolled');
-  
+
   // All classrooms data
   const [allClassrooms, setAllClassrooms] = useState<ClassroomResponse[]>([]);
   const [totalClassrooms, setTotalClassrooms] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(20);
-  
+
   // Enrolled classrooms data
   const [enrolledClassrooms, setEnrolledClassrooms] = useState<ClassroomResponse[]>([]);
-  
+
   // UI states
   const [isLoadingAll, setIsLoadingAll] = useState(true);
   const [isLoadingEnrolled, setIsLoadingEnrolled] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  
+
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
@@ -51,18 +51,19 @@ export default function ClassroomsScreen() {
       if (showLoader) {
         setIsLoadingAll(true);
       }
-      
+
       const params: ClassroomQueryRequest = {
         page,
         pageSize,
         isArchived: false,
       };
-      
+
       if (searchQuery.trim()) {
         params.q = searchQuery.trim();
       }
-      
+
       const response = await classroomService.query(params);
+      console.log('📚 All classrooms response:', JSON.stringify(response, null, 2));
       setAllClassrooms(response.items);
       setTotalClassrooms(response.total);
       setCurrentPage(page);
@@ -80,6 +81,7 @@ export default function ClassroomsScreen() {
         setIsLoadingEnrolled(true);
       }
       const data = await classroomService.getMyEnrollments();
+      console.log('📚 Enrolled classrooms:', JSON.stringify(data, null, 2));
       setEnrolledClassrooms(data);
     } catch (error: any) {
       console.error('Error fetching enrolled classrooms:', error);
@@ -119,10 +121,19 @@ export default function ClassroomsScreen() {
     fetchAllData(false);
   }, [fetchAllData]);
 
+  const getClassroomId = (classroom: ClassroomResponse): number | undefined => {
+    return classroom.id || classroom.classroomId;
+  };
+
   const handleClassroomPress = (classroom: ClassroomResponse) => {
+    const id = getClassroomId(classroom);
+    if (!id) {
+      console.warn('⚠️ Invalid classroom data:', classroom);
+      return;
+    }
     router.push({
       pathname: '/classroom-detail',
-      params: { id: classroom.classroomId.toString() },
+      params: { id: id.toString() },
     });
   };
 
@@ -140,12 +151,14 @@ export default function ClassroomsScreen() {
   };
 
   const isEnrolled = (classroomId: number) => {
-    return enrolledClassrooms.some(c => c.classroomId === classroomId);
+    return enrolledClassrooms.some(c => getClassroomId(c) === classroomId);
   };
 
   const renderClassroomItem = ({ item }: { item: ClassroomResponse }) => {
-    const enrolled = isEnrolled(item.classroomId);
-    
+    const classroomId = getClassroomId(item);
+    const enrolled = classroomId ? isEnrolled(classroomId) : false;
+    const tutorName = item.tutorName || item.tutor?.fullName || 'Unknown';
+
     return (
       <TouchableOpacity
         style={styles.classroomCard}
@@ -204,17 +217,17 @@ export default function ClassroomsScreen() {
     const isEnrolledTab = activeTab === 'enrolled';
     return (
       <View style={styles.emptyContainer}>
-        <Ionicons 
-          name={isEnrolledTab ? 'school-outline' : 'search-outline'} 
-          size={80} 
-          color="#ccc" 
+        <Ionicons
+          name={isEnrolledTab ? 'school-outline' : 'search-outline'}
+          size={80}
+          color="#ccc"
         />
         <Text style={styles.emptyTitle}>
           {isEnrolledTab ? 'Chưa tham gia lớp học nào' : 'Không tìm thấy lớp học'}
         </Text>
         <Text style={styles.emptyText}>
-          {isEnrolledTab 
-            ? 'Khám phá và đăng ký lớp học phù hợp với bạn' 
+          {isEnrolledTab
+            ? 'Khám phá và đăng ký lớp học phù hợp với bạn'
             : 'Thử tìm kiếm với từ khóa khác'}
         </Text>
       </View>
@@ -244,15 +257,15 @@ export default function ClassroomsScreen() {
               onPress={() => setShowSearch(!showSearch)}
               style={styles.searchButton}
             >
-              <Ionicons 
-                name={showSearch ? 'close' : 'search'} 
-                size={24} 
-                color="#333" 
+              <Ionicons
+                name={showSearch ? 'close' : 'search'}
+                size={24}
+                color="#333"
               />
             </TouchableOpacity>
           )}
         </View>
-        
+
         {showSearch && activeTab === 'all' && (
           <View style={styles.searchContainer}>
             <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
@@ -303,7 +316,10 @@ export default function ClassroomsScreen() {
       <FlatList
         data={currentData}
         renderItem={renderClassroomItem}
-        keyExtractor={(item) => item.classroomId.toString()}
+        keyExtractor={(item, index) => {
+          const id = getClassroomId(item);
+          return id?.toString() || `classroom-${index}`;
+        }}
         contentContainerStyle={[
           styles.listContent,
           currentData.length === 0 && styles.emptyListContent,
