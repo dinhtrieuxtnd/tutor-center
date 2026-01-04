@@ -19,13 +19,9 @@ class MediaService {
       .replace('http://127.0.0.1:', 'http://192.168.123.2:')
       .replace('https://localhost:', 'http://192.168.123.2:')
       .replace('https://127.0.0.1:', 'http://192.168.123.2:');
-    
-    if (fixedUrl !== url) {
-      console.log('🔧 Fixed URL:');
-      console.log('  From:', url);
-      console.log('  To:', fixedUrl);
-    }
-    
+
+    // URL fixed automatically if needed
+
     return fixedUrl;
   }
 
@@ -41,7 +37,7 @@ class MediaService {
   private async fetchWithTimeout(url: string, options: RequestInit = {}): Promise<Response> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), config.REQUEST_TIMEOUT);
-    
+
     try {
       const response = await fetch(url, {
         ...options,
@@ -51,25 +47,25 @@ class MediaService {
       return response;
     } catch (error: any) {
       clearTimeout(timeoutId);
-      
+
       if (error.name === 'AbortError') {
         throw new Error(`Kết nối đến server quá chậm. Vui lòng thử lại.`);
       }
-      
+
       if (error.message === 'Network request failed') {
         throw new Error('Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.');
       }
-      
+
       throw error;
     }
   }
 
   private async handleResponse<T>(response: Response): Promise<T> {
     const contentType = response.headers.get('content-type');
-    
+
     if (!response.ok) {
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-      
+
       if (contentType && contentType.includes('application/json')) {
         try {
           const errorData = await response.json();
@@ -78,7 +74,7 @@ class MediaService {
           // Ignore JSON parse error, use default message
         }
       }
-      
+
       throw new Error(errorMessage);
     }
 
@@ -89,7 +85,7 @@ class MediaService {
     if (contentType && contentType.includes('application/json')) {
       return await response.json();
     }
-    
+
     return {} as T;
   }
 
@@ -106,12 +102,12 @@ class MediaService {
     });
 
     const result = await this.handleResponse<MediaPresignedUrlResponse>(response);
-    
+
     // Fix localhost URLs to use actual IP
     if (result.url) {
       result.url = this.fixUrl(result.url);
     }
-    
+
     return result;
   }
 
@@ -122,7 +118,7 @@ class MediaService {
   async getViewUrl(mediaId: number | string): Promise<string> {
     const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
     const token = await AsyncStorage.getItem(config.ACCESS_TOKEN_KEY);
-    
+
     // Return backend view URL with token in query string
     return `${config.API_BASE_URL}/media/${mediaId}/view?token=${encodeURIComponent(token || '')}`;
   }
@@ -149,7 +145,7 @@ class MediaService {
     try {
       // Get presigned URL (already fixed by getPresignedUrl method)
       const { url } = await this.getPresignedUrl(mediaId);
-      
+
       // Return the fixed presigned URL for direct use
       return url;
     } catch (error: any) {

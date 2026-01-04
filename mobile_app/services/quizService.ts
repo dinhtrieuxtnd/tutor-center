@@ -1,7 +1,7 @@
 import config from '../config';
 
-// Types for Quiz
-export interface QuizResponse {
+// Types for Quiz (for student view - without correct answers)
+export interface QuizForStudentResponse {
   quizId: number;
   title: string;
   description?: string;
@@ -9,10 +9,25 @@ export interface QuizResponse {
   maxAttempts: number;
   shuffleQuestions: boolean;
   shuffleOptions: boolean;
-  gradingMethod: string;
   showAnswers: boolean;
-  createdBy: number;
-  createdAt: string;
+  questions: QuizQuestionForStudentResponse[];
+}
+
+// Quiz Question for Student (without correct answer info)
+export interface QuizQuestionForStudentResponse {
+  questionId: number;
+  content: string;
+  questionType: string;
+  points: number;
+  orderIndex: number;
+  options: QuizOptionForStudentResponse[];
+}
+
+// Quiz Option for Student (without isCorrect field)
+export interface QuizOptionForStudentResponse {
+  questionOptionId: number;
+  content: string;
+  orderIndex: number;
 }
 
 // Types for Quiz Attempt
@@ -28,67 +43,7 @@ export interface QuizAttemptResponse {
   scoreScaled10?: number;
 }
 
-// Types for Quiz Question
-export interface QuizQuestionResponse {
-  questionId: number;
-  quizId: number;
-  sectionId?: number;
-  groupId?: number;
-  content: string;
-  explanation?: string;
-  questionType: string;
-  points: number;
-  orderIndex: number;
-  options: QuizOptionResponse[];
-  media?: any[];
-}
-
-// Types for Quiz Option
-export interface QuizOptionResponse {
-  questionOptionId: number;
-  questionId: number;
-  content: string;
-  isCorrect: boolean;
-  orderIndex: number;
-  media?: any[];
-}
-
-// Types for Quiz Detail (from backend)
-export interface QuizDetailResponse {
-  quizId: number;
-  title: string;
-  description?: string;
-  timeLimitSec: number;
-  maxAttempts: number;
-  shuffleQuestions: boolean;
-  shuffleOptions: boolean;
-  gradingMethod: string;
-  showAnswers: boolean;
-  createdBy: number;
-  createdAt: string;
-  updatedAt: string;
-  sections: any[];
-  questionGroups: any[];
-  questions: QuizQuestionResponse[];
-}
-
-// Types for Quiz Answer
-export interface QuizAnswerResponse {
-  attemptId: number;
-  questionId: number;
-  optionId: number;
-}
-
-export interface QuizAnswerDetailResponse {
-  questionId: number;
-  questionContent: string;
-  questionPoints: number;
-  optionId: number;
-  optionContent: string;
-  isCorrect: boolean;
-}
-
-// Types for Quiz Attempt Detail
+// Quiz Attempt Detail (with answers and results)
 export interface QuizAttemptDetailResponse {
   quizAttemptId: number;
   lessonId: number;
@@ -104,14 +59,21 @@ export interface QuizAttemptDetailResponse {
   answers: QuizAnswerDetailResponse[];
 }
 
-// Request DTOs
-export interface CreateQuizAnswerRequest {
+// Quiz Answer Detail
+export interface QuizAnswerDetailResponse {
   questionId: number;
-  optionId: number;
+  questionContent: string;
+  questionPoints: number;
+  selectedOptionId?: number;
+  selectedOptionContent?: string;
+  correctOptionId?: number;
+  correctOptionContent?: string;
+  isCorrect: boolean;
 }
 
-export interface UpdateQuizAnswerRequest {
-  optionId: number;
+// Request DTOs
+export interface CreateQuizAttemptRequest {
+  lessonId: number;
 }
 
 class QuizService {
@@ -127,7 +89,7 @@ class QuizService {
   private async fetchWithTimeout(url: string, options: RequestInit = {}): Promise<Response> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), config.REQUEST_TIMEOUT);
-    
+
     try {
       const response = await fetch(url, {
         ...options,
@@ -137,25 +99,25 @@ class QuizService {
       return response;
     } catch (error: any) {
       clearTimeout(timeoutId);
-      
+
       if (error.name === 'AbortError') {
         throw new Error(`Kết nối đến server quá chậm. Vui lòng thử lại.`);
       }
-      
+
       if (error.message === 'Network request failed') {
         throw new Error('Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.');
       }
-      
+
       throw error;
     }
   }
 
   private async handleResponse<T>(response: Response): Promise<T> {
     const contentType = response.headers.get('content-type');
-    
+
     if (!response.ok) {
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-      
+
       if (contentType && contentType.includes('application/json')) {
         try {
           const errorData = await response.json();
@@ -164,125 +126,132 @@ class QuizService {
           // Ignore parse errors
         }
       }
-      
+
       throw new Error(errorMessage);
     }
-    
+
     if (contentType && contentType.includes('application/json')) {
       return await response.json();
     }
-    
+
     throw new Error('Unexpected response format');
   }
 
   /**
-   * Create a new quiz attempt for a lesson
+   * Get quiz detail for student (without correct answers)
+   * Backend: GET /api/Quiz/lesson/{lessonId}/student
    */
-  async createAttempt(lessonId: number): Promise<QuizAttemptResponse> {
+  async getQuizForStudent(lessonId: number): Promise<QuizForStudentResponse> {
     const headers = await this.getAuthHeaders();
-    const url = `${config.API_BASE_URL}/QuizAttempts/lessons/${lessonId}`;
-    
-    const response = await this.fetchWithTimeout(url, {
-      method: 'POST',
-      headers,
-    });
-    
-    return await this.handleResponse<QuizAttemptResponse>(response);
-  }
+    const url = `${config.API_BASE_URL}/Quiz/lesson/${lessonId}/student`;
 
-  /**
-   * Get own attempt detail with questions and answers
-   */
-  async getAttemptDetail(attemptId: number): Promise<QuizAttemptDetailResponse> {
-    const headers = await this.getAuthHeaders();
-    const url = `${config.API_BASE_URL}/QuizAttempts/${attemptId}`;
-    
     const response = await this.fetchWithTimeout(url, {
       method: 'GET',
       headers,
     });
-    
-    return await this.handleResponse<QuizAttemptDetailResponse>(response);
+
+    return await this.handleResponse<QuizForStudentResponse>(response);
   }
 
   /**
-   * Create or update an answer for a question in an attempt
+   * Create a new quiz attempt for a lesson
+   * Backend: POST /api/QuizAttempt
    */
-  async submitAnswer(
-    attemptId: number, 
-    questionId: number, 
-    optionId: number
-  ): Promise<QuizAnswerResponse> {
+  async createAttempt(lessonId: number): Promise<QuizAttemptResponse> {
     const headers = await this.getAuthHeaders();
-    const url = `${config.API_BASE_URL}/quiz-attempts/${attemptId}/answers`;
-    
-    const body: CreateQuizAnswerRequest = {
-      questionId,
-      optionId,
+    const url = `${config.API_BASE_URL}/QuizAttempt`;
+
+    const body: CreateQuizAttemptRequest = {
+      lessonId,
     };
-    
+
     const response = await this.fetchWithTimeout(url, {
       method: 'POST',
       headers,
       body: JSON.stringify(body),
     });
-    
-    return await this.handleResponse<QuizAnswerResponse>(response);
+
+    return await this.handleResponse<QuizAttemptResponse>(response);
   }
 
   /**
-   * Update an existing answer
+   * Get student's quiz attempt for a specific lesson
+   * Backend: GET /api/QuizAttempt/lesson/{lessonId}/student
    */
-  async updateAnswer(
-    attemptId: number,
-    questionId: number,
-    optionId: number
-  ): Promise<QuizAnswerResponse> {
+  async getAttemptByLesson(lessonId: number): Promise<QuizAttemptDetailResponse> {
     const headers = await this.getAuthHeaders();
-    const url = `${config.API_BASE_URL}/quiz-attempts/${attemptId}/answers/${questionId}`;
-    
-    const body: UpdateQuizAnswerRequest = {
-      optionId,
+    const url = `${config.API_BASE_URL}/QuizAttempt/lesson/${lessonId}/student`;
+
+    const response = await this.fetchWithTimeout(url, {
+      method: 'GET',
+      headers,
+    });
+
+    return await this.handleResponse<QuizAttemptDetailResponse>(response);
+  }
+
+  /**
+   * Create/submit an answer for a quiz question
+   * Backend: POST /api/QuizAnswer
+   */
+  async createAnswer(attemptId: number, questionId: number, optionIds: number[]): Promise<{ message: string }> {
+    const headers = await this.getAuthHeaders();
+    const url = `${config.API_BASE_URL}/QuizAnswer`;
+
+    const body = {
+      attemptId,
+      questionId,
+      optionIds,
     };
-    
+
+    const response = await this.fetchWithTimeout(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    });
+
+    return await this.handleResponse<{ message: string }>(response);
+  }
+
+  /**
+   * Update an existing answer for a quiz question
+   * Backend: PUT /api/QuizAnswer
+   */
+  async updateAnswer(attemptId: number, questionId: number, optionIds: number[]): Promise<{ message: string }> {
+    const headers = await this.getAuthHeaders();
+    const url = `${config.API_BASE_URL}/QuizAnswer`;
+
+    const body = {
+      attemptId,
+      questionId,
+      optionIds,
+    };
+
     const response = await this.fetchWithTimeout(url, {
       method: 'PUT',
       headers,
       body: JSON.stringify(body),
     });
-    
-    return await this.handleResponse<QuizAnswerResponse>(response);
+
+    return await this.handleResponse<{ message: string }>(response);
   }
 
   /**
-   * Delete an answer
+   * Delete an answer for a quiz question
+   * Backend: DELETE /api/QuizAnswer/attempt/{attemptId}/question/{questionId}
    */
-  async deleteAnswer(attemptId: number, questionId: number): Promise<void> {
+  async deleteAnswer(attemptId: number, questionId: number): Promise<{ message: string }> {
     const headers = await this.getAuthHeaders();
-    const url = `${config.API_BASE_URL}/quiz-attempts/${attemptId}/answers/${questionId}`;
-    
+    const url = `${config.API_BASE_URL}/QuizAnswer/attempt/${attemptId}/question/${questionId}`;
+
     const response = await this.fetchWithTimeout(url, {
       method: 'DELETE',
       headers,
     });
-    
-    await this.handleResponse<{ message: string }>(response);
-  }
 
-  /**
-   * Get quiz detail including questions (use existing GetQuizDetail API)
-   */
-  async getQuizDetail(quizId: number): Promise<QuizDetailResponse> {
-    const headers = await this.getAuthHeaders();
-    const url = `${config.API_BASE_URL}/Quizzes/${quizId}`;
-    
-    const response = await this.fetchWithTimeout(url, {
-      method: 'GET',
-      headers,
-    });
-    
-    return await this.handleResponse<QuizDetailResponse>(response);
+    return await this.handleResponse<{ message: string }>(response);
   }
 }
 
 export const quizService = new QuizService();
+export default quizService;

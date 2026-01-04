@@ -18,6 +18,7 @@ export interface UpdateProfileRequest {
 export interface ChangePasswordRequest {
   currentPassword: string;
   newPassword: string;
+  confirmNewPassword: string;
 }
 
 // Profile Service
@@ -34,7 +35,7 @@ class ProfileService {
   private async fetchWithTimeout(url: string, options: RequestInit = {}): Promise<Response> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), config.REQUEST_TIMEOUT);
-    
+
     try {
       const response = await fetch(url, {
         ...options,
@@ -44,15 +45,15 @@ class ProfileService {
       return response;
     } catch (error: any) {
       clearTimeout(timeoutId);
-      
+
       if (error.name === 'AbortError') {
         throw new Error(`Kết nối đến server quá chậm. Vui lòng thử lại.`);
       }
-      
+
       if (error.message.includes('Network request failed')) {
         throw new Error(`Không thể kết nối đến server.`);
       }
-      
+
       throw error;
     }
   }
@@ -62,7 +63,7 @@ class ProfileService {
    */
   async getProfile(): Promise<ProfileResponse> {
     try {
-      const response = await this.fetchWithTimeout(`${config.API_BASE_URL}/Profile/me`, {
+      const response = await this.fetchWithTimeout(`${config.API_BASE_URL}/Profile`, {
         method: 'GET',
         headers: await this.getAuthHeaders(),
       });
@@ -109,7 +110,7 @@ class ProfileService {
   async changePassword(data: ChangePasswordRequest): Promise<void> {
     try {
       const response = await this.fetchWithTimeout(`${config.API_BASE_URL}/Profile/change-password`, {
-        method: 'POST',
+        method: 'PUT',
         headers: await this.getAuthHeaders(),
         body: JSON.stringify(data),
       });
