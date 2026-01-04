@@ -61,10 +61,10 @@ class ApiService {
 
   private async handleResponse<T>(response: Response): Promise<T> {
     const contentType = response.headers.get('content-type');
-    
+
     if (!response.ok) {
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-      
+
       if (contentType && contentType.includes('application/json')) {
         try {
           const errorData = await response.json();
@@ -73,24 +73,24 @@ class ApiService {
           // Ignore JSON parse error, use default message
         }
       }
-      
+
       throw new Error(errorMessage);
     }
 
     if (contentType && contentType.includes('application/json')) {
       return await response.json();
     }
-    
+
     return {} as T;
   }
 
   private async fetchWithTimeout(url: string, options: RequestInit = {}): Promise<Response> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), config.REQUEST_TIMEOUT);
-    
+
     console.log('🌐 API Request:', url);
     console.log('📤 Request options:', JSON.stringify(options, null, 2));
-    
+
     try {
       const response = await fetch(url, {
         ...options,
@@ -102,7 +102,7 @@ class ApiService {
     } catch (error: any) {
       clearTimeout(timeoutId);
       console.error('❌ Fetch error:', error);
-      
+
       if (error.name === 'AbortError') {
         throw new Error(
           `Kết nối đến server quá chậm (timeout ${config.REQUEST_TIMEOUT / 1000}s).\n` +
@@ -111,7 +111,7 @@ class ApiService {
           `2. IP trong config có đúng không? (${config.API_BASE_URL})`
         );
       }
-      
+
       if (error.message.includes('Network request failed')) {
         throw new Error(
           `Không thể kết nối đến server.\n` +
@@ -122,7 +122,7 @@ class ApiService {
           `4. Cùng mạng WiFi với máy chạy backend?`
         );
       }
-      
+
       throw error;
     }
   }
@@ -137,13 +137,13 @@ class ApiService {
       });
 
       const result = await this.handleResponse<AuthTokens>(response);
-      
+
       // Lưu tokens vào AsyncStorage
       if (result.accessToken) {
         await AsyncStorage.setItem(config.ACCESS_TOKEN_KEY, result.accessToken);
         await AsyncStorage.setItem(config.REFRESH_TOKEN_KEY, result.refreshToken);
       }
-      
+
       return result;
     } catch (error: any) {
       console.error('Login error:', error);
@@ -182,13 +182,13 @@ class ApiService {
       });
 
       const result = await this.handleResponse<AuthTokens>(response);
-      
+
       // Lưu tokens vào AsyncStorage
       if (result.accessToken) {
         await AsyncStorage.setItem(config.ACCESS_TOKEN_KEY, result.accessToken);
         await AsyncStorage.setItem(config.REFRESH_TOKEN_KEY, result.refreshToken);
       }
-      
+
       return result;
     } catch (error: any) {
       console.error('Register error:', error);
@@ -221,7 +221,7 @@ class ApiService {
   async resetPassword(data: ResetPasswordRequest): Promise<{ message: string }> {
     try {
       const response = await this.fetchWithTimeout(`${this.baseURL}/Auth/reset-password`, {
-        method: 'POST',
+        method: 'PUT',
         headers: config.DEFAULT_HEADERS,
         body: JSON.stringify(data),
       });
@@ -239,9 +239,28 @@ class ApiService {
 
   async logout(): Promise<void> {
     try {
+      // Get refresh token before clearing storage
+      const refreshToken = await AsyncStorage.getItem(config.REFRESH_TOKEN_KEY);
+
+      // Call backend logout API if we have a refresh token
+      if (refreshToken) {
+        try {
+          await this.fetchWithTimeout(`${this.baseURL}/Auth/logout`, {
+            method: 'DELETE',
+            headers: await this.getAuthHeaders(),
+            body: JSON.stringify({ refreshToken }),
+          });
+        } catch (error) {
+          // Continue with local logout even if API call fails
+          console.error('Backend logout error:', error);
+        }
+      }
+
+      // Clear local tokens
       await AsyncStorage.multiRemove([config.ACCESS_TOKEN_KEY, config.REFRESH_TOKEN_KEY]);
     } catch (error) {
       console.error('Logout error:', error);
+      throw error;
     }
   }
 
@@ -259,13 +278,13 @@ class ApiService {
       });
 
       const result = await this.handleResponse<AuthTokens>(response);
-      
+
       // Cập nhật tokens mới
       if (result.accessToken) {
         await AsyncStorage.setItem(config.ACCESS_TOKEN_KEY, result.accessToken);
         await AsyncStorage.setItem(config.REFRESH_TOKEN_KEY, result.refreshToken);
       }
-      
+
       return result;
     } catch (error) {
       console.error('Refresh token error:', error);
@@ -277,7 +296,7 @@ class ApiService {
 
   async getMe(): Promise<any> {
     try {
-      const response = await this.fetchWithTimeout(`${this.baseURL}/Profile/me`, {
+      const response = await this.fetchWithTimeout(`${this.baseURL}/Profile`, {
         method: 'GET',
         headers: await this.getAuthHeaders(),
       });
