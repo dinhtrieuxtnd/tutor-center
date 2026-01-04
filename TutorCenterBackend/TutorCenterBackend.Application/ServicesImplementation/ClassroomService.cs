@@ -16,7 +16,8 @@ namespace TutorCenterBackend.Application.ServicesImplementation
         IClassroomRepository classroomRepository,
         IHttpContextAccessor httpContextAccessor,
         IMediaRepository mediaRepository,
-        IStorageService storageService) : IClassroomService
+        IStorageService storageService,
+        IClrStudentRepository clrStudentRepository) : IClassroomService
     {
         private readonly IMapper _mapper = mapper;
         private readonly IUserRepository _userRepository = userRepository;
@@ -24,6 +25,7 @@ namespace TutorCenterBackend.Application.ServicesImplementation
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
         private readonly IMediaRepository _mediaRepository = mediaRepository;
         private readonly IStorageService _storageService = storageService;
+        private readonly IClrStudentRepository _clrStudentRepository = clrStudentRepository;
 
         private ClassroomResponseDto MapWithCoverUrl(Classroom classroom)
         {
@@ -161,7 +163,28 @@ namespace TutorCenterBackend.Application.ServicesImplementation
             {
                 throw new KeyNotFoundException("Lớp học không tồn tại.");
             }
-            return MapWithCoverUrl(classroom);
+            
+            var dto = MapWithCoverUrl(classroom);
+            
+            // Check payment status if user is logged in
+            var currentUserId = _httpContextAccessor.GetCurrentUserId();
+            if (currentUserId > 0)
+            {
+                var classroomStudent = await _clrStudentRepository.FindByStudentAndClassroomIdAsync(currentUserId, id, ct);
+                
+                // Only set HasPaid if classroom requires payment (Price > 0)
+                if (classroom.Price > 0)
+                {
+                    dto.HasPaid = classroomStudent?.HasPaid ?? false;
+                }
+                else
+                {
+                    // Free classroom, always considered as paid
+                    dto.HasPaid = true;
+                }
+            }
+            
+            return dto;
         }
 
         public async Task<ClassroomResponseDto> UpdateClassroomAsync(int id, UpdateClassroomRequestDto dto, CancellationToken ct = default)
