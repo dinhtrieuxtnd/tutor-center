@@ -9,6 +9,7 @@ using TutorCenterBackend.Application.DTOs.QuestionGroup.Responses;
 using TutorCenterBackend.Application.Interfaces;
 using TutorCenterBackend.Domain.Entities;
 using TutorCenterBackend.Domain.Interfaces;
+using TutorCenterBackend.Domain.Constants;
 
 namespace TutorCenterBackend.Application.ServicesImplementation
 {
@@ -207,7 +208,7 @@ namespace TutorCenterBackend.Application.ServicesImplementation
                 MaxAttempts = quiz.MaxAttempts,
                 ShuffleQuestions = quiz.ShuffleQuestions,
                 ShuffleOptions = quiz.ShuffleOptions,
-                GradingMethod = quiz.GradingMethod,
+                GradingMethod = Enum.Parse<GradingMethodEnum>(quiz.GradingMethod),
                 CreatedBy = quiz.CreatedBy,
                 CreatedAt = quiz.CreatedAt,
                 UpdatedAt = quiz.UpdatedAt,
@@ -253,7 +254,7 @@ namespace TutorCenterBackend.Application.ServicesImplementation
                 GroupId = question.GroupId,
                 Content = question.Content,
                 Explanation = question.Explanation,
-                QuestionType = question.QuestionType,
+                QuestionType = Enum.Parse<QuestionTypeEnum>(question.QuestionType),
                 Points = question.Points,
                 OrderIndex = question.OrderIndex,
                 Media = new List<QuestionMediaResponseDto>(), // Not loading media for simplicity

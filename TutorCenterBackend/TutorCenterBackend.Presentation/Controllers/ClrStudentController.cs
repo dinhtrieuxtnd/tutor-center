@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using TutorCenterBackend.Application.DTOs.ClassroomStudent.Requests;
 using TutorCenterBackend.Application.Interfaces;
 using TutorCenterBackend.Presentation.Attributes;
 
@@ -26,6 +27,16 @@ namespace TutorCenterBackend.Presentation.Controllers
         public async Task<IActionResult> RemoveStudentFromClassroom(int classroomId, int studentId, CancellationToken ct = default)
         {
             var result = await _clrStudentService.RemoveStudentFromClassroomAsync(classroomId, studentId, ct);
+            return Ok(result);
+        }
+
+        [HttpPatch("{classroomId}/students/{studentId}/payment-status")]
+        [RequirePermission("classroomstudent.update")]
+        [ValidateId("classroomId")]
+        [ValidateId("studentId")]
+        public async Task<IActionResult> UpdatePaymentStatus(int classroomId, int studentId, [FromBody] UpdatePaymentStatusRequestDto request, CancellationToken ct = default)
+        {
+            var result = await _clrStudentService.UpdatePaymentStatusAsync(classroomId, studentId, request, ct);
             return Ok(result);
         }
     }

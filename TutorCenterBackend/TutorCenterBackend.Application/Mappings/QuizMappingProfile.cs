@@ -1,6 +1,7 @@
 using AutoMapper;
 using TutorCenterBackend.Application.DTOs.Quiz.Responses;
 using TutorCenterBackend.Domain.Entities;
+using TutorCenterBackend.Domain.Constants;
 
 namespace TutorCenterBackend.Application.Mappings
 {

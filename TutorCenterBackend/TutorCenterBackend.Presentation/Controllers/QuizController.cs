@@ -56,6 +56,15 @@ namespace TutorCenterBackend.Presentation.Controllers
             return Ok(result);
         }
 
+        [HttpDelete("{quizId}")]
+        [RequirePermission("quiz.delete")]
+        [ValidateId("quizId")]
+        public async Task<IActionResult> DeleteQuizAsync(int quizId, CancellationToken ct)
+        {
+            var result = await _quizService.DeleteQuizAsync(quizId, ct);
+            return Ok(result);
+        }
+
         /// <summary>
         /// API for students to view quiz details (without correct answers)
         /// </summary>

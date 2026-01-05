@@ -1,3 +1,5 @@
+using TutorCenterBackend.Domain.Constants;
+
 namespace TutorCenterBackend.Application.DTOs.Question.Responses
 {
     public class QuestionResponseDto
@@ -8,7 +10,7 @@ namespace TutorCenterBackend.Application.DTOs.Question.Responses
         public int? GroupId { get; set; }
         public string Content { get; set; } = null!;
         public string? Explanation { get; set; }
-        public string QuestionType { get; set; } = null!;
+        public QuestionTypeEnum QuestionType { get; set; }
         public double Points { get; set; }
         public int OrderIndex { get; set; }
     }

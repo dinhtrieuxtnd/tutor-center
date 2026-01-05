@@ -1,3 +1,5 @@
+using TutorCenterBackend.Domain.Constants;
+
 namespace TutorCenterBackend.Application.DTOs.Quiz.Responses
 {
     public class QuizResponseDto
@@ -16,7 +18,7 @@ namespace TutorCenterBackend.Application.DTOs.Quiz.Responses
 
         public bool ShuffleOptions { get; set; }
 
-        public string GradingMethod { get; set; } = null!;
+        public GradingMethodEnum GradingMethod { get; set; }
 
         public int CreatedBy { get; set; }
 

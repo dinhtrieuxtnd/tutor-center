@@ -75,17 +75,20 @@ public class AIDocumentService : IAIDocumentService
             }
         }
 
-        // Upload file to storage
+        // Upload file to storage with unique filename
+        var fileName = $"{Guid.NewGuid()}{extension}";
         var folderPath = classroomId.HasValue 
             ? $"ai-documents/classroom-{classroomId}" 
             : $"ai-documents/user-{userId}";
         
-        var objectKey = await _storageService.UploadFileAsync(file, folderPath);
+        var objectKey = $"{folderPath}/{fileName}";
+        await _storageService.UploadFileAsync(file, objectKey);
 
         // Create Media entity
         var media = new Medium
         {
             Disk = "s3",
+            Bucket = "tutor-center",
             ObjectKey = objectKey,
             MimeType = file.ContentType,
             SizeBytes = file.Length,

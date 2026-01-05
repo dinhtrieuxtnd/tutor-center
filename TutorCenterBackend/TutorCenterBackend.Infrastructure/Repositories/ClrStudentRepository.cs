@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using TutorCenterBackend.Domain.Entities;
 using TutorCenterBackend.Domain.Interfaces;
+using TutorCenterBackend.Domain.Models;
 using TutorCenterBackend.Infrastructure.DataAccess;
 
 namespace TutorCenterBackend.Infrastructure.Repositories
@@ -15,12 +16,17 @@ namespace TutorCenterBackend.Infrastructure.Repositories
             await _context.SaveChangesAsync(ct);
         }
 
-        public async Task<IEnumerable<User>> GetStudentsByClassroomIdAsync(int classroomId, CancellationToken ct = default)
+        public async Task<IEnumerable<StudentWithPaymentInfo>> GetStudentsByClassroomIdAsync(int classroomId, CancellationToken ct = default)
         {
             var students = from cs in _context.ClassroomStudents
                            join u in _context.Users on cs.StudentId equals u.UserId
                            where cs.ClassroomId == classroomId && cs.DeletedAt == null
-                           select u;
+                           select new StudentWithPaymentInfo
+                           {
+                               User = u,
+                               HasPaid = cs.HasPaid,
+                               PaidAt = cs.PaidAt
+                           };
 
             return await students.ToListAsync(ct);
         }

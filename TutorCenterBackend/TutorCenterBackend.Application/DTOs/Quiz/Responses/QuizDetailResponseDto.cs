@@ -1,6 +1,7 @@
 using TutorCenterBackend.Application.DTOs.Question.Responses;
 using TutorCenterBackend.Application.DTOs.QuestionGroup.Responses;
 using TutorCenterBackend.Application.DTOs.QuizSection.Responses;
+using TutorCenterBackend.Domain.Constants;
 
 namespace TutorCenterBackend.Application.DTOs.Quiz.Responses
 {
@@ -13,7 +14,7 @@ namespace TutorCenterBackend.Application.DTOs.Quiz.Responses
         public int MaxAttempts { get; set; }
         public bool ShuffleQuestions { get; set; }
         public bool ShuffleOptions { get; set; }
-        public string GradingMethod { get; set; } = null!;
+        public GradingMethodEnum GradingMethod { get; set; }
         public int CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
