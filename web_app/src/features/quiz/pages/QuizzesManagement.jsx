@@ -5,10 +5,11 @@ import { FileQuestion, Plus, Filter, BookOpen } from 'lucide-react';
 import {
     getAllQuizzesAsync,
     createQuizAsync,
+    deleteQuizAsync,
     setFilters,
     setPagination
 } from '../store/quizSlice';
-import { Button, SearchInput } from '../../../shared/components/ui';
+import { Button, SearchInput, ConfirmModal } from '../../../shared/components/ui';
 import { StatCard, Pagination } from '../../../shared/components';
 import { QuizzesTable } from '../components/QuizzesTable';
 import { AddQuizPanel } from '../components/AddQuizPanel';
@@ -23,11 +24,14 @@ export const QuizzesManagement = () => {
         quizzes,
         loading,
         createLoading,
+        deleteLoading,
         filters,
         pagination,
     } = useAppSelector((state) => state.quiz);
 
     const [isAddPanelOpen, setIsAddPanelOpen] = useState(false);
+    const [deletingQuizId, setDeletingQuizId] = useState(null);
+    const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, quiz: null });
 
     // Fetch quizzes when component mounts or filters/pagination change
     useEffect(() => {
@@ -74,6 +78,28 @@ export const QuizzesManagement = () => {
 
     const handleViewQuiz = (quiz) => {
         navigate(`${ROUTES.TUTOR_QUIZZES}/${quiz.id}`);
+    };
+
+    const handleDeleteQuiz = (quiz) => {
+        setConfirmDelete({ isOpen: true, quiz });
+    };
+
+    const handleConfirmDelete = async () => {
+        const quiz = confirmDelete.quiz;
+        if (!quiz) return;
+
+        setDeletingQuizId(quiz.id);
+        const result = await dispatch(deleteQuizAsync(quiz.id));
+        setDeletingQuizId(null);
+        setConfirmDelete({ isOpen: false, quiz: null });
+
+        if (result.type.endsWith('/fulfilled')) {
+            fetchQuizzes();
+        }
+    };
+
+    const handleCancelDelete = () => {
+        setConfirmDelete({ isOpen: false, quiz: null });
     };
 
     // Stats
@@ -163,6 +189,8 @@ export const QuizzesManagement = () => {
                         quizzes={quizzes}
                         loading={loading}
                         onView={handleViewQuiz}
+                        onDelete={handleDeleteQuiz}
+                        deletingQuizId={deletingQuizId}
                     />
 
                     {!loading && pagination.totalCount > 0 && (
@@ -185,6 +213,18 @@ export const QuizzesManagement = () => {
                 onClose={() => setIsAddPanelOpen(false)}
                 onSubmit={handleAddQuiz}
                 isLoading={createLoading}
+            />
+
+            <ConfirmModal
+                isOpen={confirmDelete.isOpen}
+                onClose={handleCancelDelete}
+                onConfirm={handleConfirmDelete}
+                title="Xóa bài kiểm tra"
+                message={`Bạn có chắc chắn muốn xóa bài kiểm tra "${confirmDelete.quiz?.title}"? Hành động này không thể hoàn tác.`}
+                confirmText="Xóa"
+                cancelText="Hủy"
+                variant="danger"
+                isLoading={deletingQuizId === confirmDelete.quiz?.id}
             />
         </>
     );

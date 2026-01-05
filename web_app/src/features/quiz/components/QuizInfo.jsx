@@ -3,6 +3,7 @@ import { useAppDispatch } from '../../../core/store/hooks';
 import { updateQuizAsync } from '../store/quizSlice';
 import { Calendar, Edit2, Save, X } from 'lucide-react';
 import { Button, Input } from '../../../shared/components/ui';
+import { GRADING_METHOD, GRADING_METHOD_LABELS } from '../../../core/constants';
 
 export const QuizInfo = ({ quiz, onUpdate }) => {
     const dispatch = useAppDispatch();
@@ -15,7 +16,7 @@ export const QuizInfo = ({ quiz, onUpdate }) => {
         maxAttempts: 1,
         shuffleQuestions: false,
         shuffleOptions: false,
-        gradingMethod: 'Automatic'
+        gradingMethod: GRADING_METHOD.HIGHEST
     });
 
     useEffect(() => {
@@ -27,7 +28,7 @@ export const QuizInfo = ({ quiz, onUpdate }) => {
                 maxAttempts: quiz.maxAttempts || 1,
                 shuffleQuestions: quiz.shuffleQuestions || false,
                 shuffleOptions: quiz.shuffleOptions || false,
-                gradingMethod: quiz.gradingMethod || 'Automatic'
+                gradingMethod: quiz.gradingMethod ?? GRADING_METHOD.HIGHEST
             });
         }
     }, [quiz]);
@@ -61,7 +62,7 @@ export const QuizInfo = ({ quiz, onUpdate }) => {
             maxAttempts: quiz.maxAttempts || 1,
             shuffleQuestions: quiz.shuffleQuestions || false,
             shuffleOptions: quiz.shuffleOptions || false,
-            gradingMethod: quiz.gradingMethod || 'Automatic'
+            gradingMethod: quiz.gradingMethod ?? GRADING_METHOD.HIGHEST
         });
     };
 
@@ -148,11 +149,13 @@ export const QuizInfo = ({ quiz, onUpdate }) => {
                                 </label>
                                 <select
                                     value={formData.gradingMethod}
-                                    onChange={(e) => setFormData({ ...formData, gradingMethod: e.target.value })}
+                                    onChange={(e) => setFormData({ ...formData, gradingMethod: parseInt(e.target.value) })}
                                     className="w-full px-3 py-2 border border-input-border rounded-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent text-sm text-foreground bg-input"
                                 >
-                                    <option value="Automatic">Tự động</option>
-                                    <option value="Manual">Thủ công</option>
+                                    <option value={GRADING_METHOD.FIRST}>{GRADING_METHOD_LABELS[GRADING_METHOD.FIRST]}</option>
+                                    <option value={GRADING_METHOD.HIGHEST}>{GRADING_METHOD_LABELS[GRADING_METHOD.HIGHEST]}</option>
+                                    <option value={GRADING_METHOD.AVERAGE}>{GRADING_METHOD_LABELS[GRADING_METHOD.AVERAGE]}</option>
+                                    <option value={GRADING_METHOD.LATEST}>{GRADING_METHOD_LABELS[GRADING_METHOD.LATEST]}</option>
                                 </select>
                             </div>
                         </div>
@@ -242,7 +245,7 @@ export const QuizInfo = ({ quiz, onUpdate }) => {
                                 <label className="block text-xs font-medium text-foreground-light mb-1">
                                     Phương thức chấm điểm
                                 </label>
-                                <p className="text-sm text-foreground">{quiz.gradingMethod}</p>
+                                <p className="text-sm text-foreground">{GRADING_METHOD_LABELS[quiz.gradingMethod] || 'Không xác định'}</p>
                             </div>
 
                             <div>

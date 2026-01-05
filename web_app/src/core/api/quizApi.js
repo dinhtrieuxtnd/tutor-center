@@ -56,4 +56,11 @@ export const quizApi = {
     update: (quizId, data) => {
         return axiosClient.put(API_ENDPOINTS.QUIZZES.UPDATE(quizId), data);
     },
-};
+    /**
+     * Delete quiz (soft delete)
+     * @param {number} quizId
+     * @returns {Promise<Object>}
+     */
+    delete: (quizId) => {
+        return axiosClient.delete(API_ENDPOINTS.QUIZZES.DELETE(quizId));
+    },};

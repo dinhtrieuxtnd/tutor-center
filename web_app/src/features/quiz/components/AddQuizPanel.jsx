@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
 import { Button, Input } from '../../../shared/components/ui';
+import { GRADING_METHOD, GRADING_METHOD_LABELS } from '../../../core/constants';
 
 export const AddQuizPanel = ({ isOpen, onClose, onSubmit, isLoading }) => {
   const [formData, setFormData] = useState({
@@ -10,6 +11,7 @@ export const AddQuizPanel = ({ isOpen, onClose, onSubmit, isLoading }) => {
     maxAttempts: 1,
     shuffleQuestions: true,
     shuffleOptions: true,
+    gradingMethod: GRADING_METHOD.HIGHEST,
   });
   const [errors, setErrors] = useState({});
 
@@ -44,6 +46,7 @@ export const AddQuizPanel = ({ isOpen, onClose, onSubmit, isLoading }) => {
       maxAttempts: parseInt(formData.maxAttempts) || 1,
       shuffleQuestions: formData.shuffleQuestions,
       shuffleOptions: formData.shuffleOptions,
+      gradingMethod: formData.gradingMethod,
     };
 
     onSubmit(submitData);
@@ -57,6 +60,7 @@ export const AddQuizPanel = ({ isOpen, onClose, onSubmit, isLoading }) => {
       maxAttempts: 1,
       shuffleQuestions: true,
       shuffleOptions: true,
+      gradingMethod: GRADING_METHOD.HIGHEST,
     });
     setErrors({});
     onClose();
@@ -137,6 +141,24 @@ export const AddQuizPanel = ({ isOpen, onClose, onSubmit, isLoading }) => {
                 placeholder="Số lần thử"
                 disabled={isLoading}
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">
+                Phương thức chấm điểm
+              </label>
+              <select
+                name="gradingMethod"
+                value={formData.gradingMethod}
+                onChange={(e) => setFormData(prev => ({ ...prev, gradingMethod: parseInt(e.target.value) }))}
+                disabled={isLoading}
+                className="w-full px-3 py-2 text-sm border border-border rounded-sm focus:outline-none focus:border-foreground bg-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <option value={GRADING_METHOD.FIRST}>{GRADING_METHOD_LABELS[GRADING_METHOD.FIRST]}</option>
+                <option value={GRADING_METHOD.HIGHEST}>{GRADING_METHOD_LABELS[GRADING_METHOD.HIGHEST]}</option>
+                <option value={GRADING_METHOD.AVERAGE}>{GRADING_METHOD_LABELS[GRADING_METHOD.AVERAGE]}</option>
+                <option value={GRADING_METHOD.LATEST}>{GRADING_METHOD_LABELS[GRADING_METHOD.LATEST]}</option>
+              </select>
             </div>
 
             <div className="space-y-3">

@@ -1,7 +1,7 @@
-import { Eye, FileQuestion } from 'lucide-react';
+import { Eye, FileQuestion, Trash2 } from 'lucide-react';
 import { ButtonLoading } from '../../../shared/components/loading';
 
-export const QuizzesTable = ({ quizzes, loading, onView }) => {
+export const QuizzesTable = ({ quizzes, loading, onView, onDelete, deletingQuizId }) => {
     if (loading) {
         return (
             <div className="flex items-center justify-center py-12">
@@ -76,6 +76,14 @@ export const QuizzesTable = ({ quizzes, loading, onView }) => {
                                         title="Xem chi tiết"
                                     >
                                         <Eye size={16} />
+                                    </button>
+                                    <button
+                                        onClick={() => onDelete(quiz)}
+                                        className="p-2 hover:bg-gray-100 rounded-sm text-foreground-light hover:text-red-500 transition-colors"
+                                        title="Xóa bài kiểm tra"
+                                        disabled={deletingQuizId === quiz.id}
+                                    >
+                                        <Trash2 size={16} />
                                     </button>
                                 </div>
                             </td>

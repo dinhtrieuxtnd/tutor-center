@@ -13,6 +13,13 @@ import lessonReducer from '../../features/lesson/store/lessonSlice';
 import lectureReducer from '../../features/lecture/store/lectureSlice';
 import exerciseReducer from '../../features/exercise/store/exerciseSlice';
 import quizReducer from '../../features/quiz/store/quizSlice';
+import quizSectionReducer from '../../features/quiz/store/quizSectionSlice';
+import qGroupReducer from '../../features/quiz/store/qGroupSlice';
+import questionReducer from '../../features/quiz/store/questionSlice';
+import optionReducer from '../../features/quiz/store/optionSlice';
+import quizAttemptReducer from '../../features/quiz/store/quizAttemptSlice';
+import quizAnswerReducer from '../../features/quiz/store/quizAnswerSlice';
+import paymentReducer from '../../features/payment/store/paymentSlice';
 
 export const store = configureStore({
   reducer: {
@@ -30,5 +37,12 @@ export const store = configureStore({
     lecture: lectureReducer,
     exercise: exerciseReducer,
     quiz: quizReducer,
+    quizSection: quizSectionReducer,
+    qGroup: qGroupReducer,
+    question: questionReducer,
+    option: optionReducer,
+    quizAttempt: quizAttemptReducer,
+    quizAnswer: quizAnswerReducer,
+    payment: paymentReducer,
   },
 });
