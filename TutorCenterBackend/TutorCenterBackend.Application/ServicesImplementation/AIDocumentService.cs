@@ -14,7 +14,7 @@ public class AIDocumentService : IAIDocumentService
     private readonly IAiDocumentRepository _documentRepository;
     private readonly IMediaRepository _mediaRepository;
     private readonly IStorageService _storageService;
-    private readonly IDocumentTextExtractionService _textExtractionService;
+    private readonly IMistralAIOcrService _mistralOcrService;
     private readonly IClassroomRepository _classroomRepository;
     private readonly IMapper _mapper;
     private readonly DocumentProcessingOptions _options;
@@ -23,7 +23,7 @@ public class AIDocumentService : IAIDocumentService
         IAiDocumentRepository documentRepository,
         IMediaRepository mediaRepository,
         IStorageService storageService,
-        IDocumentTextExtractionService textExtractionService,
+        IMistralAIOcrService mistralOcrService,
         IClassroomRepository classroomRepository,
         IMapper mapper,
         IOptions<DocumentProcessingOptions> options)
@@ -31,7 +31,7 @@ public class AIDocumentService : IAIDocumentService
         _documentRepository = documentRepository;
         _mediaRepository = mediaRepository;
         _storageService = storageService;
-        _textExtractionService = textExtractionService;
+        _mistralOcrService = mistralOcrService;
         _classroomRepository = classroomRepository;
         _mapper = mapper;
         _options = options.Value;
@@ -50,9 +50,11 @@ public class AIDocumentService : IAIDocumentService
         }
 
         var extension = Path.GetExtension(file.FileName);
-        if (!_options.AllowedExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
+        
+        // Only accept PDF files
+        if (!extension.Equals(".pdf", StringComparison.OrdinalIgnoreCase))
         {
-            throw new ArgumentException($"File type {extension} is not supported. Allowed types: {string.Join(", ", _options.AllowedExtensions)}");
+            throw new ArgumentException("Only PDF files are supported for AI document processing");
         }
 
         if (file.Length > _options.MaxFileSizeBytes)
@@ -99,16 +101,16 @@ public class AIDocumentService : IAIDocumentService
 
         var savedMedia = await _mediaRepository.AddAsync(media, cancellationToken);
 
-        // Extract text from document
+        // Extract text from PDF using Mistral AI OCR
         string extractedText;
         using (var stream = file.OpenReadStream())
         {
-            extractedText = await _textExtractionService.ExtractTextAsync(stream, extension, cancellationToken);
+            extractedText = await _mistralOcrService.ExtractTextFromPdfAsync(stream, cancellationToken);
         }
 
         if (string.IsNullOrWhiteSpace(extractedText))
         {
-            throw new InvalidOperationException("Could not extract text from document. Please ensure the document contains readable text.");
+            throw new InvalidOperationException("Could not extract text from PDF. Please ensure the document contains readable text.");
         }
 
         // Create document entity

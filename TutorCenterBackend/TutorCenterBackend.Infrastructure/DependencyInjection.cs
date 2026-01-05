@@ -53,6 +53,10 @@ public static class DependencyInjection
         services.AddScoped<IDocumentTextExtractionService, DocumentTextExtractionService>();
         services.AddScoped<IAIProviderService, GeminiAIProviderService>();
 
+        // Register Mistral AI Settings and Service
+        services.Configure<MistralAIOptions>(configuration.GetSection(MistralAIOptions.SectionName));
+        services.AddHttpClient<IMistralAIOcrService, MistralAIOcrService>();
+
         // Register HttpClient for Resend
         services.AddHttpClient<IResend, ResendClient>();
         
