@@ -9,7 +9,10 @@ const config = {
   // 
   // 💡 PRODUCTION: Thay bằng domain thật
   // API_BASE_URL: 'https://api.tutorcenter.com/api',
-  API_BASE_URL: 'http://192.168.1.137:5038/api',
+  // Backend API endpoint
+  // Use 10.0.2.2 for Android Emulator (maps to host's 127.0.0.1)
+  // Use 192.168.x.x for real device on same WiFi
+  API_BASE_URL: 'http://192.168.1.104:5038/api',
 
   // Alternative URLs for different environments
   // Local only: 'http://localhost:5293/api' (work trên Android Emulator)

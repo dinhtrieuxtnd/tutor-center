@@ -23,12 +23,14 @@ export interface ClassroomResponse {
   createdAt: string;
   updatedAt?: string;
   deletedAt?: string;
+  hasPaid?: boolean | null; // Payment status for enrolled students
 }
 
 export interface ClassroomQueryRequest {
   q?: string;
   tutorId?: number;
   isArchived?: boolean;
+  includeDeleted?: boolean; // Filter deleted classrooms
   page?: number;
   pageSize?: number;
 }
@@ -100,7 +102,20 @@ class ClassroomService {
     }
 
     if (contentType && contentType.includes('application/json')) {
-      return await response.json();
+      // Read as text first to check for empty response
+      const text = await response.text();
+      if (!text || text.trim() === '') {
+        console.warn('⚠️ Empty response body from:', response.url);
+        return {} as T;
+      }
+
+      try {
+        return JSON.parse(text);
+      } catch (error) {
+        console.error('❌ JSON parse error:', error);
+        console.error('Response text:', text);
+        throw new Error('Server trả về dữ liệu không hợp lệ');
+      }
     }
 
     return {} as T;
@@ -114,6 +129,7 @@ class ClassroomService {
     if (params?.q) queryString.append('Q', params.q);
     if (params?.tutorId) queryString.append('TutorId', params.tutorId.toString());
     if (params?.isArchived !== undefined) queryString.append('IsArchived', params.isArchived.toString());
+    if (params?.includeDeleted !== undefined) queryString.append('IncludeDeleted', params.includeDeleted.toString());
     if (params?.page) queryString.append('Page', params.page.toString());
     if (params?.pageSize) queryString.append('PageSize', params.pageSize.toString());
 
@@ -139,6 +155,13 @@ class ClassroomService {
 
     // Backend returns PageResultDto, extract items
     const result = await this.handleResponse<ClassroomQueryResponse>(response);
+
+    // Handle empty response
+    if (!result || !result.items) {
+      console.warn('⚠️ Empty enrollments response');
+      return [];
+    }
+
     return result.items;
   }
 

@@ -6,10 +6,12 @@ export interface ChatMessageResponse {
     classroomId: number;
     senderId: number;
     senderName: string;
+    senderAvatarUrl?: string;
     content: string;
-    createdAt: string;
-    updatedAt?: string;
+    sentAt: string; // Backend uses sentAt, not createdAt
     isEdited: boolean;
+    isDeleted?: boolean;
+    media?: any[];
 }
 
 export interface SendMessageRequest {

@@ -20,7 +20,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="dashboard"
         options={{
-          title: 'Dashboard',
+          title: 'Trang chủ',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="grid-outline" size={size || 28} color={color} />
           ),
@@ -36,9 +36,18 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="chat"
+        options={{
+          title: 'Tin nhắn',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="chatbubbles-outline" size={size || 28} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
+          title: 'Cá nhân',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person-outline" size={size || 28} color={color} />
           ),

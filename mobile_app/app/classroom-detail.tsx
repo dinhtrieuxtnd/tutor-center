@@ -26,7 +26,7 @@ export default function ClassroomDetailScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [myRequests, setMyRequests] = useState<JoinRequestResponse[]>([]);
   const [isJoining, setIsJoining] = useState(false);
-  const [enrolledClassrooms, setEnrolledClassrooms] = useState<number[]>([]);
+  const [enrolledClassrooms, setEnrolledClassrooms] = useState<ClassroomResponse[]>([]);
   const [activeTab, setActiveTab] = useState<'info' | 'lessons'>('info');
   const [lessons, setLessons] = useState<LessonResponse[]>([]);
   const [isLoadingLessons, setIsLoadingLessons] = useState(false);
@@ -41,10 +41,16 @@ export default function ClassroomDetailScreen() {
         joinRequestService.getMy().catch(() => []),
         classroomService.getMyEnrollments().catch(() => []),
       ]);
-      
+
+      console.log('📚 Enrolled classrooms data:', enrolledData);
+      console.log('📚 Current classroom:', classroomData);
+
       setClassroom(classroomData);
       setMyRequests(requestsData);
-      setEnrolledClassrooms(enrolledData.map(c => c.classroomId));
+      // Backend returns 'id', not 'classroomId'
+      const enrolledIds = enrolledData.map(c => (c as any).id || (c as any).classroomId).filter(Boolean);
+      console.log('📚 Enrolled IDs:', enrolledIds);
+      setEnrolledClassrooms(enrolledData); // Store full objects, not just IDs
     } catch (error: any) {
       console.error('Error fetching classroom detail:', error);
       Alert.alert('Lỗi', error.message || 'Không thể tải thông tin lớp học', [
@@ -61,7 +67,7 @@ export default function ClassroomDetailScreen() {
 
   const fetchLessons = async () => {
     if (!id) return;
-    
+
     setIsLoadingLessons(true);
     try {
       const lessonsData = await lessonService.getByClassroom(Number(id));
@@ -88,6 +94,31 @@ export default function ClassroomDetailScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
+  // Check payment status and show alert
+  useEffect(() => {
+    if (!classroom || !user) return;
+
+    const status = getEnrollmentStatus();
+    if (status?.type === 'enrolled') {
+      const hasPaid = (classroom as any).hasPaid;
+      
+      if (hasPaid === false || hasPaid === null) {
+        Alert.alert(
+          'Chưa thanh toán học phí',
+          'Bạn chưa thanh toán học phí cho lớp học này. Vui lòng thanh toán để tiếp tục học.',
+          [
+            { text: 'Để sau', style: 'cancel' },
+            {
+              text: 'Thanh toán ngay',
+              onPress: handlePayment,
+            },
+          ]
+        );
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [classroom, user]);
+
   const handleRefresh = () => {
     setIsRefreshing(true);
     fetchClassroomDetail(false);
@@ -96,11 +127,17 @@ export default function ClassroomDetailScreen() {
   const handleJoinRequest = async () => {
     if (!user || !classroom) return;
 
+    // Get classroom ID (backend returns 'id', not 'classroomId')
+    const classroomId = (classroom as any).id || classroom.classroomId;
+    if (!classroomId) {
+      Alert.alert('Lỗi', 'Không tìm thấy ID lớp học');
+      return;
+    }
+
     setIsJoining(true);
     try {
       await joinRequestService.create({
-        classroomId: classroom.classroomId,
-        studentId: user.userId,
+        classRoomId: classroomId,
       });
 
       Alert.alert('Thành công', 'Đã gửi yêu cầu tham gia. Vui lòng chờ giáo viên duyệt.');
@@ -113,23 +150,53 @@ export default function ClassroomDetailScreen() {
     }
   };
 
+  const handlePayment = () => {
+    if (!classroom) return;
+
+    // Backend returns 'id', but we keep 'classroomId' for compatibility
+    const classroomId = (classroom as any).id || classroom.classroomId;
+    if (!classroomId) {
+      Alert.alert('Lỗi', 'Không tìm thấy thông tin lớp học');
+      return;
+    }
+
+    router.push({
+      pathname: '/payment',
+      params: {
+        classroomId: classroomId.toString(),
+        classroomName: classroom.name,
+        price: classroom.price.toString(),
+      },
+    });
+  };
+
   const getEnrollmentStatus = () => {
     if (!classroom) return null;
 
-    const isEnrolled = enrolledClassrooms.includes(classroom.classroomId);
+    // Get classroom ID (backend returns 'id', but we keep 'classroomId' for compatibility)
+    const currentClassroomId = (classroom as any).id || classroom.classroomId;
+    if (!currentClassroomId) return null;
+
+    // Check if enrolled by comparing IDs
+    const isEnrolled = enrolledClassrooms.some(c => {
+      if (!c) return false; // Skip null/undefined items
+      const enrolledId = (c as any).id || (c as any).classroomId;
+      return enrolledId === currentClassroomId;
+    });
+
     if (isEnrolled) {
       return { type: 'enrolled' as const, text: 'Đã tham gia', color: '#34C759' };
     }
 
     const pendingRequest = myRequests.find(
-      r => r.classroomId === classroom.classroomId && r.status === 'pending'
+      r => r.classroomId === currentClassroomId && r.status === 'pending'
     );
     if (pendingRequest) {
       return { type: 'pending' as const, text: 'Đang chờ duyệt', color: '#FF9500' };
     }
 
     const rejectedRequest = myRequests.find(
-      r => r.classroomId === classroom.classroomId && r.status === 'rejected'
+      r => r.classroomId === currentClassroomId && r.status === 'rejected'
     );
     if (rejectedRequest) {
       return { type: 'rejected' as const, text: 'Đã bị từ chối', color: '#FF3B30' };
@@ -235,154 +302,149 @@ export default function ClassroomDetailScreen() {
             />
           }
         >
-        {/* Main Info Card */}
-        <View style={styles.mainCard}>
-          <View style={styles.iconHeader}>
-            <View style={styles.iconCircle}>
-              <Ionicons name="school" size={40} color="#007AFF" />
-            </View>
-            {classroom.isArchived && (
-              <View style={styles.archivedBadge}>
-                <Text style={styles.archivedText}>Đã lưu trữ</Text>
+          {/* Main Info Card */}
+          <View style={styles.mainCard}>
+            <View style={styles.iconHeader}>
+              <View style={styles.iconCircle}>
+                <Ionicons name="school" size={40} color="#007AFF" />
               </View>
+              {classroom.isArchived && (
+                <View style={styles.archivedBadge}>
+                  <Text style={styles.archivedText}>Đã lưu trữ</Text>
+                </View>
+              )}
+            </View>
+
+            <Text style={styles.className}>{classroom.name}</Text>
+
+            {classroom.description && (
+              <Text style={styles.description}>{classroom.description}</Text>
             )}
           </View>
 
-          <Text style={styles.className}>{classroom.name}</Text>
-
-          {classroom.description && (
-            <Text style={styles.description}>{classroom.description}</Text>
-          )}
-        </View>
-
-        {/* Information Cards */}
-        <View style={styles.infoCard}>
-          <Text style={styles.cardTitle}>Thông tin giảng viên</Text>
-          <View style={styles.infoRow}>
-            <Ionicons name="person" size={20} color="#007AFF" />
-            <Text style={styles.infoLabel}>Giảng viên:</Text>
-            <Text style={styles.infoValue}>{classroom.tutorName}</Text>
-          </View>
-        </View>
-
-        <View style={styles.infoCard}>
-          <Text style={styles.cardTitle}>Thông tin lớp học</Text>
-
-          <View style={styles.infoRow}>
-            <Ionicons name="people" size={20} color="#007AFF" />
-            <Text style={styles.infoLabel}>Số học sinh:</Text>
-            <Text style={styles.infoValue}>{classroom.studentCount} học sinh</Text>
+          {/* Information Cards */}
+          <View style={styles.infoCard}>
+            <Text style={styles.cardTitle}>Thông tin giảng viên</Text>
+            <View style={styles.infoRow}>
+              <Ionicons name="person" size={20} color="#007AFF" />
+              <Text style={styles.infoLabel}>Giảng viên:</Text>
+              <Text style={styles.infoValue}>
+                {classroom.tutorName || (classroom as any).tutor?.fullName || 'Chưa có thông tin'}
+              </Text>
+            </View>
           </View>
 
-          <View style={styles.divider} />
+          <View style={styles.infoCard}>
+            <Text style={styles.cardTitle}>Thông tin lớp học</Text>
 
-          <View style={styles.infoRow}>
-            <Ionicons name="cash" size={20} color="#007AFF" />
-            <Text style={styles.infoLabel}>Học phí:</Text>
-            <Text style={[styles.infoValue, styles.priceText]}>
-              {formatPrice(classroom.price)}
-            </Text>
-          </View>
+            <View style={styles.infoRow}>
+              <Ionicons name="cash" size={20} color="#007AFF" />
+              <Text style={styles.infoLabel}>Học phí:</Text>
+              <Text style={[styles.infoValue, styles.priceText]}>
+                {formatPrice(classroom.price)}
+              </Text>
+            </View>
 
-          <View style={styles.divider} />
+            <View style={styles.divider} />
 
-          <View style={styles.infoRow}>
-            <Ionicons name="calendar" size={20} color="#007AFF" />
-            <Text style={styles.infoLabel}>Ngày tạo:</Text>
-            <Text style={styles.infoValue}>{formatDate(classroom.createdAt)}</Text>
-          </View>
+            <View style={styles.infoRow}>
+              <Ionicons name="calendar" size={20} color="#007AFF" />
+              <Text style={styles.infoLabel}>Ngày tạo:</Text>
+              <Text style={styles.infoValue}>{formatDate(classroom.createdAt)}</Text>
+            </View>
 
-          {classroom.isArchived && (
-            <>
-              <View style={styles.divider} />
-              <View style={styles.infoRow}>
-                <Ionicons name="archive" size={20} color="#FF9500" />
-                <Text style={styles.infoLabel}>Trạng thái:</Text>
-                <Text style={[styles.infoValue, styles.archivedStatusText]}>
-                  Đã lưu trữ
-                </Text>
-              </View>
-            </>
-          )}
-        </View>
-
-        {/* Enrollment Status / Action Button */}
-        {(() => {
-          const status = getEnrollmentStatus();
-          if (!status) return null;
-
-          if (status.type === 'enrolled') {
-            return (
-              <View style={styles.enrolledBanner}>
-                <Ionicons name="checkmark-circle" size={24} color={status.color} />
-                <Text style={[styles.enrolledText, { color: status.color }]}>
-                  {status.text}
-                </Text>
-              </View>
-            );
-          }
-
-          if (status.type === 'pending') {
-            return (
-              <View style={styles.pendingBanner}>
-                <Ionicons name="time" size={24} color={status.color} />
-                <Text style={[styles.pendingText, { color: status.color }]}>
-                  {status.text}
-                </Text>
-              </View>
-            );
-          }
-
-          if (status.type === 'rejected') {
-            return (
-              <View style={styles.rejectedBanner}>
-                <Ionicons name="close-circle" size={24} color={status.color} />
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.rejectedText, { color: status.color }]}>
-                    {status.text}
-                  </Text>
-                  <Text style={styles.rejectedSubtext}>
-                    Bạn có thể gửi lại yêu cầu tham gia
+            {classroom.isArchived && (
+              <>
+                <View style={styles.divider} />
+                <View style={styles.infoRow}>
+                  <Ionicons name="archive" size={20} color="#FF9500" />
+                  <Text style={styles.infoLabel}>Trạng thái:</Text>
+                  <Text style={[styles.infoValue, styles.archivedStatusText]}>
+                    Đã lưu trữ
                   </Text>
                 </View>
-                <TouchableOpacity
-                  style={styles.retryButton}
-                  onPress={handleJoinRequest}
-                  disabled={isJoining}
-                >
-                  {isJoining ? (
-                    <ActivityIndicator size="small" color="#007AFF" />
-                  ) : (
-                    <Text style={styles.retryButtonText}>Gửi lại</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
+              </>
+            )}
+          </View>
+
+          {/* Enrollment Status / Action Button */}
+          {(() => {
+            const status = getEnrollmentStatus();
+            if (!status) return null;
+
+            // enrolled - just show status
+            if (status.type === 'enrolled') {
+              return (
+                <View style={styles.enrolledBanner}>
+                  <Ionicons name="checkmark-circle" size={24} color={status.color} />
+                  <Text style={[styles.enrolledText, { color: status.color }]}>
+                    {status.text}
+                  </Text>
+                </View>
+              );
+            }
+
+            if (status.type === 'pending') {
+              return (
+                <View style={styles.pendingBanner}>
+                  <Ionicons name="time" size={24} color={status.color} />
+                  <Text style={[styles.pendingText, { color: status.color }]}>
+                    {status.text}
+                  </Text>
+                </View>
+              );
+            }
+
+            if (status.type === 'rejected') {
+              return (
+                <View style={styles.rejectedBanner}>
+                  <Ionicons name="close-circle" size={24} color={status.color} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.rejectedText, { color: status.color }]}>
+                      {status.text}
+                    </Text>
+                    <Text style={styles.rejectedSubtext}>
+                      Bạn có thể gửi lại yêu cầu tham gia
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.retryButton}
+                    onPress={handleJoinRequest}
+                    disabled={isJoining}
+                  >
+                    {isJoining ? (
+                      <ActivityIndicator size="small" color="#007AFF" />
+                    ) : (
+                      <Text style={styles.retryButtonText}>Gửi lại</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              );
+            }
+
+            // not-enrolled - show only join request button
+            return (
+              <TouchableOpacity
+                style={styles.joinButton}
+                onPress={handleJoinRequest}
+                disabled={isJoining}
+              >
+                {isJoining ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <Ionicons name="person-add" size={20} color="#fff" />
+                    <Text style={styles.joinButtonText}>Gửi yêu cầu</Text>
+                  </>
+                )}
+              </TouchableOpacity>
             );
-          }
+          })()}
 
-          // not-enrolled
-          return (
-            <TouchableOpacity
-              style={styles.joinButton}
-              onPress={handleJoinRequest}
-              disabled={isJoining}
-            >
-              {isJoining ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <>
-                  <Ionicons name="add-circle" size={24} color="#fff" />
-                  <Text style={styles.joinButtonText}>{status.text}</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          );
-        })()}
 
-        
-      </ScrollView>
+        </ScrollView>
       ) : (
-        <LessonsTab lessons={lessons} classroomId={classroom.classroomId} isLoading={isLoadingLessons} />
+        <LessonsTab lessons={lessons} classroomId={classroom.id} isLoading={isLoadingLessons} />
       )}
     </View>
   );
@@ -631,8 +693,70 @@ const styles = StyleSheet.create({
   },
   joinButtonText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
+  },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  paymentButton: {
+    flex: 1,
+    backgroundColor: '#10B981',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 12,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  paymentButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  paymentStatusContainer: {
+    marginTop: 16,
+    gap: 12,
+  },
+  unpaidBanner: {
+    backgroundColor: '#FFF3CD',
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    gap: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF9500',
+  },
+  unpaidText: {
+    color: '#856404',
+    fontSize: 14,
+    fontWeight: '500',
+    flex: 1,
+  },
+  paidBanner: {
+    backgroundColor: '#D1FAE5',
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    gap: 8,
+    marginTop: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#34C759',
+  },
+  paidText: {
+    color: '#065F46',
+    fontSize: 14,
+    fontWeight: '500',
+    flex: 1,
   },
   actionSection: {
     marginTop: 8,

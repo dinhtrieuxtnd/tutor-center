@@ -56,6 +56,7 @@ export default function ClassroomsScreen() {
         page,
         pageSize,
         isArchived: false,
+        includeDeleted: false, // Don't show deleted classrooms
       };
 
       if (searchQuery.trim()) {
@@ -143,6 +144,22 @@ export default function ClassroomsScreen() {
     }
   };
 
+  const handleJoinClassroom = async (classroom: ClassroomResponse) => {
+    const classroomId = getClassroomId(classroom);
+    if (!classroomId) return;
+
+    try {
+      // Navigate to classroom detail where user can join
+      router.push({
+        pathname: '/classroom-detail',
+        params: { id: classroomId.toString() },
+      });
+    } catch (error: any) {
+      console.error('Error navigating to classroom:', error);
+      Alert.alert('Lỗi', 'Không thể mở chi tiết lớp học');
+    }
+  };
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
@@ -173,12 +190,6 @@ export default function ClassroomsScreen() {
             <Text style={styles.className} numberOfLines={2}>
               {item.name}
             </Text>
-            {enrolled && (
-              <View style={styles.enrolledBadge}>
-                <Ionicons name="checkmark-circle" size={14} color="#34C759" />
-                <Text style={styles.enrolledText}>Đã tham gia</Text>
-              </View>
-            )}
           </View>
         </View>
 
@@ -191,14 +202,9 @@ export default function ClassroomsScreen() {
         <View style={styles.infoRow}>
           <View style={styles.infoItem}>
             <Ionicons name="person" size={16} color="#666" />
-            <Text style={styles.infoText}>GV: {item.tutorName}</Text>
-          </View>
-        </View>
-
-        <View style={styles.infoRow}>
-          <View style={styles.infoItem}>
-            <Ionicons name="people" size={16} color="#666" />
-            <Text style={styles.infoText}>{item.studentCount} học sinh</Text>
+            <Text style={styles.infoText}>
+              GV: {item.tutorName || item.tutor?.fullName || 'Chưa có thông tin'}
+            </Text>
           </View>
           <View style={styles.infoItem}>
             <Ionicons name="cash" size={16} color="#666" />
@@ -206,10 +212,44 @@ export default function ClassroomsScreen() {
           </View>
         </View>
 
+        {/* Enrollment Status Badge and Join Button */}
         <View style={styles.footer}>
-          <Ionicons name="chevron-forward" size={20} color="#007AFF" />
+          {enrolled ? (
+            <>
+              <View style={styles.enrolledStatusBadge}>
+                <Ionicons name="checkmark-circle" size={16} color="#34C759" />
+                <Text style={styles.enrolledStatusText}>Đã tham gia</Text>
+              </View>
+              {(item.hasPaid === false || item.hasPaid === null) && (
+                <View style={styles.unpaidStatusBadge}>
+                  <Ionicons name="alert-circle" size={16} color="#FF3B30" />
+                  <Text style={styles.unpaidStatusText}>Chưa thanh toán</Text>
+                </View>
+              )}
+            </>
+          ) : (
+            <>
+              <View style={styles.notEnrolledBadge}>
+                <Ionicons name="alert-circle" size={16} color="#FF9500" />
+                <Text style={styles.notEnrolledText}>Chưa tham gia</Text>
+              </View>
+              {/* Only show join button in 'all' tab, not in 'enrolled' tab */}
+              {activeTab === 'all' && (
+                <TouchableOpacity
+                  style={styles.joinClassButton}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handleJoinClassroom(item);
+                  }}
+                >
+                  <Ionicons name="add-circle" size={16} color="#fff" />
+                  <Text style={styles.joinClassButtonText}>Tham gia</Text>
+                </TouchableOpacity>
+              )}
+            </>
+          )}
         </View>
-      </TouchableOpacity>
+      </TouchableOpacity >
     );
   };
 
@@ -474,6 +514,42 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginLeft: 4,
   },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  unpaidBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: '#FFE5E5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    marginTop: 4,
+  },
+  unpaidText: {
+    fontSize: 12,
+    color: '#FF3B30',
+    fontWeight: '500',
+    marginLeft: 4,
+  },
+  unpaidStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFE5E5',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 4,
+  },
+  unpaidStatusText: {
+    fontSize: 12,
+    color: '#FF3B30',
+    fontWeight: '600',
+  },
   description: {
     fontSize: 14,
     color: '#666',
@@ -497,12 +573,55 @@ const styles = StyleSheet.create({
   },
   footer: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 8,
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
+    gap: 8,
+  },
+  enrolledStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8F5E9',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 4,
+  },
+  enrolledStatusText: {
+    fontSize: 12,
+    color: '#34C759',
+    fontWeight: '600',
+  },
+  notEnrolledBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF3E0',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 4,
+  },
+  notEnrolledText: {
+    fontSize: 12,
+    color: '#FF9500',
+    fontWeight: '600',
+  },
+  joinClassButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 4,
+  },
+  joinClassButtonText: {
+    fontSize: 12,
+    color: '#fff',
+    fontWeight: '600',
   },
   loadingContainer: {
     flex: 1,

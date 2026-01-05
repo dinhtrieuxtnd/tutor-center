@@ -25,6 +25,7 @@ export default function RootLayout() {
           <Stack.Screen name="lecture-detail" options={{ headerShown: false }} />
           <Stack.Screen name="exercise-submit" options={{ headerShown: false }} />
           <Stack.Screen name="classroom-chat" options={{ headerShown: false }} />
+          <Stack.Screen name="chat-room" options={{ headerShown: false }} />
           <Stack.Screen name="payment" options={{ headerShown: false }} />
           <Stack.Screen name="payment-history" options={{ headerShown: false }} />
           <Stack.Screen name="my-join-requests" options={{ headerShown: false }} />

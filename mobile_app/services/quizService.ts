@@ -1,6 +1,34 @@
 import config from '../config';
 
-// Types for Quiz (for student view - without correct answers)
+// Backend Response Types (as returned from API)
+interface QuizBackendResponse {
+  id: number;
+  title: string;
+  description?: string;
+  timeLimitSec: number;
+  maxAttempts: number;
+  shuffleQuestions: boolean;
+  shuffleOptions: boolean;
+  showAnswers?: boolean;
+  questions: QuizQuestionBackendResponse[];
+}
+
+interface QuizQuestionBackendResponse {
+  id: number;
+  content: string;
+  questionType: string;
+  points: number;
+  orderIndex: number;
+  options: QuizOptionBackendResponse[];
+}
+
+interface QuizOptionBackendResponse {
+  id: number;
+  content: string;
+  orderIndex: number;
+}
+
+// Frontend Types (normalized for app use)
 export interface QuizForStudentResponse {
   quizId: number;
   title: string;
@@ -13,7 +41,6 @@ export interface QuizForStudentResponse {
   questions: QuizQuestionForStudentResponse[];
 }
 
-// Quiz Question for Student (without correct answer info)
 export interface QuizQuestionForStudentResponse {
   questionId: number;
   content: string;
@@ -23,7 +50,6 @@ export interface QuizQuestionForStudentResponse {
   options: QuizOptionForStudentResponse[];
 }
 
-// Quiz Option for Student (without isCorrect field)
 export interface QuizOptionForStudentResponse {
   questionOptionId: number;
   content: string;
@@ -43,7 +69,40 @@ export interface QuizAttemptResponse {
   scoreScaled10?: number;
 }
 
-// Quiz Attempt Detail (with answers and results)
+// Backend response for quiz attempt detail (actual structure)
+interface QuizAttemptBackendDetailResponse {
+  quizAttemptId: number;
+  lessonId: number;
+  quizId: number;
+  studentId: number;
+  studentName: string;
+  startedAt: string;
+  submittedAt?: string;
+  status: string;
+  scoreRaw?: number;
+  scoreScaled10?: number;
+  quiz: {
+    id: number;
+    title: string;
+    questions: Array<{
+      id: number;
+      content: string;
+      points: number;
+      options: Array<{
+        id: number;
+        content: string;
+        isCorrect: boolean;
+      }>;
+    }>;
+  };
+  answers: Array<{
+    attemptId: number;
+    questionId: number;
+    optionId: number;
+  }>;
+}
+
+// Frontend transformed quiz attempt detail
 export interface QuizAttemptDetailResponse {
   quizAttemptId: number;
   lessonId: number;
@@ -137,6 +196,67 @@ class QuizService {
     throw new Error('Unexpected response format');
   }
 
+  // Transform attempt detail from backend to frontend format
+  private transformAttemptDetail(backendData: QuizAttemptBackendDetailResponse): QuizAttemptDetailResponse {
+    const answers: QuizAnswerDetailResponse[] = backendData.answers.map(ans => {
+      const question = backendData.quiz.questions.find(q => q.id === ans.questionId);
+      const selectedOption = question?.options.find(opt => opt.id === ans.optionId);
+      const correctOption = question?.options.find(opt => opt.isCorrect);
+
+      return {
+        questionId: ans.questionId,
+        questionContent: question?.content || '',
+        questionPoints: question?.points || 0,
+        selectedOptionId: ans.optionId,
+        selectedOptionContent: selectedOption?.content || '',
+        correctOptionId: correctOption?.id,
+        correctOptionContent: correctOption?.content || '',
+        isCorrect: selectedOption?.isCorrect || false,
+      };
+    });
+
+    return {
+      quizAttemptId: backendData.quizAttemptId,
+      lessonId: backendData.lessonId,
+      quizId: backendData.quizId,
+      quizTitle: backendData.quiz.title,
+      studentId: backendData.studentId,
+      studentName: backendData.studentName,
+      startedAt: backendData.startedAt,
+      submittedAt: backendData.submittedAt,
+      status: backendData.status,
+      scoreRaw: backendData.scoreRaw,
+      scoreScaled10: backendData.scoreScaled10,
+      answers,
+    };
+  }
+
+  // Transform backend response to frontend format
+  private transformQuizData(backendData: QuizBackendResponse): QuizForStudentResponse {
+    return {
+      quizId: backendData.id,
+      title: backendData.title,
+      description: backendData.description,
+      timeLimitSec: backendData.timeLimitSec,
+      maxAttempts: backendData.maxAttempts,
+      shuffleQuestions: backendData.shuffleQuestions,
+      shuffleOptions: backendData.shuffleOptions,
+      showAnswers: backendData.showAnswers || false,
+      questions: backendData.questions.map(q => ({
+        questionId: q.id,
+        content: q.content,
+        questionType: q.questionType,
+        points: q.points,
+        orderIndex: q.orderIndex,
+        options: q.options.map(opt => ({
+          questionOptionId: opt.id,
+          content: opt.content,
+          orderIndex: opt.orderIndex,
+        })),
+      })),
+    };
+  }
+
   /**
    * Get quiz detail for student (without correct answers)
    * Backend: GET /api/Quiz/lesson/{lessonId}/student
@@ -150,7 +270,8 @@ class QuizService {
       headers,
     });
 
-    return await this.handleResponse<QuizForStudentResponse>(response);
+    const backendData = await this.handleResponse<QuizBackendResponse>(response);
+    return this.transformQuizData(backendData);
   }
 
   /**
@@ -187,7 +308,8 @@ class QuizService {
       headers,
     });
 
-    return await this.handleResponse<QuizAttemptDetailResponse>(response);
+    const backendData = await this.handleResponse<QuizAttemptBackendDetailResponse>(response);
+    return this.transformAttemptDetail(backendData);
   }
 
   /**
@@ -250,6 +372,27 @@ class QuizService {
     });
 
     return await this.handleResponse<{ message: string }>(response);
+  }
+
+  /**
+   * Submit quiz attempt
+   * Backend: PUT /api/QuizAttempt/submit
+   */
+  async submitAttempt(lessonId: number): Promise<QuizAttemptResponse> {
+    const headers = await this.getAuthHeaders();
+    const url = `${config.API_BASE_URL}/QuizAttempt/submit`;
+
+    const body = {
+      lessonId,
+    };
+
+    const response = await this.fetchWithTimeout(url, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(body),
+    });
+
+    return await this.handleResponse<QuizAttemptResponse>(response);
   }
 }
 

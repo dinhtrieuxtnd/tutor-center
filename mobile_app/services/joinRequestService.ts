@@ -13,9 +13,7 @@ export interface JoinRequestResponse {
 }
 
 export interface CreateJoinRequestRequest {
-  classroomId: number;
-  studentId: number;
-  note?: string;
+  classRoomId: number; // Note: capital R to match backend DTO
 }
 
 // Join Request Service
@@ -32,7 +30,7 @@ class JoinRequestService {
   private async fetchWithTimeout(url: string, options: RequestInit = {}): Promise<Response> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), config.REQUEST_TIMEOUT);
-    
+
     try {
       const response = await fetch(url, {
         ...options,
@@ -42,25 +40,25 @@ class JoinRequestService {
       return response;
     } catch (error: any) {
       clearTimeout(timeoutId);
-      
+
       if (error.name === 'AbortError') {
         throw new Error(`Kết nối đến server quá chậm. Vui lòng thử lại.`);
       }
-      
+
       if (error.message === 'Network request failed') {
         throw new Error('Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.');
       }
-      
+
       throw error;
     }
   }
 
   private async handleResponse<T>(response: Response): Promise<T> {
     const contentType = response.headers.get('content-type');
-    
+
     if (!response.ok) {
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-      
+
       if (contentType && contentType.includes('application/json')) {
         try {
           const errorData = await response.json();
@@ -69,7 +67,7 @@ class JoinRequestService {
           // Ignore JSON parse error, use default message
         }
       }
-      
+
       throw new Error(errorMessage);
     }
 
@@ -80,21 +78,27 @@ class JoinRequestService {
     if (contentType && contentType.includes('application/json')) {
       return await response.json();
     }
-    
+
     return {} as T;
   }
 
   // Student: Create join request
   async create(data: CreateJoinRequestRequest): Promise<JoinRequestResponse> {
     const headers = await this.getAuthHeaders();
-    const url = `${config.API_BASE_URL}/JoinRequests`;
-    
+    const url = `${config.API_BASE_URL}/JoinRequest`; // Singular, not plural
+
+    console.log('🔵 Creating join request...');
+    console.log('URL:', url);
+    console.log('Data:', data);
+
     const response = await this.fetchWithTimeout(url, {
       method: 'POST',
       headers,
       body: JSON.stringify(data),
     });
-    
+
+    console.log('Response status:', response.status);
+
     const result = await this.handleResponse<{ data: JoinRequestResponse }>(response);
     return result.data;
   }
@@ -103,12 +107,12 @@ class JoinRequestService {
   async getMy(): Promise<JoinRequestResponse[]> {
     const headers = await this.getAuthHeaders();
     const url = `${config.API_BASE_URL}/JoinRequests/my`;
-    
+
     const response = await this.fetchWithTimeout(url, {
       method: 'GET',
       headers,
     });
-    
+
     return this.handleResponse<JoinRequestResponse[]>(response);
   }
 }

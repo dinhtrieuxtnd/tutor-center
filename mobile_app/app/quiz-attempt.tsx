@@ -52,6 +52,8 @@ export default function QuizAttemptScreen() {
 
         // Load quiz questions
         const quizData = await quizService.getQuizForStudent(Number(lessonId));
+        console.log('🔍 Quiz Data from Backend:', JSON.stringify(quizData, null, 2));
+        console.log('⏰ Quiz timeLimitSec:', quizData.timeLimitSec);
         setQuiz(quizData);
 
         if (!quizData || !quizData.questions || quizData.questions.length === 0) {
@@ -95,6 +97,9 @@ export default function QuizAttemptScreen() {
           const now = Date.now();
           const elapsed = Math.floor((now - startTime) / 1000);
           const remaining = Math.max(0, quizData.timeLimitSec - elapsed);
+          console.log('⏰ Start time:', currentAttempt.startedAt);
+          console.log('⏰ Elapsed seconds:', elapsed);
+          console.log('⏰ Time remaining:', remaining);
           setTimeRemaining(remaining);
         }
       } catch (error: any) {
@@ -119,7 +124,7 @@ export default function QuizAttemptScreen() {
 
   // Timer countdown
   useEffect(() => {
-    if (timeRemaining > 0 && attempt?.status === 'in_progress') {
+    if (attempt?.status === 'in_progress' && timeRemaining > 0) {
       timerRef.current = setInterval(() => {
         setTimeRemaining(prev => {
           if (prev <= 1) {
@@ -133,10 +138,11 @@ export default function QuizAttemptScreen() {
       return () => {
         if (timerRef.current) {
           clearInterval(timerRef.current);
+          timerRef.current = null;
         }
       };
     }
-  }, [timeRemaining, attempt?.status]);
+  }, [attempt?.status]);
 
   const handleAutoSubmit = async () => {
     Alert.alert(
@@ -151,11 +157,18 @@ export default function QuizAttemptScreen() {
       return;
     }
 
+    console.log('=== SELECT ANSWER ===');
+    console.log('Question ID:', questionId);
+    console.log('Option ID:', optionId);
+    console.log('Before - selectedAnswers:', JSON.stringify(selectedAnswers));
+
     // Update local state
     const newAnswers = {
       ...selectedAnswers,
       [questionId]: [optionId], // Single choice for now
     };
+    
+    console.log('After - newAnswers:', JSON.stringify(newAnswers));
     setSelectedAnswers(newAnswers);
 
     // Save to server
@@ -171,7 +184,7 @@ export default function QuizAttemptScreen() {
         await quizService.createAnswer(attempt!.quizAttemptId, questionId, [optionId]);
       }
 
-      console.log('Answer saved:', questionId, optionId);
+      console.log('Answer saved successfully');
     } catch (error: any) {
       console.error('Error saving answer:', error);
       // Don't show error to user, they can continue
@@ -193,6 +206,9 @@ export default function QuizAttemptScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
+              // Submit the quiz attempt
+              await quizService.submitAttempt(Number(lessonId));
+              
               // Navigate to result with lessonId
               router.replace({
                 pathname: '/quiz-result',
@@ -249,8 +265,8 @@ export default function QuizAttemptScreen() {
             Câu {currentQuestionIndex + 1}/{quiz.questions.length}
           </Text>
         </View>
-        {timeRemaining > 0 && (
-          <View style={[styles.timer, timeRemaining < 300 && styles.timerWarning]}>
+        {quiz.timeLimitSec && quiz.timeLimitSec > 0 && (
+          <View style={[styles.timer, timeRemaining === 0 ? styles.timerExpired : timeRemaining < 300 && styles.timerWarning]}>
             <Ionicons name="time" size={20} color="white" />
             <Text style={styles.timerText}>{formatTime(timeRemaining)}</Text>
           </View>
@@ -287,53 +303,60 @@ export default function QuizAttemptScreen() {
       </ScrollView>
 
       {/* Question Content */}
-      <ScrollView style={styles.content}>
+      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
         <View style={styles.questionCard}>
           <View style={styles.questionHeader}>
             <Text style={styles.questionNumber}>Câu hỏi {currentQuestionIndex + 1}</Text>
             <Text style={styles.questionPoints}>{currentQuestion?.points || 1} điểm</Text>
           </View>
           <Text style={styles.questionText}>{currentQuestion?.content || ''}</Text>
-        </View>
 
-        {/* Options */}
-        <View style={styles.optionsContainer}>
+          {/* Options */}
           <Text style={styles.optionsNote}>
             Chọn một đáp án đúng nhất:
           </Text>
-          {currentQuestion?.options.map((option) => (
-            <TouchableOpacity
-              key={option.questionOptionId}
-              style={[
-                styles.optionCard,
-                selectedAnswers[currentQuestion.questionId]?.includes(option.questionOptionId) &&
-                styles.optionSelected,
-              ]}
-              onPress={() => handleSelectAnswer(currentQuestion.questionId, option.questionOptionId)}
-              disabled={attempt?.status !== 'in_progress'}
-            >
-              <View
+          {currentQuestion?.options.map((option) => {
+            const currentQuestionAnswers = selectedAnswers[currentQuestion.questionId];
+            const isSelected = currentQuestionAnswers?.includes(option.questionOptionId);
+            
+            console.log(`\nRendering Option:`);
+            console.log(`  - Option ID: ${option.questionOptionId}`);
+            console.log(`  - Content: ${option.content}`);
+            console.log(`  - Question ID: ${currentQuestion.questionId}`);
+            console.log(`  - Current answers for this Q:`, currentQuestionAnswers);
+            console.log(`  - Is Selected: ${isSelected}`);
+            
+            return (
+              <TouchableOpacity
+                key={option.questionOptionId}
                 style={[
-                  styles.optionRadio,
-                  selectedAnswers[currentQuestion.questionId]?.includes(option.questionOptionId) &&
-                  styles.optionRadioSelected,
+                  styles.optionCard,
+                  isSelected && styles.optionSelected,
                 ]}
+                onPress={() => handleSelectAnswer(currentQuestion.questionId, option.questionOptionId)}
+                disabled={attempt?.status !== 'in_progress'}
               >
-                {selectedAnswers[currentQuestion.questionId]?.includes(option.questionOptionId) && (
-                  <View style={styles.optionRadioInner} />
-                )}
-              </View>
-              <Text
-                style={[
-                  styles.optionText,
-                  selectedAnswers[currentQuestion.questionId]?.includes(option.questionOptionId) &&
-                  styles.optionTextSelected,
-                ]}
-              >
-                {option.content}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <View
+                  style={[
+                    styles.optionRadio,
+                    isSelected && styles.optionRadioSelected,
+                  ]}
+                >
+                  {isSelected && (
+                    <View style={styles.optionRadioInner} />
+                  )}
+                </View>
+                <Text
+                  style={[
+                    styles.optionText,
+                    isSelected && styles.optionTextSelected,
+                  ]}
+                >
+                  {option.content}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </ScrollView>
 
@@ -462,6 +485,9 @@ const styles = StyleSheet.create({
   timerWarning: {
     backgroundColor: '#EF4444',
   },
+  timerExpired: {
+    backgroundColor: '#7C3AED',
+  },
   timerText: {
     color: 'white',
     fontSize: 14,
@@ -471,10 +497,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
+    maxHeight: 70,
   },
   questionNavContent: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 8,
     gap: 8,
   },
   questionNavItem: {
@@ -502,13 +529,16 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
+  contentContainer: {
     padding: 16,
   },
   questionCard: {
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 16,
+    marginBottom: 0,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -525,36 +555,37 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 6,
   },
   questionNumber: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#007AFF',
   },
   questionPoints: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#6B7280',
   },
   questionText: {
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 15,
+    lineHeight: 22,
     color: '#1F2937',
+    marginBottom: 12,
   },
   optionsContainer: {
     backgroundColor: 'white',
     borderRadius: 12,
-    padding: 16,
+    padding: 12,
   },
   optionsNote: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#6B7280',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   optionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    padding: 12,
     borderRadius: 8,
     backgroundColor: '#F9FAFB',
     marginBottom: 8,
