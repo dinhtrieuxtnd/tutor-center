@@ -43,7 +43,7 @@ export const LoadingRedirect = () => {
                 // Redirect to default dashboard based on role
                 if (profile.roleId === 1) {
                     navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
-                } else if (profile.roleId === 2) {
+                } else if (profile.roleId === 2) { 
                     navigate(ROUTES.TUTOR_DASHBOARD, { replace: true });
                 } else {
                     // Default fallback

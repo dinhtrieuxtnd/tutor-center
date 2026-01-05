@@ -141,11 +141,10 @@ export const ClassroomsDetail = () => {
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                                    isActive
+                                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${isActive
                                         ? 'border-foreground text-foreground'
                                         : 'border-transparent text-foreground-light hover:text-foreground hover:border-gray-300'
-                                }`}
+                                    }`}
                             >
                                 <Icon size={16} />
                                 {tab.label}

@@ -11,24 +11,24 @@ export const TutorSidebar = () => {
     },
     {
       name: 'Quản lý lớp học',
-      href: '/tutor/classrooms',
+      href: ROUTES.TUTOR_CLASSROOMS,
       icon: GraduationCap
     },
     {
       name: 'Quản lý bài giảng',
-      href: '/tutor/lectures',
+      href: ROUTES.TUTOR_LECTURES,
       icon: BookOpen
     },
     {
       name: 'Quản lý bài tập',
-      href: '/tutor/exercises',
+      href: ROUTES.TUTOR_EXERCISES,
       icon: FileText
     },
     {
       name: 'Quản lý bài kiểm tra',
-      href: '/tutor/quizzes',
+      href: ROUTES.TUTOR_QUIZZES,
       icon: ClipboardCheck
-    }
+    },
   ];
 
   return <Sidebar menuItems={menuItems} />;

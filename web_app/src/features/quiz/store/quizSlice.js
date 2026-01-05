@@ -223,14 +223,14 @@ const quizSlice = createSlice({
                 state.updateLoading = false;
                 const updatedQuiz = action.payload.data || action.payload;
 
-                // Update in quizzes list
-                const index = state.quizzes.findIndex(q => q.quizId === updatedQuiz.quizId);
+                // Update in quizzes list (backend uses 'id' not 'quizId')
+                const index = state.quizzes.findIndex(q => q.id === updatedQuiz.id);
                 if (index !== -1) {
                     state.quizzes[index] = updatedQuiz;
                 }
 
                 // Update current quiz if it's the same
-                if (state.currentQuiz?.quizId === updatedQuiz.quizId) {
+                if (state.currentQuiz?.id === updatedQuiz.id) {
                     state.currentQuiz = updatedQuiz;
                 }
 
