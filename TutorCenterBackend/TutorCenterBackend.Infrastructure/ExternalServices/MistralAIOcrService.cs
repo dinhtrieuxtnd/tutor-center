@@ -69,9 +69,10 @@ public class MistralAIOcrService : IMistralAIOcrService
         var dataUrl = $"data:application/pdf;base64,{base64Data}";
 
         // Build request payload following Mistral AI OCR format
+        // Model can be null according to API documentation
         var requestPayload = new
         {
-            model = _options.ModelOcr,
+            model = (string?)null,
             document = new
             {
                 type = "document_url",
@@ -82,7 +83,7 @@ public class MistralAIOcrService : IMistralAIOcrService
         var jsonContent = JsonSerializer.Serialize(requestPayload, new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.Never
         });
 
         var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
