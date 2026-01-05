@@ -44,9 +44,9 @@ export default function LessonsTab({ lessons, classroomId, isLoading }: LessonsT
       <View style={styles.lessonsList}>
         {lessons.map((lesson) => (
           lesson.lessonType === 'lecture' ? (
-            <LectureCard key={lesson.lessonId} lesson={lesson} classroomId={classroomId} />
+            <LectureCard key={lesson.lessonId || (lesson as any).id} lesson={lesson} classroomId={classroomId} />
           ) : (
-            <LessonCard key={lesson.lessonId} lesson={lesson} classroomId={classroomId} />
+            <LessonCard key={lesson.lessonId || (lesson as any).id} lesson={lesson} classroomId={classroomId} />
           )
         ))}
       </View>

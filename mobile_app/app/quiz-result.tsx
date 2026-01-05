@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { quizService, QuizAttemptDetailResponse } from '../services/quizService';
 
 export default function QuizResultScreen() {
-  const { attemptId } = useLocalSearchParams<{ attemptId: string }>();
+  const { lessonId } = useLocalSearchParams<{ lessonId: string }>();
   const router = useRouter();
 
   const [attemptDetail, setAttemptDetail] = useState<QuizAttemptDetailResponse | null>(null);
@@ -24,7 +24,8 @@ export default function QuizResultScreen() {
     const fetchResult = async () => {
       try {
         setIsLoading(true);
-        const detail = await quizService.getAttemptDetail(Number(attemptId));
+        const detail = await quizService.getAttemptByLesson(Number(lessonId));
+        console.log('📊 Quiz Result from Backend:', JSON.stringify(detail, null, 2));
         setAttemptDetail(detail);
       } catch (error: any) {
         console.error('Error fetching quiz result:', error);
@@ -37,7 +38,7 @@ export default function QuizResultScreen() {
     };
 
     fetchResult();
-  }, [attemptId]);
+  }, [lessonId]);
 
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
@@ -58,6 +59,19 @@ export default function QuizResultScreen() {
     const incorrect = total - correct;
     
     return { correct, incorrect, total };
+  };
+
+  const calculateScore = (): number | undefined => {
+    if (!attemptDetail || !attemptDetail.answers.length) return undefined;
+    
+    // Nếu đã có điểm từ backend (submitted)
+    if (attemptDetail.scoreScaled10 && attemptDetail.scoreScaled10 > 0) {
+      return attemptDetail.scoreScaled10;
+    }
+    
+    // Tự tính điểm dựa trên số câu đúng (khi chưa submit)
+    const stats = calculateStats();
+    return (stats.correct / stats.total) * 10;
   };
 
   const getScoreColor = (score?: number): string => {
@@ -97,7 +111,8 @@ export default function QuizResultScreen() {
   }
 
   const stats = calculateStats();
-  const scoreColor = getScoreColor(attemptDetail.scoreScaled10);
+  const scoreValue = calculateScore();
+  const scoreColor = getScoreColor(scoreValue);
 
   return (
     <View style={styles.container}>
@@ -122,13 +137,13 @@ export default function QuizResultScreen() {
           
           <View style={styles.scoreContent}>
             <Text style={[styles.scoreValue, { color: scoreColor }]}>
-              {attemptDetail.scoreScaled10?.toFixed(1) || '--'}
+              {scoreValue?.toFixed(1) || '--'}
             </Text>
             <Text style={styles.scoreScale}>/10</Text>
           </View>
           
           <Text style={[styles.scoreLabel, { color: scoreColor }]}>
-            {getScoreLabel(attemptDetail.scoreScaled10)}
+            {getScoreLabel(scoreValue)}
           </Text>
 
           <View style={styles.scoreStats}>
@@ -229,9 +244,18 @@ export default function QuizResultScreen() {
                   styles.answerText,
                   answer.isCorrect ? styles.answerTextCorrect : styles.answerTextIncorrect
                 ]}>
-                  {answer.optionContent}
+                  {answer.selectedOptionContent}
                 </Text>
               </View>
+
+              {!answer.isCorrect && answer.correctOptionContent && (
+                <View style={styles.answerContent}>
+                  <Text style={styles.answerLabel}>Đáp án đúng:</Text>
+                  <Text style={[styles.answerText, styles.answerTextCorrect]}>
+                    {answer.correctOptionContent}
+                  </Text>
+                </View>
+              )}
             </View>
           ))}
         </View>

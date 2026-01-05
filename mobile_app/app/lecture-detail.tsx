@@ -17,9 +17,9 @@ import MarkdownViewer from '../components/MarkdownViewer';
 import PDFViewer from '../components/PDFViewer';
 
 export default function LectureDetailScreen() {
-  const { classroomId, lessonId, lectureId } = useLocalSearchParams<{ 
-    classroomId: string; 
-    lessonId: string; 
+  const { classroomId, lessonId, lectureId } = useLocalSearchParams<{
+    classroomId: string;
+    lessonId: string;
     lectureId?: string;
   }>();
   const router = useRouter();
@@ -48,47 +48,48 @@ export default function LectureDetailScreen() {
       if (showLoader) {
         setIsLoading(true);
       }
-      
+
       // Get all lessons from classroom and find the specific lesson
       const lessons = await lessonService.getByClassroom(Number(classroomId));
-      const lessonData = lessons.find(l => l.lessonId === Number(lessonId));
-      
+      const lessonData = lessons.find(l => (l.lessonId || (l as any).id) === Number(lessonId));
+
       if (!lessonData) {
+        console.error('❌ Lesson not found. LessonId:', lessonId, 'Available lessons:', lessons.map(l => ({ id: (l as any).id, lessonId: l.lessonId, type: l.lessonType })));
         throw new Error('Không tìm thấy bài học');
       }
-      
+
       setLesson(lessonData);
-      
+
       // Fetch media if exists
       const currentLecture = lectureId && lessonData.lecture?.children
         ? lessonData.lecture.children.find((child) => child.lectureId === Number(lectureId))
         : lessonData.lecture;
-      
+
       console.log('Current lecture:', currentLecture);
       console.log('MediaId:', currentLecture?.mediaId);
-      
+
       if (currentLecture?.mediaId) {
         try {
-          console.log('📄 Fetching media for mediaId:', currentLecture.mediaId);
-          
+          console.log('Fetching media for mediaId:', currentLecture.mediaId);
+
           // Use backend /view endpoint (works better with external viewers)
           const viewUrl = await mediaService.getViewUrl(currentLecture.mediaId);
-          console.log('✅ Backend view URL:', viewUrl);
+          console.log('Backend view URL:', viewUrl);
           setMediaUrl(viewUrl);
-          
+
           // Try to detect media type
           try {
             const result = await mediaService.getPresignedUrl(currentLecture.mediaId);
-            const detectedType = result.mimeType || 
+            const detectedType = result.mimeType ||
               (result.url.toLowerCase().endsWith('.pdf') ? 'application/pdf' : null);
             setMediaType(detectedType);
-            console.log('✅ Media type:', detectedType);
+            console.log('Media type:', detectedType);
           } catch (err) {
-            console.log('⚠️ Could not detect media type, defaulting to PDF');
+            console.log('Could not detect media type, defaulting to PDF');
             setMediaType('application/pdf');
           }
         } catch (error: any) {
-          console.error('❌ Error fetching media:', error);
+          console.error(' Error fetching media:', error);
           // Don't throw, just log - missing media shouldn't break the page
         }
       } else {
@@ -155,7 +156,7 @@ export default function LectureDetailScreen() {
   }
 
   // Handle Quiz lesson
-  if (lesson.lessonType === 'quiz' && lesson.quiz) {
+  if (lesson.lessonType?.toLowerCase() === 'quiz' && lesson.quiz) {
     return (
       <View style={styles.container}>
         {/* Header */}
@@ -191,7 +192,7 @@ export default function LectureDetailScreen() {
               <View style={styles.metaRow}>
                 <Ionicons name="time-outline" size={14} color="#6B7280" />
                 <Text style={styles.metaText}>
-                  {lesson.quiz.timeLimit ? `${lesson.quiz.timeLimit} phút` : 'Không giới hạn thời gian'}
+                  {lesson.quiz.timeLimitSec ? `${Math.floor(lesson.quiz.timeLimitSec / 60)} phút` : 'Không giới hạn thời gian'}
                 </Text>
               </View>
               <View style={styles.metaRow}>
@@ -220,7 +221,7 @@ export default function LectureDetailScreen() {
                 <View style={styles.infoTextContainer}>
                   <Text style={styles.infoLabel}>Thời gian bắt đầu</Text>
                   <Text style={styles.infoValue}>
-                    {lesson.quizStartAt ? formatDate(lesson.quizStartAt) : 'Chưa xác định'}
+                    {lesson.quiz.quizStartAt ? formatDate(lesson.quiz.quizStartAt) : 'Chưa xác định'}
                   </Text>
                 </View>
               </View>
@@ -229,7 +230,7 @@ export default function LectureDetailScreen() {
                 <View style={styles.infoTextContainer}>
                   <Text style={styles.infoLabel}>Thời gian kết thúc</Text>
                   <Text style={styles.infoValue}>
-                    {lesson.quizEndAt ? formatDate(lesson.quizEndAt) : 'Chưa xác định'}
+                    {lesson.quiz.quizEndAt ? formatDate(lesson.quiz.quizEndAt) : 'Chưa xác định'}
                   </Text>
                 </View>
               </View>
@@ -259,7 +260,7 @@ export default function LectureDetailScreen() {
     return (
       <View style={styles.errorContainer}>
         <Ionicons name="alert-circle-outline" size={80} color="#FF3B30" />
-        <Text style={styles.errorText}>Không tìm thấy bài giảng</Text>
+        <Text style={styles.errorText}>Không tìm thấy</Text>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Text style={styles.backButtonText}>Quay lại</Text>
         </TouchableOpacity>
@@ -328,7 +329,7 @@ export default function LectureDetailScreen() {
         {lecture?.mediaId && (
           <View style={styles.mediaSection}>
             <Text style={styles.sectionTitle}>Tài liệu đính kèm</Text>
-            
+
             {mediaUrl ? (
               <View style={styles.mediaCard}>
                 {/* PDF Viewer - Always show directly without toggle */}
@@ -368,9 +369,9 @@ export default function LectureDetailScreen() {
                 onPress={() => {
                   router.push({
                     pathname: '/lecture-detail',
-                    params: { 
+                    params: {
                       classroomId,
-                      lessonId, 
+                      lessonId,
                       lectureId: child.lectureId.toString(),
                     },
                   });

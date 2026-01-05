@@ -83,22 +83,40 @@ export default function LessonCard({ lesson, classroomId, onPress }: LessonCardP
       return;
     }
 
+    // Get lessonId (backend may return 'id' or 'lessonId')
+    const lessonId = lesson.lessonId || (lesson as any).id;
+
+    console.log('🔍 Lesson clicked:', {
+      lessonId: lesson.lessonId,
+      id: (lesson as any).id,
+      computed: lessonId,
+      lessonType: lesson.lessonType,
+      classroomId,
+    });
+
+    if (!lessonId) {
+      console.error('❌ Lesson missing lessonId:', lesson);
+      return;
+    }
+
+    // Normalize lessonType to lowercase
+    const lessonType = lesson.lessonType?.toLowerCase();
+
     // Navigate based on lesson type
-    if (lesson.lessonType === 'exercise') {
+    if (lessonType === 'exercise') {
       router.push({
         pathname: '/exercise-submit',
         params: {
           classroomId: classroomId.toString(),
-          lessonId: lesson.lessonId.toString(),
+          lessonId: lessonId.toString(),
         },
       });
-    } else if (lesson.lessonType === 'quiz') {
-      // TODO: Navigate to quiz screen when implemented
+    } else if (lessonType === 'quiz') {
       router.push({
         pathname: '/lecture-detail',
         params: {
           classroomId: classroomId.toString(),
-          lessonId: lesson.lessonId.toString(),
+          lessonId: lessonId.toString(),
         },
       });
     } else {
@@ -107,7 +125,7 @@ export default function LessonCard({ lesson, classroomId, onPress }: LessonCardP
         pathname: '/lecture-detail',
         params: {
           classroomId: classroomId.toString(),
-          lessonId: lesson.lessonId.toString(),
+          lessonId: lessonId.toString(),
         },
       });
     }
