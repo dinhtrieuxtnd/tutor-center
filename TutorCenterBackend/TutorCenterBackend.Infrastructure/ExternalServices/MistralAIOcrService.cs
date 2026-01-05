@@ -14,7 +14,7 @@ public class MistralAIOcrService : IMistralAIOcrService
 {
     private readonly MistralAIOptions _options;
     private readonly HttpClient _httpClient;
-    private const string ApiBaseUrl = "https://api.mistral.ai/v1/ocr";
+    private const string ApiBaseUrl = "https://api.mistral.ai/v1/chat/completions";
 
     public MistralAIOcrService(IOptions<MistralAIOptions> options, HttpClient httpClient)
     {
@@ -22,6 +22,7 @@ public class MistralAIOcrService : IMistralAIOcrService
         _httpClient = httpClient;
         _httpClient.DefaultRequestHeaders.Authorization = 
             new AuthenticationHeaderValue("Bearer", _options.ApiKey);
+        _httpClient.Timeout = TimeSpan.FromSeconds(120); // OCR can take longer
     }
 
     /// <summary>
@@ -67,21 +68,36 @@ public class MistralAIOcrService : IMistralAIOcrService
         // Create data URL for PDF
         var dataUrl = $"data:application/pdf;base64,{base64Data}";
 
-        // Build request payload
+        // Build request payload following Mistral AI chat completions format
         var requestPayload = new
         {
             model = _options.ModelOcr,
-            document = new
+            messages = new[]
             {
-                type = "document_url",
-                document_url = dataUrl
-            },
-            include_image_base64 = false
+                new
+                {
+                    role = "user",
+                    content = new object[]
+                    {
+                        new
+                        {
+                            type = "image_url",
+                            image_url = dataUrl
+                        },
+                        new
+                        {
+                            type = "text",
+                            text = "Extract all text content from this document. Return only the extracted text without any additional comments or formatting."
+                        }
+                    }
+                }
+            }
         };
 
         var jsonContent = JsonSerializer.Serialize(requestPayload, new JsonSerializerOptions
         {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
         });
 
         var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
