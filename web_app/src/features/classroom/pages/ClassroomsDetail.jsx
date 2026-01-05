@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../../core/store/hooks';
 import { getClassroomByIdAsync } from '../../../features/classroom/store/classroomSlice';
 import { getPaymentsByClassroomAsync } from '../../../features/payment/store/paymentSlice';
-import { School, ArrowLeft, Info, Users, MessageCircle, BookOpen, DollarSign } from 'lucide-react';
+import { School, ArrowLeft, Info, Users, MessageCircle, BookOpen, DollarSign, FileText, Sparkles } from 'lucide-react';
 import { Spinner } from '../../../shared/components/loading/Loading';
 import { Button } from '../../../shared/components';
 import { ROUTES } from '../../../core/constants';
@@ -12,6 +12,8 @@ import { ClassroomStudents } from '../components/ClassroomStudents';
 import { ClassroomChat } from '../components/ClassroomChat';
 import { ClassroomLessons } from '../components/lessons/ClassroomLessons';
 import { PaymentsTable } from '../../payment/components/PaymentsTable';
+import { AIDocumentsTab } from '../../ai/components/AIDocumentsTab';
+import { AIQuestionsTab } from '../../ai/components/AIQuestionsTab';
 
 const TABS = {
     INFO: 'info',
@@ -19,6 +21,8 @@ const TABS = {
     STUDENTS: 'students',
     CHAT: 'chat',
     PAYMENTS: 'payments',
+    AI_DOCUMENTS: 'ai_documents',
+    AI_QUESTIONS: 'ai_questions',
 };
 
 export const ClassroomsDetail = () => {
@@ -57,6 +61,8 @@ export const ClassroomsDetail = () => {
         { id: TABS.STUDENTS, label: 'Học sinh', icon: Users },
         { id: TABS.CHAT, label: 'Phòng chat', icon: MessageCircle },
         { id: TABS.PAYMENTS, label: 'Thanh toán', icon: DollarSign },
+        { id: TABS.AI_DOCUMENTS, label: 'Tài liệu AI', icon: FileText },
+        { id: TABS.AI_QUESTIONS, label: 'Câu hỏi AI', icon: Sparkles },
     ];
 
     /* ================= LOADING ================= */
@@ -179,6 +185,8 @@ export const ClassroomsDetail = () => {
                         />
                     </div>
                 )}
+                {activeTab === TABS.AI_DOCUMENTS && <AIDocumentsTab classroomId={currentClassroom.id} />}
+                {activeTab === TABS.AI_QUESTIONS && <AIQuestionsTab classroomId={currentClassroom.id} />}
             </div>
         </div>
     );

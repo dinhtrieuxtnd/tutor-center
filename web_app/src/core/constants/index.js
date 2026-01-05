@@ -157,6 +157,25 @@ export const API_ENDPOINTS = {
   PAYMENTS: {
     GET_BY_CLASSROOM: (classroomId) => `/Payment/classroom/${classroomId}`,
   },
+  // AI Document endpoints
+  AI_DOCUMENTS: {
+    UPLOAD: '/ai-documents/upload',
+    GET_BY_ID: (documentId) => `/ai-documents/${documentId}`,
+    GET_ALL: '/ai-documents',
+    GET_TEXT: (documentId) => `/ai-documents/${documentId}/text`,
+    DELETE: (documentId) => `/ai-documents/${documentId}`,
+  },
+  // AI Question endpoints
+  AI_QUESTIONS: {
+    GENERATE: '/ai-questions/generate',
+    GET_JOB_STATUS: (jobId) => `/ai-questions/jobs/${jobId}`,
+    GET_ALL_JOBS: '/ai-questions/jobs',
+    GET_BY_DOCUMENT: (documentId) => `/ai-questions/document/${documentId}`,
+    GET_BY_ID: (questionId) => `/ai-questions/${questionId}`,
+    UPDATE: (questionId) => `/ai-questions/${questionId}`,
+    IMPORT: '/ai-questions/import',
+    DELETE: (questionId) => `/ai-questions/${questionId}`,
+  },
 };
 
 export const ROUTES = {
