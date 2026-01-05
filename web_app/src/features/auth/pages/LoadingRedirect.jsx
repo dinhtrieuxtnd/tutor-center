@@ -19,7 +19,10 @@ export const LoadingRedirect = () => {
         }
 
         // Load profile
-        dispatch(getProfileAsync());
+        dispatch(getProfileAsync()).unwrap().catch((error) => {
+            console.error('Failed to load profile:', error);
+            navigate(ROUTES.LOGIN);
+        });
     }, [isAuthenticated]);
 
     useEffect(() => {
