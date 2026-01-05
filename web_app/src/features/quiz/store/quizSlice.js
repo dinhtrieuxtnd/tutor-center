@@ -10,6 +10,7 @@ const initialState = {
     quizDetailLoading: false,
     createLoading: false,
     updateLoading: false,
+    deleteLoading: false,
     error: null,
     // Server-side pagination
     pagination: {
@@ -113,7 +114,20 @@ export const updateQuizAsync = createAsyncThunk(
         );
     }
 );
-
+export const deleteQuizAsync = createAsyncThunk(
+    'quiz/delete',
+    async (quizId, thunkAPI) => {
+        return handleAsyncThunk(
+            () => quizApi.delete(quizId),
+            thunkAPI,
+            {
+                successTitle: 'Xóa bài kiểm tra thành công',
+                successMessage: 'Bài kiểm tra đã được xóa',
+                errorTitle: 'Xóa bài kiểm tra thất bại',
+            }
+        );
+    }
+);
 const quizSlice = createSlice({
     name: 'quiz',
     initialState,
@@ -223,14 +237,14 @@ const quizSlice = createSlice({
                 state.updateLoading = false;
                 const updatedQuiz = action.payload.data || action.payload;
 
-                // Update in quizzes list
-                const index = state.quizzes.findIndex(q => q.quizId === updatedQuiz.quizId);
+                // Update in quizzes list (backend uses 'id' not 'quizId')
+                const index = state.quizzes.findIndex(q => q.id === updatedQuiz.id);
                 if (index !== -1) {
                     state.quizzes[index] = updatedQuiz;
                 }
 
                 // Update current quiz if it's the same
-                if (state.currentQuiz?.quizId === updatedQuiz.quizId) {
+                if (state.currentQuiz?.id === updatedQuiz.id) {
                     state.currentQuiz = updatedQuiz;
                 }
 
@@ -238,6 +252,19 @@ const quizSlice = createSlice({
             })
             .addCase(updateQuizAsync.rejected, (state, action) => {
                 state.updateLoading = false;
+                state.error = action.payload;
+            })
+            // Delete quiz
+            .addCase(deleteQuizAsync.pending, (state) => {
+                state.deleteLoading = true;
+                state.error = null;
+            })
+            .addCase(deleteQuizAsync.fulfilled, (state, action) => {
+                state.deleteLoading = false;
+                state.error = null;
+            })
+            .addCase(deleteQuizAsync.rejected, (state, action) => {
+                state.deleteLoading = false;
                 state.error = action.payload;
             });
     },

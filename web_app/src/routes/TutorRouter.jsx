@@ -4,6 +4,8 @@ import { ClassroomsManagement, ClassroomsDetail } from '../features/classroom/pa
 import { TutorLayout } from '../features/tutor/layouts';
 import { LecturesManagement } from "../features/lecture/pages/LecturesManagement";
 import { ExercisesManagement } from "../features/exercise/pages/ExercisesManagement";
+import { QuizzesManagement } from "../features/quiz/pages/QuizzesManagement";
+import { QuizzesDetail } from "../features/quiz/pages/QuizzesDetail";
 import { ROUTES } from '../core/constants';
 import { Outlet } from 'react-router-dom';
 
@@ -39,6 +41,14 @@ export const tutorRouter = [
             {
                 path: ROUTES.TUTOR_EXERCISES,
                 element: <ExercisesManagement />,
+            },
+            {
+                path: ROUTES.TUTOR_QUIZZES,
+                element: <QuizzesManagement />,
+            },
+            {
+                path: ROUTES.TUTOR_QUIZ_DETAIL,
+                element: <QuizzesDetail />,
             },
         ],
     },

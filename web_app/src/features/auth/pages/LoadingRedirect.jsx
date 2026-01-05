@@ -19,7 +19,10 @@ export const LoadingRedirect = () => {
         }
 
         // Load profile
-        dispatch(getProfileAsync());
+        dispatch(getProfileAsync()).unwrap().catch((error) => {
+            console.error('Failed to load profile:', error);
+            navigate(ROUTES.LOGIN);
+        });
     }, [isAuthenticated]);
 
     useEffect(() => {
@@ -43,7 +46,7 @@ export const LoadingRedirect = () => {
                 // Redirect to default dashboard based on role
                 if (profile.roleId === 1) {
                     navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
-                } else if (profile.roleId === 2) {
+                } else if (profile.roleId === 2) { 
                     navigate(ROUTES.TUTOR_DASHBOARD, { replace: true });
                 } else {
                     // Default fallback

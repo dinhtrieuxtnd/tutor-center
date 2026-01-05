@@ -12,12 +12,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { profileService, ProfileResponse, UpdateProfileRequest, ChangePasswordRequest } from '../../services/profileService';
 
 type TabType = 'profile' | 'stats' | 'security' | 'notifications';
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const { user, refreshUserData, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('profile');
   const [isEditing, setIsEditing] = useState(false);
@@ -112,6 +114,7 @@ export default function ProfileScreen() {
       const changePasswordData: ChangePasswordRequest = {
         currentPassword: passwordForm.currentPassword,
         newPassword: passwordForm.newPassword,
+        confirmNewPassword: passwordForm.confirmPassword,
       };
 
       await profileService.changePassword(changePasswordData);
@@ -140,6 +143,7 @@ export default function ProfileScreen() {
           style: 'destructive',
           onPress: async () => {
             await logout();
+            router.replace('/login');
           },
         },
       ]
@@ -181,7 +185,7 @@ export default function ProfileScreen() {
           <Text style={styles.avatarEmail}>{profile?.email}</Text>
           <View style={styles.roleBadge}>
             <Text style={styles.roleBadgeText}>
-              {profile?.role === 'student' ? 'Học sinh' : profile?.role === 'tutor' ? 'Giáo viên' : 'Quản trị viên'}
+              {profile?.role?.toLowerCase() === 'student' ? 'Học sinh' : profile?.role?.toLowerCase() === 'tutor' ? 'Giáo viên' : 'Quản trị viên'}
             </Text>
           </View>
         </View>
@@ -283,7 +287,7 @@ export default function ProfileScreen() {
     <View style={styles.tabContent}>
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Thống kê hoạt động</Text>
-        
+
         <View style={styles.statsGrid}>
           <View style={[styles.statCard, { backgroundColor: '#EFF6FF' }]}>
             <Ionicons name="book-outline" size={24} color="#3B82F6" />
@@ -380,16 +384,6 @@ export default function ProfileScreen() {
               <Text style={styles.primaryButtonText}>Cập nhật mật khẩu</Text>
             </>
           )}
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Xác thực hai yếu tố</Text>
-        <Text style={styles.cardDescription}>
-          Tăng cường bảo mật tài khoản với xác thực hai yếu tố
-        </Text>
-        <TouchableOpacity style={styles.secondaryButton}>
-          <Text style={styles.secondaryButtonText}>Kích hoạt</Text>
         </TouchableOpacity>
       </View>
     </View>

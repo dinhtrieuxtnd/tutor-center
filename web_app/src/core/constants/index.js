@@ -106,6 +106,75 @@ export const API_ENDPOINTS = {
     GET_FOR_STUDENT: (lessonId) => `/Quiz/lesson/${lessonId}/student`,
     CREATE: '/Quiz',
     UPDATE: (quizId) => `/Quiz/${quizId}`,
+    DELETE: (quizId) => `/Quiz/${quizId}`,
+  },
+  // Question endpoints
+  QUESTIONS: {
+    CREATE: '/Question',
+    UPDATE: (questionId) => `/Question/${questionId}`,
+    DELETE: (questionId) => `/Question/${questionId}`,
+    ATTACH_MEDIA: (questionId) => `/Question/${questionId}/media`,
+    DETACH_MEDIA: (questionId, mediaId) => `/Question/${questionId}/media/${mediaId}`,
+    GET_MEDIAS: (questionId) => `/Question/${questionId}/media`,
+  },
+  // Question Group endpoints
+  QGROUPS: {
+    CREATE: '/QGroup',
+    UPDATE: (qGroupId) => `/QGroup/${qGroupId}`,
+    DELETE: (qGroupId) => `/QGroup/${qGroupId}`,
+    ATTACH_MEDIA: (qGroupId) => `/QGroup/${qGroupId}/media`,
+    DETACH_MEDIA: (qGroupId, mediaId) => `/QGroup/${qGroupId}/media/${mediaId}`,
+    GET_MEDIAS: (qGroupId) => `/QGroup/${qGroupId}/media`,
+  },
+  // Quiz Section endpoints
+  QUIZ_SECTIONS: {
+    CREATE: '/QuizSection',
+    UPDATE: (quizSectionId) => `/QuizSection/${quizSectionId}`,
+    DELETE: (quizSectionId) => `/QuizSection/${quizSectionId}`,
+  },
+  // Question Option endpoints
+  OPTIONS: {
+    CREATE: '/Option',
+    UPDATE: (optionId) => `/Option/${optionId}`,
+    DELETE: (optionId) => `/Option/${optionId}`,
+    ATTACH_MEDIA: (optionId) => `/Option/${optionId}/media`,
+    DETACH_MEDIA: (optionId, mediaId) => `/Option/${optionId}/media/${mediaId}`,
+    GET_MEDIAS: (optionId) => `/Option/${optionId}/media`,
+  },
+  // Quiz Attempt endpoints
+  QUIZ_ATTEMPTS: {
+    CREATE: '/QuizAttempt',
+    GET_BY_LESSON_AND_STUDENT: (lessonId) => `/QuizAttempt/lesson/${lessonId}/student`,
+    GET_BY_LESSON: (lessonId) => `/QuizAttempt/lesson/${lessonId}`,
+  },
+  // Quiz Answer endpoints
+  QUIZ_ANSWERS: {
+    CREATE: '/QuizAnswer',
+    UPDATE: '/QuizAnswer',
+    DELETE: (attemptId, questionId) => `/QuizAnswer/attempt/${attemptId}/question/${questionId}`,
+  },
+  // Payment endpoints
+  PAYMENTS: {
+    GET_BY_CLASSROOM: (classroomId) => `/Payment/classroom/${classroomId}`,
+  },
+  // AI Document endpoints
+  AI_DOCUMENTS: {
+    UPLOAD: '/ai-documents/upload',
+    GET_BY_ID: (documentId) => `/ai-documents/${documentId}`,
+    GET_ALL: '/ai-documents',
+    GET_TEXT: (documentId) => `/ai-documents/${documentId}/text`,
+    DELETE: (documentId) => `/ai-documents/${documentId}`,
+  },
+  // AI Question endpoints
+  AI_QUESTIONS: {
+    GENERATE: '/ai-questions/generate',
+    GET_JOB_STATUS: (jobId) => `/ai-questions/jobs/${jobId}`,
+    GET_ALL_JOBS: '/ai-questions/jobs',
+    GET_BY_DOCUMENT: (documentId) => `/ai-questions/document/${documentId}`,
+    GET_BY_ID: (questionId) => `/ai-questions/${questionId}`,
+    UPDATE: (questionId) => `/ai-questions/${questionId}`,
+    IMPORT: '/ai-questions/import',
+    DELETE: (questionId) => `/ai-questions/${questionId}`,
   },
 };
 
@@ -129,6 +198,8 @@ export const ROUTES = {
   TUTOR_PROFILE: '/tutor/profile',
   TUTOR_LECTURES: '/tutor/lectures',
   TUTOR_EXERCISES: '/tutor/exercises',
+  TUTOR_QUIZZES: '/tutor/quizzes',
+  TUTOR_QUIZ_DETAIL: '/tutor/quizzes/:id',
   USERS: '/users',
   USER_DETAIL: '/users/:id',
   NOT_FOUND: '/404',
@@ -145,4 +216,20 @@ export const STORAGE_KEYS = {
   ACCESS_TOKEN: 'accessToken',
   REFRESH_TOKEN: 'refreshToken',
   USER: 'user',
+};
+
+// Grading method constants for quiz scoring
+export const GRADING_METHOD = {
+  FIRST: 0,     // Điểm lần đầu tiên
+  HIGHEST: 1,   // Điểm cao nhất
+  AVERAGE: 2,   // Điểm trung bình
+  LATEST: 3,    // Điểm lần cuối
+};
+
+// Helper to get label for grading method
+export const GRADING_METHOD_LABELS = {
+  [GRADING_METHOD.FIRST]: 'Lần đầu tiên',
+  [GRADING_METHOD.HIGHEST]: 'Điểm cao nhất',
+  [GRADING_METHOD.AVERAGE]: 'Điểm trung bình',
+  [GRADING_METHOD.LATEST]: 'Lần cuối cùng',
 };

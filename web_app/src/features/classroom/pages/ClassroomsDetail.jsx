@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../../core/store/hooks';
 import { getClassroomByIdAsync } from '../../../features/classroom/store/classroomSlice';
-import { School, ArrowLeft, Info, Users, MessageCircle, BookOpen } from 'lucide-react';
+import { getPaymentsByClassroomAsync } from '../../../features/payment/store/paymentSlice';
+import { School, ArrowLeft, Info, Users, MessageCircle, BookOpen, DollarSign, FileText, Sparkles } from 'lucide-react';
 import { Spinner } from '../../../shared/components/loading/Loading';
 import { Button } from '../../../shared/components';
 import { ROUTES } from '../../../core/constants';
@@ -10,12 +11,18 @@ import { ClassroomInfo } from '../components/ClassroomInfo';
 import { ClassroomStudents } from '../components/ClassroomStudents';
 import { ClassroomChat } from '../components/ClassroomChat';
 import { ClassroomLessons } from '../components/lessons/ClassroomLessons';
+import { PaymentsTable } from '../../payment/components/PaymentsTable';
+import { AIDocumentsTab } from '../../ai/components/AIDocumentsTab';
+import { AIQuestionsTab } from '../../ai/components/AIQuestionsTab';
 
 const TABS = {
     INFO: 'info',
     LESSONS: 'lessons',
     STUDENTS: 'students',
     CHAT: 'chat',
+    PAYMENTS: 'payments',
+    AI_DOCUMENTS: 'ai_documents',
+    AI_QUESTIONS: 'ai_questions',
 };
 
 export const ClassroomsDetail = () => {
@@ -25,6 +32,7 @@ export const ClassroomsDetail = () => {
     const dispatch = useAppDispatch();
     const profile = useAppSelector((state) => state.profile.profile);
     const { currentClassroom, classroomDetailLoading } = useAppSelector((state) => state.classroom);
+    const { payments, loading: paymentsLoading } = useAppSelector((state) => state.payment);
     const [activeTab, setActiveTab] = useState(TABS.INFO);
 
     // Check if tutor route
@@ -36,6 +44,12 @@ export const ClassroomsDetail = () => {
         }
     }, [id, dispatch]);
 
+    useEffect(() => {
+        if (activeTab === TABS.PAYMENTS && id) {
+            dispatch(getPaymentsByClassroomAsync(parseInt(id)));
+        }
+    }, [activeTab, id, dispatch]);
+
     const handleBack = () => {
         const backRoute = isTutor ? ROUTES.TUTOR_CLASSROOMS : ROUTES.ADMIN_CLASSROOMS;
         navigate(backRoute);
@@ -46,6 +60,9 @@ export const ClassroomsDetail = () => {
         { id: TABS.LESSONS, label: 'Buổi học', icon: BookOpen },
         { id: TABS.STUDENTS, label: 'Học sinh', icon: Users },
         { id: TABS.CHAT, label: 'Phòng chat', icon: MessageCircle },
+        { id: TABS.PAYMENTS, label: 'Thanh toán', icon: DollarSign },
+        { id: TABS.AI_DOCUMENTS, label: 'Tài liệu AI', icon: FileText },
+        { id: TABS.AI_QUESTIONS, label: 'Câu hỏi AI', icon: Sparkles },
     ];
 
     /* ================= LOADING ================= */
@@ -141,11 +158,10 @@ export const ClassroomsDetail = () => {
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                                    isActive
+                                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${isActive
                                         ? 'border-foreground text-foreground'
                                         : 'border-transparent text-foreground-light hover:text-foreground hover:border-gray-300'
-                                }`}
+                                    }`}
                             >
                                 <Icon size={16} />
                                 {tab.label}
@@ -161,6 +177,16 @@ export const ClassroomsDetail = () => {
                 {activeTab === TABS.LESSONS && <ClassroomLessons classroomId={currentClassroom.id} />}
                 {activeTab === TABS.STUDENTS && <ClassroomStudents classroomId={currentClassroom.id} />}
                 {activeTab === TABS.CHAT && <ClassroomChat classroomId={currentClassroom.id} />}
+                {activeTab === TABS.PAYMENTS && (
+                    <div className="bg-primary border border-border rounded-sm overflow-hidden">
+                        <PaymentsTable
+                            payments={payments}
+                            loading={paymentsLoading}
+                        />
+                    </div>
+                )}
+                {activeTab === TABS.AI_DOCUMENTS && <AIDocumentsTab classroomId={currentClassroom.id} />}
+                {activeTab === TABS.AI_QUESTIONS && <AIQuestionsTab classroomId={currentClassroom.id} />}
             </div>
         </div>
     );

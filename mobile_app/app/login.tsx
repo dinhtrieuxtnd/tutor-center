@@ -44,18 +44,9 @@ export default function LoginScreen() {
     setIsLoading(true);
     try {
       await login(email.trim(), password);
-      
-      Alert.alert('Thành công', 'Đăng nhập thành công!', [
-        {
-          text: 'OK',
-          onPress: () => {
-            // Navigate to dashboard
-            router.replace('/(tabs)/dashboard');
-          }
-        }
-      ]);
+      router.replace('/(tabs)/dashboard');
     } catch (error: any) {
-      Alert.alert('Lỗi đăng nhập', error.message || 'Đã xảy ra lỗi, vui lòng thử lại');
+      Alert.alert('Lỗi đăng nhập', error.message || 'Tài khoản hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại.');
     } finally {
       setIsLoading(false);
     }
@@ -76,7 +67,7 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
@@ -162,8 +153,8 @@ export default function LoginScreen() {
           </View>
 
           {/* Login Button */}
-          <TouchableOpacity 
-            style={[styles.loginButton, isLoading && styles.loginButtonDisabled]} 
+          <TouchableOpacity
+            style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
             onPress={handleLogin}
             disabled={isLoading}
           >
