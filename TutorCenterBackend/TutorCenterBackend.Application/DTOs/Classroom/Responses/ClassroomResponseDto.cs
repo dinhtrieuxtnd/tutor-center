@@ -27,5 +27,7 @@ namespace TutorCenterBackend.Application.DTOs.Classroom.Responses
         public required DateTime UpdatedAt { get; set; }
         
         public DateTime? DeletedAt { get; set; }
+
+        public bool? HasPaid { get; set; }
     }
 }

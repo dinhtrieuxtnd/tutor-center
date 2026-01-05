@@ -16,7 +16,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         /// <summary>
         /// Gửi tin nhắn trong nhóm chat lớp học
         /// </summary>
-        [HttpPost("send")]
+        [HttpPost("messages/send")]
         [RequirePermission("classroom.chat")]
         public async Task<ActionResult<ChatMessageResponseDto>> SendMessage(
             [FromBody] SendMessageRequestDto dto, 
@@ -29,7 +29,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         /// <summary>
         /// Chỉnh sửa tin nhắn đã gửi
         /// </summary>
-        [HttpPut("edit")]
+        [HttpPut("messages/edit")]
         [RequirePermission("classroom.chat")]
         public async Task<ActionResult<ChatMessageResponseDto>> EditMessage(
             [FromBody] EditMessageRequestDto dto, 
@@ -42,7 +42,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         /// <summary>
         /// Xóa tin nhắn
         /// </summary>
-        [HttpDelete("{messageId}")]
+        [HttpDelete("messages/{messageId}")]
         [RequirePermission("classroom.chat")]
         public async Task<ActionResult<string>> DeleteMessage(
             int messageId, 
@@ -55,7 +55,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         /// <summary>
         /// Lấy danh sách tin nhắn trong nhóm chat lớp học
         /// </summary>
-        [HttpGet]
+        [HttpGet("messages")]
         [RequirePermission("classroom.chat")]
         public async Task<ActionResult<PageResultDto<ChatMessageResponseDto>>> GetMessages(
             [FromQuery] GetMessagesQueryDto dto, 

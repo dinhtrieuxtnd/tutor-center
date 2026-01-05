@@ -2,16 +2,27 @@ import config from '../config';
 
 // Types
 export interface ClassroomResponse {
-  classroomId: number;
+  id: number; // Backend uses 'id', not 'classroomId'
+  classroomId?: number; // Keep for backward compatibility
   name: string;
   description?: string;
   tutorId: number;
-  tutorName: string;
+  tutorName?: string; // Optional, might come from tutor object
+  tutor?: {
+    userId: number;
+    fullName: string;
+    email: string;
+    avatarUrl?: string;
+    avatarMediaId?: number;
+  };
   isArchived: boolean;
-  studentCount: number;
+  studentCount?: number;
   price: number;
   coverMediaId?: number;
+  coverImageUrl?: string;
   createdAt: string;
+  updatedAt?: string;
+  deletedAt?: string;
 }
 
 export interface ClassroomQueryRequest {
@@ -43,7 +54,7 @@ class ClassroomService {
   private async fetchWithTimeout(url: string, options: RequestInit = {}): Promise<Response> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), config.REQUEST_TIMEOUT);
-    
+
     try {
       const response = await fetch(url, {
         ...options,
@@ -53,25 +64,25 @@ class ClassroomService {
       return response;
     } catch (error: any) {
       clearTimeout(timeoutId);
-      
+
       if (error.name === 'AbortError') {
         throw new Error(`Kết nối đến server quá chậm. Vui lòng thử lại.`);
       }
-      
+
       if (error.message === 'Network request failed') {
         throw new Error('Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.');
       }
-      
+
       throw error;
     }
   }
 
   private async handleResponse<T>(response: Response): Promise<T> {
     const contentType = response.headers.get('content-type');
-    
+
     if (!response.ok) {
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-      
+
       if (contentType && contentType.includes('application/json')) {
         try {
           const errorData = await response.json();
@@ -80,7 +91,7 @@ class ClassroomService {
           // Ignore JSON parse error, use default message
         }
       }
-      
+
       throw new Error(errorMessage);
     }
 
@@ -91,7 +102,7 @@ class ClassroomService {
     if (contentType && contentType.includes('application/json')) {
       return await response.json();
     }
-    
+
     return {} as T;
   }
 
@@ -99,46 +110,48 @@ class ClassroomService {
   async query(params?: ClassroomQueryRequest): Promise<ClassroomQueryResponse> {
     const headers = await this.getAuthHeaders();
     const queryString = new URLSearchParams();
-    
+
     if (params?.q) queryString.append('Q', params.q);
     if (params?.tutorId) queryString.append('TutorId', params.tutorId.toString());
     if (params?.isArchived !== undefined) queryString.append('IsArchived', params.isArchived.toString());
     if (params?.page) queryString.append('Page', params.page.toString());
     if (params?.pageSize) queryString.append('PageSize', params.pageSize.toString());
-    
-    const url = `${config.API_BASE_URL}/Classrooms${queryString.toString() ? `?${queryString}` : ''}`;
-    
+
+    const url = `${config.API_BASE_URL}/Classroom${queryString.toString() ? `?${queryString}` : ''}`;
+
     const response = await this.fetchWithTimeout(url, {
       method: 'GET',
       headers,
     });
-    
+
     return this.handleResponse<ClassroomQueryResponse>(response);
   }
 
   // Student: Get my enrolled classrooms
   async getMyEnrollments(): Promise<ClassroomResponse[]> {
     const headers = await this.getAuthHeaders();
-    const url = `${config.API_BASE_URL}/Classrooms/my-enrollments`;
-    
+    const url = `${config.API_BASE_URL}/Classroom/my-enrollments`;
+
     const response = await this.fetchWithTimeout(url, {
       method: 'GET',
       headers,
     });
-    
-    return this.handleResponse<ClassroomResponse[]>(response);
+
+    // Backend returns PageResultDto, extract items
+    const result = await this.handleResponse<ClassroomQueryResponse>(response);
+    return result.items;
   }
 
   // Get classroom by ID
   async getById(id: number): Promise<ClassroomResponse> {
     const headers = await this.getAuthHeaders();
-    const url = `${config.API_BASE_URL}/Classrooms/${id}`;
-    
+    const url = `${config.API_BASE_URL}/Classroom/${id}`;
+
     const response = await this.fetchWithTimeout(url, {
       method: 'GET',
       headers,
     });
-    
+
     return this.handleResponse<ClassroomResponse>(response);
   }
 }

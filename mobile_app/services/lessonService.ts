@@ -64,7 +64,7 @@ class LessonService {
   private async fetchWithTimeout(url: string, options: RequestInit = {}): Promise<Response> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), config.REQUEST_TIMEOUT);
-    
+
     try {
       const response = await fetch(url, {
         ...options,
@@ -74,25 +74,25 @@ class LessonService {
       return response;
     } catch (error: any) {
       clearTimeout(timeoutId);
-      
+
       if (error.name === 'AbortError') {
         throw new Error(`Kết nối đến server quá chậm. Vui lòng thử lại.`);
       }
-      
+
       if (error.message === 'Network request failed') {
         throw new Error('Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.');
       }
-      
+
       throw error;
     }
   }
 
   private async handleResponse<T>(response: Response): Promise<T> {
     const contentType = response.headers.get('content-type');
-    
+
     if (!response.ok) {
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-      
+
       if (contentType && contentType.includes('application/json')) {
         try {
           const errorData = await response.json();
@@ -101,7 +101,7 @@ class LessonService {
           // Ignore JSON parse error, use default message
         }
       }
-      
+
       throw new Error(errorMessage);
     }
 
@@ -112,7 +112,7 @@ class LessonService {
     if (contentType && contentType.includes('application/json')) {
       return await response.json();
     }
-    
+
     return {} as T;
   }
 
@@ -120,23 +120,10 @@ class LessonService {
   async getByClassroom(classroomId: number): Promise<LessonResponse[]> {
     const headers = await this.getAuthHeaders();
     const response = await this.fetchWithTimeout(
-      `${config.API_BASE_URL}/Lessons/classroom/${classroomId}`,
+      `${config.API_BASE_URL}/Lesson/classroom/${classroomId}`,
       {
         method: 'GET',
         headers,
-      }
-    );
-
-    return this.handleResponse<LessonResponse[]>(response);
-  }
-
-  // Get public lessons by classroom (no auth required)
-  async getByClassroomPublic(classroomId: number): Promise<LessonResponse[]> {
-    const response = await this.fetchWithTimeout(
-      `${config.API_BASE_URL}/Lessons/classroom/${classroomId}/public`,
-      {
-        method: 'GET',
-        headers: config.DEFAULT_HEADERS,
       }
     );
 

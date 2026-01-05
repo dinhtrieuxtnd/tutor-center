@@ -44,6 +44,7 @@ namespace TutorCenterBackend.Application.ServicesImplementation
                 Email = dto.Email,
                 FullName = dto.FullName,
                 PasswordHash = passwordHash,
+                PhoneNumber = dto.PhoneNumber,
                 RoleId = 2,
                 IsActive = true
             };

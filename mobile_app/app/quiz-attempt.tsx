@@ -11,87 +11,90 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { quizService, QuizAttemptResponse, QuizAttemptDetailResponse, QuizQuestionResponse, QuizDetailResponse } from '../services/quizService';
-import { lessonService, LessonResponse } from '../services/lessonService';
+import {
+  quizService,
+  QuizAttemptResponse,
+  QuizAttemptDetailResponse,
+  QuizForStudentResponse,
+  QuizQuestionForStudentResponse
+} from '../services/quizService';
 
 export default function QuizAttemptScreen() {
-  const { lessonId, attemptId } = useLocalSearchParams<{
-    lessonId: string;
-    attemptId?: string;
-  }>();
+  const { lessonId } = useLocalSearchParams<{ lessonId: string }>();
   const router = useRouter();
 
-  const [lesson, setLesson] = useState<LessonResponse | null>(null);
   const [attempt, setAttempt] = useState<QuizAttemptResponse | null>(null);
-  const [attemptDetail, setAttemptDetail] = useState<QuizAttemptDetailResponse | null>(null);
-  const [quizDetail, setQuizDetail] = useState<QuizDetailResponse | null>(null);
-  const [questions, setQuestions] = useState<QuizQuestionResponse[]>([]);
+  const [quiz, setQuiz] = useState<QuizForStudentResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(0);
-  const [selectedAnswers, setSelectedAnswers] = useState<{ [questionId: number]: number }>({});
+  const [selectedAnswers, setSelectedAnswers] = useState<{ [questionId: number]: number[] }>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [hasExistingAttempt, setHasExistingAttempt] = useState(false);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Fetch lesson and create/load attempt
+  // Fetch quiz and create/load attempt
   useEffect(() => {
     const initializeQuiz = async () => {
       try {
         setIsLoading(true);
 
+        // First, try to get existing attempt
+        let existingAttempt: QuizAttemptDetailResponse | null = null;
+        try {
+          existingAttempt = await quizService.getAttemptByLesson(Number(lessonId));
+          setHasExistingAttempt(true);
+        } catch (error) {
+          // No existing attempt, will create new one
+          console.log('No existing attempt found');
+        }
+
+        // Load quiz questions
+        const quizData = await quizService.getQuizForStudent(Number(lessonId));
+        setQuiz(quizData);
+
+        if (!quizData || !quizData.questions || quizData.questions.length === 0) {
+          throw new Error('Bài kiểm tra chưa có câu hỏi nào');
+        }
+
         let currentAttempt: QuizAttemptResponse;
-        
-        if (attemptId) {
+
+        if (existingAttempt) {
           // Load existing attempt
-          const detail = await quizService.getAttemptDetail(Number(attemptId));
           currentAttempt = {
-            quizAttemptId: detail.quizAttemptId,
-            lessonId: detail.lessonId,
-            quizId: detail.quizId,
-            studentId: detail.studentId,
-            startedAt: detail.startedAt,
-            submittedAt: detail.submittedAt,
-            status: detail.status as any,
-            scoreRaw: detail.scoreRaw,
-            scoreScaled10: detail.scoreScaled10,
+            quizAttemptId: existingAttempt.quizAttemptId,
+            lessonId: existingAttempt.lessonId,
+            quizId: existingAttempt.quizId,
+            studentId: existingAttempt.studentId,
+            startedAt: existingAttempt.startedAt,
+            submittedAt: existingAttempt.submittedAt,
+            status: existingAttempt.status as any,
+            scoreRaw: existingAttempt.scoreRaw,
+            scoreScaled10: existingAttempt.scoreScaled10,
           };
-          setAttemptDetail(detail);
-          
+
           // Load saved answers
-          const answers: { [key: number]: number } = {};
-          detail.answers.forEach(ans => {
-            answers[ans.questionId] = ans.optionId;
+          const answers: { [key: number]: number[] } = {};
+          existingAttempt.answers.forEach(ans => {
+            if (ans.selectedOptionId) {
+              answers[ans.questionId] = [ans.selectedOptionId];
+            }
           });
           setSelectedAnswers(answers);
         } else {
           // Create new attempt
           currentAttempt = await quizService.createAttempt(Number(lessonId));
         }
-        
+
         setAttempt(currentAttempt);
 
-        // Load quiz detail to get questions
-        console.log('Fetching quiz detail for quizId:', currentAttempt.quizId);
-        const quizDetailData = await quizService.getQuizDetail(currentAttempt.quizId);
-        console.log('Quiz detail received:', JSON.stringify(quizDetailData, null, 2));
-        
-        setQuizDetail(quizDetailData);
-        
-        if (quizDetailData && quizDetailData.questions && quizDetailData.questions.length > 0) {
-          console.log('Setting questions, count:', quizDetailData.questions.length);
-          setQuestions(quizDetailData.questions);
-        } else {
-          console.error('No questions found in quiz detail');
-          throw new Error('Bài kiểm tra chưa có câu hỏi nào');
-        }
-
         // Calculate time remaining
-        if (currentAttempt.startedAt && quizDetailData.timeLimitSec) {
+        if (currentAttempt.startedAt && quizData.timeLimitSec) {
           const startTime = new Date(currentAttempt.startedAt).getTime();
           const now = Date.now();
           const elapsed = Math.floor((now - startTime) / 1000);
-          const remaining = Math.max(0, quizDetailData.timeLimitSec - elapsed);
+          const remaining = Math.max(0, quizData.timeLimitSec - elapsed);
           setTimeRemaining(remaining);
         }
       } catch (error: any) {
@@ -112,7 +115,7 @@ export default function QuizAttemptScreen() {
         clearInterval(timerRef.current);
       }
     };
-  }, [lessonId, attemptId]);
+  }, [lessonId]);
 
   // Timer countdown
   useEffect(() => {
@@ -149,24 +152,25 @@ export default function QuizAttemptScreen() {
     }
 
     // Update local state
-    setSelectedAnswers(prev => ({
-      ...prev,
-      [questionId]: optionId,
-    }));
+    const newAnswers = {
+      ...selectedAnswers,
+      [questionId]: [optionId], // Single choice for now
+    };
+    setSelectedAnswers(newAnswers);
 
     // Save to server
     try {
       setIsSaving(true);
-      
+
       // Check if answer already exists
-      const existingAnswer = attemptDetail?.answers.find(a => a.questionId === questionId);
-      
-      if (existingAnswer) {
-        await quizService.updateAnswer(attempt!.quizAttemptId, questionId, optionId);
+      const existingAnswer = selectedAnswers[questionId];
+
+      if (existingAnswer && existingAnswer.length > 0) {
+        await quizService.updateAnswer(attempt!.quizAttemptId, questionId, [optionId]);
       } else {
-        await quizService.submitAnswer(attempt!.quizAttemptId, questionId, optionId);
+        await quizService.createAnswer(attempt!.quizAttemptId, questionId, [optionId]);
       }
-      
+
       console.log('Answer saved:', questionId, optionId);
     } catch (error: any) {
       console.error('Error saving answer:', error);
@@ -189,11 +193,10 @@ export default function QuizAttemptScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Submit is handled by backend when all questions are answered
-              // For now, just navigate to result
+              // Navigate to result with lessonId
               router.replace({
                 pathname: '/quiz-result',
-                params: { attemptId: attempt.quizAttemptId.toString() },
+                params: { lessonId: lessonId },
               });
             } catch (error: any) {
               Alert.alert('Lỗi', error.message || 'Không thể nộp bài');
@@ -219,7 +222,7 @@ export default function QuizAttemptScreen() {
     );
   }
 
-  if (!attempt || questions.length === 0) {
+  if (!attempt || !quiz || quiz.questions.length === 0) {
     return (
       <View style={styles.errorContainer}>
         <Ionicons name="alert-circle" size={64} color="#EF4444" />
@@ -231,7 +234,7 @@ export default function QuizAttemptScreen() {
     );
   }
 
-  const currentQuestion = questions[currentQuestionIndex];
+  const currentQuestion = quiz.questions[currentQuestionIndex];
 
   return (
     <View style={styles.container}>
@@ -241,9 +244,9 @@ export default function QuizAttemptScreen() {
           <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
         <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>{quizDetail?.title || 'Bài kiểm tra'}</Text>
+          <Text style={styles.headerTitle}>{quiz.title || 'Bài kiểm tra'}</Text>
           <Text style={styles.headerSubtitle}>
-            Câu {currentQuestionIndex + 1}/{questions.length}
+            Câu {currentQuestionIndex + 1}/{quiz.questions.length}
           </Text>
         </View>
         {timeRemaining > 0 && (
@@ -261,7 +264,7 @@ export default function QuizAttemptScreen() {
         style={styles.questionNav}
         contentContainerStyle={styles.questionNavContent}
       >
-        {questions.map((q, index) => (
+        {quiz.questions.map((q, index) => (
           <TouchableOpacity
             key={q.questionId}
             style={[
@@ -303,8 +306,8 @@ export default function QuizAttemptScreen() {
               key={option.questionOptionId}
               style={[
                 styles.optionCard,
-                selectedAnswers[currentQuestion.questionId] === option.questionOptionId &&
-                  styles.optionSelected,
+                selectedAnswers[currentQuestion.questionId]?.includes(option.questionOptionId) &&
+                styles.optionSelected,
               ]}
               onPress={() => handleSelectAnswer(currentQuestion.questionId, option.questionOptionId)}
               disabled={attempt?.status !== 'in_progress'}
@@ -312,19 +315,19 @@ export default function QuizAttemptScreen() {
               <View
                 style={[
                   styles.optionRadio,
-                  selectedAnswers[currentQuestion.questionId] === option.questionOptionId &&
-                    styles.optionRadioSelected,
+                  selectedAnswers[currentQuestion.questionId]?.includes(option.questionOptionId) &&
+                  styles.optionRadioSelected,
                 ]}
               >
-                {selectedAnswers[currentQuestion.questionId] === option.questionOptionId && (
+                {selectedAnswers[currentQuestion.questionId]?.includes(option.questionOptionId) && (
                   <View style={styles.optionRadioInner} />
                 )}
               </View>
               <Text
                 style={[
                   styles.optionText,
-                  selectedAnswers[currentQuestion.questionId] === option.questionOptionId &&
-                    styles.optionTextSelected,
+                  selectedAnswers[currentQuestion.questionId]?.includes(option.questionOptionId) &&
+                  styles.optionTextSelected,
                 ]}
               >
                 {option.content}
@@ -357,19 +360,19 @@ export default function QuizAttemptScreen() {
 
         <TouchableOpacity
           style={[styles.footerBtn, styles.nextBtn]}
-          onPress={() => setCurrentQuestionIndex(prev => Math.min(questions.length - 1, prev + 1))}
-          disabled={currentQuestionIndex === questions.length - 1}
+          onPress={() => setCurrentQuestionIndex(prev => Math.min(quiz.questions.length - 1, prev + 1))}
+          disabled={currentQuestionIndex === quiz.questions.length - 1}
         >
           <Text style={[
             styles.footerBtnText,
-            currentQuestionIndex === questions.length - 1 && styles.footerBtnTextDisabled
+            currentQuestionIndex === quiz.questions.length - 1 && styles.footerBtnTextDisabled
           ]}>
             Sau
           </Text>
           <Ionicons
             name="chevron-forward"
             size={24}
-            color={currentQuestionIndex === questions.length - 1 ? '#9CA3AF' : '#007AFF'}
+            color={currentQuestionIndex === quiz.questions.length - 1 ? '#9CA3AF' : '#007AFF'}
           />
         </TouchableOpacity>
       </View>
@@ -590,16 +593,6 @@ const styles = StyleSheet.create({
   optionTextSelected: {
     color: '#007AFF',
     fontWeight: '500',
-  },
-  placeholder: {
-    alignItems: 'center',
-    padding: 32,
-  },
-  placeholderText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: '#9CA3AF',
-    textAlign: 'center',
   },
   footer: {
     flexDirection: 'row',

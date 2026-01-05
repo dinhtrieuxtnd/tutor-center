@@ -129,6 +129,8 @@ export const ROUTES = {
   TUTOR_PROFILE: '/tutor/profile',
   TUTOR_LECTURES: '/tutor/lectures',
   TUTOR_EXERCISES: '/tutor/exercises',
+  TUTOR_QUIZZES: '/tutor/quizzes',
+  TUTOR_QUIZ_DETAIL: '/tutor/quizzes/:id',
   USERS: '/users',
   USER_DETAIL: '/users/:id',
   NOT_FOUND: '/404',
