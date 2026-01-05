@@ -14,7 +14,7 @@ public class MistralAIOcrService : IMistralAIOcrService
 {
     private readonly MistralAIOptions _options;
     private readonly HttpClient _httpClient;
-    private const string ApiBaseUrl = "https://api.mistral.ai/v1/chat/completions";
+    private const string ApiBaseUrl = "https://api.mistral.ai/v1/ocr";
 
     public MistralAIOcrService(IOptions<MistralAIOptions> options, HttpClient httpClient)
     {
@@ -68,29 +68,14 @@ public class MistralAIOcrService : IMistralAIOcrService
         // Create data URL for PDF
         var dataUrl = $"data:application/pdf;base64,{base64Data}";
 
-        // Build request payload following Mistral AI chat completions format
+        // Build request payload following Mistral AI OCR format
         var requestPayload = new
         {
             model = _options.ModelOcr,
-            messages = new[]
+            document = new
             {
-                new
-                {
-                    role = "user",
-                    content = new object[]
-                    {
-                        new
-                        {
-                            type = "image_url",
-                            image_url = dataUrl
-                        },
-                        new
-                        {
-                            type = "text",
-                            text = "Extract all text content from this document. Return only the extracted text without any additional comments or formatting."
-                        }
-                    }
-                }
+                type = "document_url",
+                document_url = dataUrl
             }
         };
 
