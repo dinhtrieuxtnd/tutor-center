@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import MarkdownViewer from '../components/MarkdownViewer';
 import {
   quizService,
   QuizAttemptResponse,
@@ -206,10 +207,8 @@ export default function QuizAttemptScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Submit the quiz attempt
-              await quizService.submitAttempt(Number(lessonId));
-              
-              // Navigate to result with lessonId
+              // Backend automatically calculates score based on saved answers
+              // No need to call submit endpoint - just navigate to result
               router.replace({
                 pathname: '/quiz-result',
                 params: { lessonId: lessonId },
@@ -309,7 +308,7 @@ export default function QuizAttemptScreen() {
             <Text style={styles.questionNumber}>Câu hỏi {currentQuestionIndex + 1}</Text>
             <Text style={styles.questionPoints}>{currentQuestion?.points || 1} điểm</Text>
           </View>
-          <Text style={styles.questionText}>{currentQuestion?.content || ''}</Text>
+          <MarkdownViewer content={currentQuestion?.content || ''} />
 
           {/* Options */}
           <Text style={styles.optionsNote}>
@@ -346,14 +345,9 @@ export default function QuizAttemptScreen() {
                     <View style={styles.optionRadioInner} />
                   )}
                 </View>
-                <Text
-                  style={[
-                    styles.optionText,
-                    isSelected && styles.optionTextSelected,
-                  ]}
-                >
-                  {option.content}
-                </Text>
+                <View style={{ flex: 1 }}>
+                  <MarkdownViewer content={option.content} />
+                </View>
               </TouchableOpacity>
             );
           })}
