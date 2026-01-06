@@ -12,6 +12,7 @@ namespace TutorCenterBackend.Domain.Interfaces
         Task DeleteAsync(ExerciseSubmission submission, CancellationToken ct = default);
         Task<IEnumerable<ExerciseSubmission>> GetSubmissionsByStudentAsync(int studentId, CancellationToken ct = default);
         Task<IEnumerable<ExerciseSubmission>> GetSubmissionsByExerciseAsync(int exerciseId, CancellationToken ct = default);
+        Task<ExerciseSubmission?> GetSubmissionByLessonAndStudentAsync(int lessonId, int studentId, CancellationToken ct = default);
         Task<bool> IsStudentInClassroomAsync(int studentId, int lessonId, CancellationToken ct = default);
         Task<bool> IsTutorOfClassroomAsync(int tutorId, int lessonId, CancellationToken ct = default);
     }

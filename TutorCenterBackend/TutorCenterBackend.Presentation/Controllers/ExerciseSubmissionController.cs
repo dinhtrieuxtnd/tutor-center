@@ -81,7 +81,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         /// Học sinh xem danh sách bài nộp của mình
         /// </summary>
         [HttpGet("my-submissions")]
-        [RequirePermission("exercise_submission.view")]
+        [RequirePermission("exercise_submission.view_my")]
         public async Task<IActionResult> GetMySubmissionsAsync(CancellationToken ct = default)
         {
             var result = await _submissionService.GetMySubmissionsAsync(ct);
@@ -92,11 +92,27 @@ namespace TutorCenterBackend.Presentation.Controllers
         /// Gia sư xem danh sách bài nộp theo bài tập
         /// </summary>
         [HttpGet("by-exercise/{exerciseId}")]
-        [RequirePermission("exercise_submission.view")]
+        [RequirePermission("exercise_submission.view_all")]
         [ValidateId("exerciseId")]
         public async Task<IActionResult> GetSubmissionsByExerciseAsync(int exerciseId, CancellationToken ct = default)
         {
             var result = await _submissionService.GetSubmissionsByExerciseAsync(exerciseId, ct);
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Học sinh xem bài nộp của mình theo lesson ID
+        /// </summary>
+        [HttpGet("lessons/{lessonId}/my-submission")]
+        [RequirePermission("exercise_submission.view_my_by_lesson")]
+        [ValidateId("lessonId")]
+        public async Task<IActionResult> GetMySubmissionByLessonAsync(int lessonId, CancellationToken ct = default)
+        {
+            var result = await _submissionService.GetMySubmissionByLessonAsync(lessonId, ct);
+            if (result == null)
+            {
+                return NotFound(new { message = "Chưa có bài nộp cho bài tập này" });
+            }
             return Ok(result);
         }
     }

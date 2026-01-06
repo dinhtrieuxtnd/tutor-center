@@ -48,7 +48,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         /// API for tutors to view all quiz attempts for a specific lesson
         /// </summary>
         [HttpGet("lesson/{lessonId}")]
-        [RequirePermission("quiz_attempt.view_all")]
+        [RequirePermission("quiz_attempt.view")]
         [ValidateId("lessonId")]
         public async Task<IActionResult> GetQuizAttemptsByLessonAsync(
             int lessonId, 

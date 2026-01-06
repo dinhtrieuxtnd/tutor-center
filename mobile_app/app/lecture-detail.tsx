@@ -55,10 +55,10 @@ export default function LectureDetailScreen() {
 
       // Get all lessons from classroom and find the specific lesson
       const lessons = await lessonService.getByClassroom(Number(classroomId));
-      const lessonData = lessons.find(l => (l.lessonId || (l as any).id) === Number(lessonId));
+      const lessonData = lessons.find(l => l.lessonId === Number(lessonId));
 
       if (!lessonData) {
-        console.error('❌ Lesson not found. LessonId:', lessonId, 'Available lessons:', lessons.map(l => ({ id: (l as any).id, lessonId: l.lessonId, type: l.lessonType })));
+        console.error('❌ Lesson not found. LessonId:', lessonId, 'Available lessons:', lessons.map(l => ({ lessonId: l.lessonId, type: l.lessonType })));
         throw new Error('Không tìm thấy bài học');
       }
 

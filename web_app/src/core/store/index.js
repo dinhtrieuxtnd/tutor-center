@@ -22,6 +22,7 @@ import quizAnswerReducer from '../../features/quiz/store/quizAnswerSlice';
 import paymentReducer from '../../features/payment/store/paymentSlice';
 import aiDocumentReducer from '../../features/ai/store/aiDocumentSlice';
 import aiQuestionReducer from '../../features/ai/store/aiQuestionSlice';
+import joinRequestReducer from '../../features/joinRequest/store/joinRequestSlice';
 
 export const store = configureStore({
   reducer: {
@@ -48,5 +49,6 @@ export const store = configureStore({
     payment: paymentReducer,
     aiDocument: aiDocumentReducer,
     aiQuestion: aiQuestionReducer,
+    joinRequest: joinRequestReducer,
   },
 });

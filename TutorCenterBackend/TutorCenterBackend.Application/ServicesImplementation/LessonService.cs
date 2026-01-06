@@ -74,7 +74,7 @@ namespace TutorCenterBackend.Application.ServicesImplementation
             var lesson = new Lesson
             {
                 ClassroomId = dto.ClassroomId,
-                LessonType = LessonTypeEnum.LECTURE.ToString(),
+                LessonType = LessonTypeEnum.LECTURE.ToString().ToLower(),
                 LectureId = dto.LectureId,
                 OrderIndex = dto.OrderIndex,
                 CreatedBy = currentUserId,
@@ -127,7 +127,7 @@ namespace TutorCenterBackend.Application.ServicesImplementation
             var lesson = new Lesson
             {
                 ClassroomId = dto.ClassroomId,
-                LessonType = LessonTypeEnum.EXERCISE.ToString(),
+                LessonType = LessonTypeEnum.EXERCISE.ToString().ToLower(),
                 ExerciseId = dto.ExerciseId,
                 ExerciseDueAt = dto.DueAt,
                 OrderIndex = dto.OrderIndex,
@@ -187,7 +187,7 @@ namespace TutorCenterBackend.Application.ServicesImplementation
             var lesson = new Lesson
             {
                 ClassroomId = dto.ClassroomId,
-                LessonType = LessonTypeEnum.QUIZ.ToString(),
+                LessonType = LessonTypeEnum.QUIZ.ToString().ToLower(),
                 QuizId = dto.QuizId,
                 QuizStartAt = dto.StartAt,
                 QuizEndAt = dto.EndAt,
@@ -221,6 +221,98 @@ namespace TutorCenterBackend.Application.ServicesImplementation
             var lessons = await _lessonRepository.GetLessonsByClassroomIdAsync(classroomId, ct);
 
             return lessons.Select(lesson => MapLessonToDto(lesson, currentUserId)).ToList();
+        }
+
+        public async Task<LessonResponseDto> UpdateLessonAsync(UpdateLessonRequestDto dto, CancellationToken ct = default)
+        {
+            var currentUserId = _httpContextAccessor.GetCurrentUserId();
+
+            // Get lesson
+            var lesson = await _lessonRepository.GetByIdAsync(dto.LessonId, ct);
+            if (lesson == null)
+            {
+                throw new KeyNotFoundException("Bài học không tồn tại.");
+            }
+
+            // Validate user is the tutor of the classroom
+            var classroom = await _classroomRepository.FindByIdAsync(lesson.ClassroomId, ct);
+            if (classroom == null || classroom.TutorId != currentUserId)
+            {
+                throw new UnauthorizedAccessException("Bạn không có quyền chỉnh sửa bài học này.");
+            }
+
+            // Update fields if provided
+            if (dto.OrderIndex.HasValue)
+            {
+                lesson.OrderIndex = dto.OrderIndex.Value;
+            }
+
+            // Update exercise due date if it's an exercise lesson
+            if (lesson.LessonType == LessonTypeEnum.EXERCISE.ToString().ToLower() && dto.ExerciseDueAt.HasValue)
+            {
+                lesson.ExerciseDueAt = dto.ExerciseDueAt.Value;
+            }
+
+            // Update quiz fields if it's a quiz lesson
+            if (lesson.LessonType == LessonTypeEnum.QUIZ.ToString().ToLower())
+            {
+                if (dto.QuizStartAt.HasValue)
+                {
+                    lesson.QuizStartAt = dto.QuizStartAt.Value;
+                }
+
+                if (dto.QuizEndAt.HasValue)
+                {
+                    lesson.QuizEndAt = dto.QuizEndAt.Value;
+                }
+
+                // Validate start and end times if both are set
+                if (lesson.QuizStartAt.HasValue && lesson.QuizEndAt.HasValue && lesson.QuizEndAt <= lesson.QuizStartAt)
+                {
+                    throw new InvalidOperationException("Thời gian kết thúc phải sau thời gian bắt đầu.");
+                }
+
+                if (dto.ShowQuizAnswers.HasValue)
+                {
+                    lesson.ShowQuizAnswers = dto.ShowQuizAnswers.Value;
+                }
+
+                if (dto.ShowQuizScore.HasValue)
+                {
+                    lesson.ShowQuizScore = dto.ShowQuizScore.Value;
+                }
+            }
+
+            lesson.UpdatedAt = DateTime.UtcNow;
+            await _lessonRepository.UpdateAsync(lesson, ct);
+
+            // Reload with related data
+            var updatedLesson = await _lessonRepository.GetByIdAsync(lesson.LessonId, ct);
+            return MapLessonToDto(updatedLesson!, currentUserId);
+        }
+
+        public async Task UnassignLessonAsync(int lessonId, CancellationToken ct = default)
+        {
+            var currentUserId = _httpContextAccessor.GetCurrentUserId();
+
+            // Get lesson
+            var lesson = await _lessonRepository.GetByIdAsync(lessonId, ct);
+            if (lesson == null)
+            {
+                throw new KeyNotFoundException("Bài học không tồn tại.");
+            }
+
+            // Validate user is the tutor of the classroom
+            var classroom = await _classroomRepository.FindByIdAsync(lesson.ClassroomId, ct);
+            if (classroom == null || classroom.TutorId != currentUserId)
+            {
+                throw new UnauthorizedAccessException("Bạn không có quyền xóa bài học này.");
+            }
+
+            // Soft delete
+            lesson.DeletedAt = DateTime.UtcNow;
+            lesson.UpdatedAt = DateTime.UtcNow;
+            await _lessonRepository.UpdateAsync(lesson, ct);
         }
 
         private LessonResponseDto MapLessonToDto(Lesson lesson, int currentUserId)

@@ -19,7 +19,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         /// API to create/submit an answer for a quiz question
         /// </summary>
         [HttpPost]
-        [RequirePermission("quiz_answer.create")]
+        [RequirePermission("quiz_attempt.create")]
         public async Task<IActionResult> CreateQuizAnswerAsync(
             [FromBody] CreateQuizAnswerRequestDto dto, 
             CancellationToken ct)
@@ -33,7 +33,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         /// API to update an answer for a quiz question
         /// </summary>
         [HttpPut]
-        [RequirePermission("quiz_answer.edit")]
+        [RequirePermission("quiz_attempt.create")]
         public async Task<IActionResult> UpdateQuizAnswerAsync(
             [FromBody] UpdateQuizAnswerRequestDto dto, 
             CancellationToken ct)
@@ -47,7 +47,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         /// API to delete an answer for a quiz question
         /// </summary>
         [HttpDelete("attempt/{attemptId}/question/{questionId}")]
-        [RequirePermission("quiz_answer.delete")]
+        [RequirePermission("quiz_attempt.create")]
         [ValidateId("attemptId")]
         [ValidateId("questionId")]
         public async Task<IActionResult> DeleteQuizAnswerAsync(

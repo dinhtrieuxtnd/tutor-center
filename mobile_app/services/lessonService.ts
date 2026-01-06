@@ -127,7 +127,13 @@ class LessonService {
       }
     );
 
-    return this.handleResponse<LessonResponse[]>(response);
+    const data = await this.handleResponse<any[]>(response);
+    
+    // Map backend response (Id) to frontend format (lessonId)
+    return data.map((lesson) => ({
+      ...lesson,
+      lessonId: lesson.id || lesson.lessonId || lesson.Id,
+    }));
   }
 }
 

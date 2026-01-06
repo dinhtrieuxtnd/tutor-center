@@ -9,5 +9,7 @@ namespace TutorCenterBackend.Application.Interfaces
         Task<LessonResponseDto> AssignExerciseAsync(AssignExerciseRequestDto dto, CancellationToken ct = default);
         Task<LessonResponseDto> AssignQuizAsync(AssignQuizRequestDto dto, CancellationToken ct = default);
         Task<List<LessonResponseDto>> GetLessonsByClassroomAsync(int classroomId, CancellationToken ct = default);
+        Task<LessonResponseDto> UpdateLessonAsync(UpdateLessonRequestDto dto, CancellationToken ct = default);
+        Task UnassignLessonAsync(int lessonId, CancellationToken ct = default);
     }
 }

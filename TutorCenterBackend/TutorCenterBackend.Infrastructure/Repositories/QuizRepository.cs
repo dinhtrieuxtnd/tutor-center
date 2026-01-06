@@ -91,7 +91,7 @@ namespace TutorCenterBackend.Infrastructure.Repositories
             var query = _context.Quizzes.Where(q => q.DeletedAt == null && q.CreatedBy == tutorId).AsQueryable();
             if (gradingMethod.HasValue)
             {
-                query = query.Where(q => q.GradingMethod == gradingMethod.ToString());
+                query = query.Where(q => q.GradingMethod == gradingMethod.ToString().ToLower());
             }
 
             query = query.ApplySearch(search, q => q.Title, q => q.Description ?? string.Empty);

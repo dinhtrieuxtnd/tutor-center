@@ -161,7 +161,7 @@ namespace TutorCenterBackend.Application.ServicesImplementation
                 MaxAttempts = dto.MaxAttempts,
                 ShuffleQuestions = dto.ShuffleQuestions,
                 ShuffleOptions = dto.ShuffleOptions,
-                GradingMethod = dto.GradingMethod.ToString(),
+                GradingMethod = dto.GradingMethod.ToString().ToLower(),
                 CreatedBy = currentUserId,
                 CreatedAt = DateTime.UtcNow
             };
@@ -209,7 +209,7 @@ namespace TutorCenterBackend.Application.ServicesImplementation
             quiz.MaxAttempts = dto.MaxAttempts;
             quiz.ShuffleQuestions = dto.ShuffleQuestions;
             quiz.ShuffleOptions = dto.ShuffleOptions;
-            quiz.GradingMethod = dto.GradingMethod.ToString();
+            quiz.GradingMethod = dto.GradingMethod.ToString().ToLower();
             quiz.UpdatedAt = DateTime.UtcNow;
 
             await _quizRepository.UpdateAsync(quiz, ct);

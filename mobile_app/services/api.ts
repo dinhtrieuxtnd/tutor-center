@@ -46,9 +46,26 @@ export interface ApiResponse<T> {
 
 class ApiService {
   private baseURL: string;
+  private isRefreshing = false;
+  private failedQueue: Array<{
+    resolve: (value?: any) => void;
+    reject: (reason?: any) => void;
+  }> = [];
 
   constructor() {
     this.baseURL = config.API_BASE_URL;
+  }
+
+  private processQueue(error: any, token: string | null = null) {
+    this.failedQueue.forEach((prom) => {
+      if (error) {
+        prom.reject(error);
+      } else {
+        prom.resolve(token);
+      }
+    });
+
+    this.failedQueue = [];
   }
 
   private async getAuthHeaders(): Promise<Record<string, string>> {
@@ -74,7 +91,10 @@ class ApiService {
         }
       }
 
-      throw new Error(errorMessage);
+      // Throw the response status for 401 handling
+      const error: any = new Error(errorMessage);
+      error.status = response.status;
+      throw error;
     }
 
     // Check if response has content
@@ -138,21 +158,75 @@ class ApiService {
     }
   }
 
+  private async request<T>(url: string, options: RequestInit = {}): Promise<T> {
+    try {
+      const response = await this.fetchWithTimeout(url, options);
+      return await this.handleResponse<T>(response);
+    } catch (error: any) {
+      // Check if error is 401 (Unauthorized) and not a refresh token request
+      if (error.status === 401 && !url.includes('/Auth/refresh-token') && !url.includes('/Auth/login')) {
+        // If already refreshing, wait for the current refresh to complete
+        if (this.isRefreshing) {
+          return new Promise((resolve, reject) => {
+            this.failedQueue.push({ resolve, reject });
+          }).then(() => {
+            // Retry the original request
+            return this.request<T>(url, options);
+          });
+        }
+
+        this.isRefreshing = true;
+
+        try {
+          // Try to refresh the token
+          const newTokens = await this.refreshToken();
+          
+          if (newTokens) {
+            this.processQueue(null, newTokens.accessToken);
+            
+            // Retry the original request with new token
+            const newHeaders = await this.getAuthHeaders();
+            const newOptions = {
+              ...options,
+              headers: {
+                ...options.headers,
+                ...newHeaders,
+              },
+            };
+            
+            const response = await this.fetchWithTimeout(url, newOptions);
+            return await this.handleResponse<T>(response);
+          } else {
+            // Refresh failed, clear queue and throw error
+            this.processQueue(new Error('Token refresh failed'), null);
+            throw new Error('Session expired. Please login again.');
+          }
+        } catch (refreshError) {
+          this.processQueue(refreshError, null);
+          throw refreshError;
+        } finally {
+          this.isRefreshing = false;
+        }
+      }
+
+      throw error;
+    }
+  }
+
   // Auth endpoints
   async login(loginData: LoginRequest): Promise<AuthTokens> {
     try {
-      const response = await this.fetchWithTimeout(`${this.baseURL}/Auth/login`, {
+      const result = await this.request<AuthTokens>(`${this.baseURL}/Auth/login`, {
         method: 'POST',
         headers: await this.getAuthHeaders(),
         body: JSON.stringify(loginData),
       });
 
-      const result = await this.handleResponse<AuthTokens>(response);
-
       // Lưu tokens vào AsyncStorage
       if (result.accessToken) {
         await AsyncStorage.setItem(config.ACCESS_TOKEN_KEY, result.accessToken);
         await AsyncStorage.setItem(config.REFRESH_TOKEN_KEY, result.refreshToken);
+        console.log('✅ Tokens saved to AsyncStorage');
       }
 
       return result;
@@ -186,18 +260,17 @@ class ApiService {
 
   async register(registerData: RegisterRequest): Promise<AuthTokens> {
     try {
-      const response = await this.fetchWithTimeout(`${this.baseURL}/Auth/register`, {
+      const result = await this.request<AuthTokens>(`${this.baseURL}/Auth/register`, {
         method: 'POST',
         headers: config.DEFAULT_HEADERS,
         body: JSON.stringify(registerData),
       });
 
-      const result = await this.handleResponse<AuthTokens>(response);
-
       // Lưu tokens vào AsyncStorage
       if (result.accessToken) {
         await AsyncStorage.setItem(config.ACCESS_TOKEN_KEY, result.accessToken);
         await AsyncStorage.setItem(config.REFRESH_TOKEN_KEY, result.refreshToken);
+        console.log('✅ Tokens saved to AsyncStorage');
       }
 
       return result;
@@ -279,10 +352,12 @@ class ApiService {
     try {
       const refreshToken = await AsyncStorage.getItem(config.REFRESH_TOKEN_KEY);
       if (!refreshToken) {
+        console.log('⚠️ No refresh token found');
         return null;
       }
 
-      const response = await this.fetchWithTimeout(`${this.baseURL}/Auth/refresh`, {
+      console.log('🔄 Attempting to refresh token...');
+      const response = await this.fetchWithTimeout(`${this.baseURL}/Auth/refresh-token`, {
         method: 'POST',
         headers: config.DEFAULT_HEADERS,
         body: JSON.stringify({ refreshToken }),
@@ -294,11 +369,12 @@ class ApiService {
       if (result.accessToken) {
         await AsyncStorage.setItem(config.ACCESS_TOKEN_KEY, result.accessToken);
         await AsyncStorage.setItem(config.REFRESH_TOKEN_KEY, result.refreshToken);
+        console.log('✅ Token refreshed successfully');
       }
 
       return result;
     } catch (error) {
-      console.error('Refresh token error:', error);
+      console.error('❌ Refresh token error:', error);
       // Xóa tokens cũ nếu refresh thất bại
       await AsyncStorage.multiRemove([config.ACCESS_TOKEN_KEY, config.REFRESH_TOKEN_KEY]);
       return null;
@@ -307,12 +383,10 @@ class ApiService {
 
   async getMe(): Promise<any> {
     try {
-      const response = await this.fetchWithTimeout(`${this.baseURL}/Profile`, {
+      return await this.request(`${this.baseURL}/Profile`, {
         method: 'GET',
         headers: await this.getAuthHeaders(),
       });
-
-      return await this.handleResponse(response);
     } catch (error) {
       console.error('Get me error:', error);
       throw error;
@@ -322,6 +396,11 @@ class ApiService {
   async isAuthenticated(): Promise<boolean> {
     const token = await AsyncStorage.getItem(config.ACCESS_TOKEN_KEY);
     return !!token;
+  }
+
+  // Public method to make authenticated requests with auto-refresh
+  async makeAuthenticatedRequest<T>(url: string, options: RequestInit = {}): Promise<T> {
+    return this.request<T>(url, options);
   }
 }
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Button, Input } from '../../../shared/components/ui';
 
-export const EditQuestionPanel = ({ isOpen, onClose, onSubmit, isLoading, question }) => {
+export const EditQuestionPanel = ({ isOpen, onClose, onSubmit, isLoading, question, quizId }) => {
     const [formData, setFormData] = useState({
         content: '',
         explanation: '',
@@ -17,7 +17,7 @@ export const EditQuestionPanel = ({ isOpen, onClose, onSubmit, isLoading, questi
             setFormData({
                 content: question.content || '',
                 explanation: question.explanation || '',
-                questionType: question.questionType || 0,
+                questionType: question.questionType ?? 0,
                 points: question.points || 1,
                 orderIndex: question.orderIndex || 0,
             });
@@ -48,16 +48,22 @@ export const EditQuestionPanel = ({ isOpen, onClose, onSubmit, isLoading, questi
         e.preventDefault();
         if (!validate()) return;
 
+        const questionTypeValue = parseInt(formData.questionType);
+        const pointsValue = parseFloat(formData.points);
+        const orderIndexValue = parseInt(formData.orderIndex);
+
         const submitData = {
             sectionId: question.sectionId || undefined,
             groupId: question.groupId || undefined,
             content: formData.content.trim(),
             explanation: formData.explanation.trim() || undefined,
-            questionType: parseInt(formData.questionType),
-            points: parseFloat(formData.points),
-            orderIndex: parseInt(formData.orderIndex) || 0,
+            questionType: isNaN(questionTypeValue) ? 0 : questionTypeValue,
+            points: isNaN(pointsValue) ? 1 : pointsValue,
+            orderIndex: isNaN(orderIndexValue) ? 0 : orderIndexValue,
         };
 
+        console.log('EditQuestionPanel - submitData:', submitData);
+        console.log('EditQuestionPanel - formData:', formData);
         onSubmit(submitData);
     };
 

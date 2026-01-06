@@ -1,6 +1,6 @@
 import { ClipboardList, Clock, Calendar, Target, Eye, Award } from 'lucide-react';
 
-export const QuizItem = ({ quiz }) => {
+export const QuizItem = ({ quiz, isTutor = false }) => {
     const startDate = quiz.quizStartAt ? new Date(quiz.quizStartAt) : null;
     const endDate = quiz.quizEndAt ? new Date(quiz.quizEndAt) : null;
     const now = new Date();
@@ -89,17 +89,19 @@ export const QuizItem = ({ quiz }) => {
                 </div>
             </div>
 
-            {/* Action button */}
-            <button 
-                disabled={!isActive}
-                className={`flex-shrink-0 px-3 py-1.5 text-xs font-medium rounded-sm transition-colors ${
-                    isActive 
-                        ? 'bg-purple-600 text-white hover:bg-purple-700' 
-                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                }`}
-            >
-                {isUpcoming ? 'Chưa mở' : isActive ? 'Làm bài' : 'Đã đóng'}
-            </button>
+            {/* Action button - Only show for students */}
+            {!isTutor && (
+                <button 
+                    disabled={!isActive}
+                    className={`flex-shrink-0 px-3 py-1.5 text-xs font-medium rounded-sm transition-colors ${
+                        isActive 
+                            ? 'bg-purple-600 text-white hover:bg-purple-700' 
+                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    }`}
+                >
+                    {isUpcoming ? 'Chưa mở' : isActive ? 'Làm bài' : 'Đã đóng'}
+                </button>
+            )}
         </div>
     );
 };

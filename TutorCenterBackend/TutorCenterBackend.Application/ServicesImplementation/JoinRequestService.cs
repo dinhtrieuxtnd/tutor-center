@@ -31,17 +31,17 @@ namespace TutorCenterBackend.Application.ServicesImplementation
             var existingRequest = await _joinRequestRepository.GetByClassroomAndStudentAsync(dto.ClassRoomId, userId, ct);
             if (existingRequest != null)
             {
-                if (existingRequest.Status == JoinRequestStatusEnum.PENDING.ToString())
+                if (existingRequest.Status == JoinRequestStatusEnum.PENDING.ToString().ToLower())
                 {
                     throw new InvalidOperationException("Bạn đã gửi yêu cầu tham gia lớp học này và đang chờ xử lý.");
                 }
-                else if (existingRequest.Status == JoinRequestStatusEnum.APPROVED.ToString())
+                else if (existingRequest.Status == JoinRequestStatusEnum.APPROVED.ToString().ToLower())
                 {
                     throw new InvalidOperationException("Bạn đã được chấp nhận vào lớp học này.");
                 }
-                else if (existingRequest.Status == JoinRequestStatusEnum.REJECTED.ToString())
+                else if (existingRequest.Status == JoinRequestStatusEnum.REJECTED.ToString().ToLower())
                 {
-                    existingRequest.Status = JoinRequestStatusEnum.PENDING.ToString();
+                    existingRequest.Status = JoinRequestStatusEnum.PENDING.ToString().ToLower();
                     await _joinRequestRepository.UpdateAsync(existingRequest, ct);
                     return _mapper.Map<JoinRequestResponseDto>(existingRequest);
                 }
@@ -59,7 +59,7 @@ namespace TutorCenterBackend.Application.ServicesImplementation
             {
                 ClassroomId = dto.ClassRoomId,
                 StudentId = userId,
-                Status = JoinRequestStatusEnum.PENDING.ToString()
+                Status = JoinRequestStatusEnum.PENDING.ToString().ToLower()
             };
 
             await _joinRequestRepository.AddAsync(joinRequest, ct);
@@ -98,7 +98,7 @@ namespace TutorCenterBackend.Application.ServicesImplementation
             {
                 throw new InvalidOperationException("Không thể xử lý yêu cầu tham gia vào lớp học đã lưu trữ.");
             }
-            if (joinRequest.Status != JoinRequestStatusEnum.PENDING.ToString())
+            if (joinRequest.Status != JoinRequestStatusEnum.PENDING.ToString().ToLower())
             {
                 throw new InvalidOperationException("Yêu cầu tham gia đã được xử lý trước đó.");
             }
@@ -123,7 +123,7 @@ namespace TutorCenterBackend.Application.ServicesImplementation
                     }, ct);
                 }
             }
-            joinRequest.Status = dto.Status.ToString();
+            joinRequest.Status = dto.Status.ToString().ToLower();
             await _joinRequestRepository.UpdateAsync(joinRequest, ct);
             return _mapper.Map<JoinRequestResponseDto>(joinRequest);
         }

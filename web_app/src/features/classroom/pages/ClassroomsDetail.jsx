@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../../core/store/hooks';
 import { getClassroomByIdAsync } from '../../../features/classroom/store/classroomSlice';
 import { getPaymentsByClassroomAsync } from '../../../features/payment/store/paymentSlice';
-import { School, ArrowLeft, Info, Users, MessageCircle, BookOpen, DollarSign, FileText, Sparkles } from 'lucide-react';
+import { School, ArrowLeft, Info, Users, MessageCircle, BookOpen, DollarSign, FileText, Sparkles, UserPlus } from 'lucide-react';
 import { Spinner } from '../../../shared/components/loading/Loading';
 import { Button } from '../../../shared/components';
 import { ROUTES } from '../../../core/constants';
@@ -14,11 +14,13 @@ import { ClassroomLessons } from '../components/lessons/ClassroomLessons';
 import { PaymentsTable } from '../../payment/components/PaymentsTable';
 import { AIDocumentsTab } from '../../ai/components/AIDocumentsTab';
 import { AIQuestionsTab } from '../../ai/components/AIQuestionsTab';
+import { ClassroomJoinRequests } from '../../joinRequest/components/ClassroomJoinRequests';
 
 const TABS = {
     INFO: 'info',
     LESSONS: 'lessons',
     STUDENTS: 'students',
+    JOIN_REQUESTS: 'join_requests',
     CHAT: 'chat',
     PAYMENTS: 'payments',
     AI_DOCUMENTS: 'ai_documents',
@@ -59,6 +61,7 @@ export const ClassroomsDetail = () => {
         { id: TABS.INFO, label: 'Thông tin', icon: Info },
         { id: TABS.LESSONS, label: 'Buổi học', icon: BookOpen },
         { id: TABS.STUDENTS, label: 'Học sinh', icon: Users },
+        { id: TABS.JOIN_REQUESTS, label: 'Yêu cầu tham gia', icon: UserPlus },
         { id: TABS.CHAT, label: 'Phòng chat', icon: MessageCircle },
         { id: TABS.PAYMENTS, label: 'Thanh toán', icon: DollarSign },
         { id: TABS.AI_DOCUMENTS, label: 'Tài liệu AI', icon: FileText },
@@ -174,7 +177,8 @@ export const ClassroomsDetail = () => {
             {/* Tab Content */}
             <div className='w-full'>
                 {activeTab === TABS.INFO && <ClassroomInfo classroom={currentClassroom} />}
-                {activeTab === TABS.LESSONS && <ClassroomLessons classroomId={currentClassroom.id} />}
+                {activeTab === TABS.LESSONS && <ClassroomLessons classroomId={currentClassroom.id} isTutor={isTutor} />}
+                {activeTab === TABS.JOIN_REQUESTS && <ClassroomJoinRequests classroomId={currentClassroom.id} />}
                 {activeTab === TABS.STUDENTS && <ClassroomStudents classroomId={currentClassroom.id} />}
                 {activeTab === TABS.CHAT && <ClassroomChat classroomId={currentClassroom.id} />}
                 {activeTab === TABS.PAYMENTS && (

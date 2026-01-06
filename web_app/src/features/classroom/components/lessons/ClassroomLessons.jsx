@@ -15,7 +15,7 @@ import { AddLessonPanel } from './AddLessonPanel';
 import { ViewLecturePanel } from '../../../lecture/components/ViewLecturePanel';
 import { ViewExercisePanel } from '../../../exercise/components/ViewExercisePanel';
 
-export const ClassroomLessons = ({ classroomId }) => {
+export const ClassroomLessons = ({ classroomId, isTutor = false }) => {
     const dispatch = useAppDispatch();
     const { lessons, loading, assignLectureLoading, assignExerciseLoading, assignQuizLoading } = useAppSelector((state) => state.lesson);
     const [filterType, setFilterType] = useState('all'); // all, lecture, exercise, quiz
@@ -82,7 +82,7 @@ export const ClassroomLessons = ({ classroomId }) => {
             return <ExerciseItem key={lesson.id} exercise={lesson.exercise} exerciseDueAt={lesson.exerciseDueAt} onView={handleViewExercise} />;
         }
         if (lessonType === 'quiz' && lesson.quiz) {
-            return <QuizItem key={lesson.id} quiz={lesson.quiz} />;
+            return <QuizItem key={lesson.id} quiz={lesson.quiz} isTutor={isTutor} />;
         }
         return null;
     };

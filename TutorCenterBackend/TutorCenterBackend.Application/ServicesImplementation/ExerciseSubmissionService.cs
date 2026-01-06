@@ -208,5 +208,14 @@ namespace TutorCenterBackend.Application.ServicesImplementation
 
             return submissions.Select(MapWithMediaUrl);
         }
+
+        public async Task<ExerciseSubmissionResponseDto?> GetMySubmissionByLessonAsync(int lessonId, CancellationToken ct = default)
+        {
+            var currentUserId = _httpContextAccessor.GetCurrentUserId();
+
+            var submission = await _submissionRepository.GetSubmissionByLessonAndStudentAsync(lessonId, currentUserId, ct);
+            
+            return submission != null ? MapWithMediaUrl(submission) : null;
+        }
     }
 }

@@ -15,6 +15,8 @@ export interface ExerciseSubmissionResponse {
 }
 
 export interface SubmitExerciseRequest {
+  lessonId: number;
+  exerciseId: number;
   mediaId: number;
 }
 
@@ -58,15 +60,26 @@ class ExerciseSubmissionService {
   private async handleResponse<T>(response: Response): Promise<T> {
     const contentType = response.headers.get('content-type');
     
+    console.log('📥 Response:', response.status, response.statusText);
+    console.log('   Content-Type:', contentType);
+    
     if (!response.ok) {
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
       
       if (contentType && contentType.includes('application/json')) {
         try {
           const errorData = await response.json();
+          console.log('   Error Data:', JSON.stringify(errorData, null, 2));
           errorMessage = errorData.message || errorData.title || errorMessage;
         } catch {
           // Ignore JSON parse error, use default message
+        }
+      } else {
+        try {
+          const textData = await response.text();
+          console.log('   Error Text:', textData);
+        } catch {
+          // Ignore
         }
       }
       
@@ -89,8 +102,13 @@ class ExerciseSubmissionService {
    */
   async submitExercise(lessonId: number, data: SubmitExerciseRequest): Promise<ExerciseSubmissionResponse> {
     const headers = await this.getAuthHeaders();
+    
+    console.log('📤 Submit Exercise Request:');
+    console.log('  URL:', `${config.API_BASE_URL}/ExerciseSubmissions`);
+    console.log('  Body:', JSON.stringify(data, null, 2));
+    
     const response = await this.fetchWithTimeout(
-      `${config.API_BASE_URL}/ExerciseSubmissions/lessons/${lessonId}/submit`,
+      `${config.API_BASE_URL}/ExerciseSubmissions`,
       {
         method: 'POST',
         headers,

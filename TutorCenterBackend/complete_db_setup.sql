@@ -778,6 +778,7 @@ INSERT INTO Permissions (PermissionName, [Path], [Method], [Module], CreatedAt, 
 ('classroom.archive', '/api/classrooms/{id}/archive-status', 'PATCH', 'Classroom Management', GETDATE(), GETDATE()),
 ('classroom.restore', '/api/classrooms/{id}/restore', 'PATCH', 'Classroom Management', GETDATE(), GETDATE()),
 ('classroom.view-deleted', '/api/classrooms/deleted-list', 'GET', 'Classroom Management', GETDATE(), GETDATE()),
+('classroom.chat', '/api/classrooms/{id}/chat', 'GET', 'Classroom Management', GETDATE(), GETDATE()),
 
 -- Join Request permissions
 ('joinrequest.create', '/api/join-requests', 'POST', 'Join Request Management', GETDATE(), GETDATE()),
@@ -802,12 +803,27 @@ INSERT INTO Permissions (PermissionName, [Path], [Method], [Module], CreatedAt, 
 ('exercise.delete', '/api/exercises/{id}', 'DELETE', 'Exercise Management', GETDATE(), GETDATE()),
 ('exercise.grade', '/api/exercises/{id}/grade', 'POST', 'Exercise Management', GETDATE(), GETDATE()),
 
+-- Exercise Submission permissions
+('exercise_submission.submit', '/api/ExerciseSubmissions', 'POST', 'Exercise Submission Management', GETDATE(), GETDATE()),
+('exercise_submission.view', '/api/ExerciseSubmissions/{id}', 'GET', 'Exercise Submission Management', GETDATE(), GETDATE()),
+('exercise_submission.delete', '/api/ExerciseSubmissions/{id}', 'DELETE', 'Exercise Submission Management', GETDATE(), GETDATE()),
+('exercise_submission.download', '/api/ExerciseSubmissions/{id}/download', 'GET', 'Exercise Submission Management', GETDATE(), GETDATE()),
+('exercise_submission.grade', '/api/ExerciseSubmissions/{id}/grade', 'PUT', 'Exercise Submission Management', GETDATE(), GETDATE()),
+('exercise_submission.view_my', '/api/ExerciseSubmissions/my-submissions', 'GET', 'Exercise Submission Management', GETDATE(), GETDATE()),
+('exercise_submission.view_all', '/api/ExerciseSubmissions/by-exercise/{exerciseId}', 'GET', 'Exercise Submission Management', GETDATE(), GETDATE()),
+('exercise_submission.view_my_by_lesson', '/api/ExerciseSubmissions/lessons/{lessonId}/my-submission', 'GET', 'Exercise Submission Management', GETDATE(), GETDATE()),
+
 -- Quiz permissions
 ('quiz.view', '/api/quizzes', 'GET', 'Quiz Management', GETDATE(), GETDATE()),
 ('quiz.create', '/api/quizzes', 'POST', 'Quiz Management', GETDATE(), GETDATE()),
 ('quiz.edit', '/api/quizzes/{id}', 'PUT', 'Quiz Management', GETDATE(), GETDATE()),
 ('quiz.delete', '/api/quizzes/{id}', 'DELETE', 'Quiz Management', GETDATE(), GETDATE()),
 ('quiz.grade', '/api/quizzes/{id}/grade', 'POST', 'Quiz Management', GETDATE(), GETDATE()),
+('quiz.view_student', '/api/quizzes/{id}', 'GET', 'Quiz Management', GETDATE(), GETDATE()),
+
+('quiz_attempt.create', '/api/quiz-attempts', 'POST', 'Quiz Management', GETDATE(), GETDATE()),
+('quiz_attempt.submit', '/api/quiz-attempts/{id}/submit', 'POST', 'Quiz Management', GETDATE(), GETDATE()),
+('quiz_attempt.view', '/api/quiz-attempts/{id}', 'GET', 'Quiz Management', GETDATE(), GETDATE()),
 
 -- Lecture permissions
 ('lecture.view', '/api/lectures', 'GET', 'Lecture Management', GETDATE(), GETDATE()),
@@ -871,6 +887,7 @@ AND p.PermissionName IN (
     -- Classroom management
     'classroom.view',
     'classroom.manage_students',
+    'classroom.chat',
     -- Join Request management
     'joinrequest.view',
     'joinrequest.handle',
@@ -888,12 +905,19 @@ AND p.PermissionName IN (
     'exercise.edit',
     'exercise.delete',
     'exercise.grade',
+    -- Exercise Submission management
+    'exercise_submission.view',
+    'exercise_submission.download',
+    'exercise_submission.view_all',
+    'exercise_submission.grade',
     -- Quiz management
     'quiz.view',
     'quiz.create',
     'quiz.edit',
     'quiz.delete',
     'quiz.grade',
+    -- Quiz Attempt management
+    'quiz_attempt.view',
     -- Lecture management
     'lecture.view',
     'lecture.create',
@@ -928,12 +952,24 @@ WHERE r.RoleName = 'Student'
 AND p.PermissionName IN (
     'classroom.view',
     'classroom.view-enrollments',
+    'classroom.chat',
     'joinrequest.create',
     'joinrequest.view-own',
     'classroomstudent.view',
     'lesson.view',
     'exercise.view',
+    -- Exercise Submission management
+    'exercise_submission.submit',
+    'exercise_submission.view',
+    'exercise_submission.download',
+    'exercise_submission.view_my',
+    'exercise_submission.view_my_by_lesson',
+    'exercise_submission.delete',
+    -- Quiz management
     'quiz.view',
+    'quiz.view_student',
+    'quiz_attempt.create',
+    'quiz_attempt.view',
     'lecture.view',
     'media.upload',
     'report.create'

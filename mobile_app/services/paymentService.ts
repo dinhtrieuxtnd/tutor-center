@@ -13,6 +13,8 @@ export interface PaymentResponse {
     vnpayTransactionNo?: string;
     vnpayBankCode?: string;
     vnpayCardType?: string;
+    momoTransactionId?: string;
+    momoPayType?: string;
     orderCode: string;
     createdAt: string;
     paidAt?: string;

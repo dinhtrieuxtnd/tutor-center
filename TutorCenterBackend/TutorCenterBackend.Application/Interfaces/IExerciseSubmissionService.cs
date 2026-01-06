@@ -12,5 +12,6 @@ namespace TutorCenterBackend.Application.Interfaces
         Task<ExerciseSubmissionResponseDto> GradeSubmissionAsync(int submissionId, GradeSubmissionRequestDto dto, CancellationToken ct = default);
         Task<IEnumerable<ExerciseSubmissionResponseDto>> GetMySubmissionsAsync(CancellationToken ct = default);
         Task<IEnumerable<ExerciseSubmissionResponseDto>> GetSubmissionsByExerciseAsync(int exerciseId, CancellationToken ct = default);
+        Task<ExerciseSubmissionResponseDto?> GetMySubmissionByLessonAsync(int lessonId, CancellationToken ct = default);
     }
 }

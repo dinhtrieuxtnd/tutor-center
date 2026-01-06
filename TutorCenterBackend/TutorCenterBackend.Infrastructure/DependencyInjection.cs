@@ -88,6 +88,10 @@ public static class DependencyInjection
         services.Configure<VNPayOptions>(configuration.GetSection("VNPay"));
         services.AddScoped<IVNPayService, VNPayService>();
 
+        // Register MoMo Settings and Service
+        services.Configure<MoMoOptions>(configuration.GetSection("MoMo"));
+        services.AddHttpClient<IMoMoService, MoMoService>();
+
         // Register S3 Settings
         services.Configure<S3Settings>(configuration.GetSection("S3Storage"));
 

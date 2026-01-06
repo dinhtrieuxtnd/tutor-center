@@ -46,10 +46,18 @@ export default function ExerciseSubmitScreen() {
 
       // Fetch lesson details
       const lessons = await lessonService.getByClassroom(Number(classroomId));
+      console.log('🔍 All lessons from API:', JSON.stringify(lessons, null, 2));
+      console.log('🔍 Looking for lessonId:', lessonId);
+      
       const lessonData = lessons.find((l) => l.lessonId === Number(lessonId));
 
+      console.log('🔍 Found lesson:', lessonData);
+
       if (!lessonData) {
-        throw new Error('Không tìm thấy bài tập');
+        // Show detailed error message
+        console.error('❌ Lesson not found. Available lesson IDs:', 
+          lessons.map(l => l.lessonId));
+        throw new Error(`Không tìm thấy bài tập với ID: ${lessonId}`);
       }
 
       if (lessonData.lessonType !== 'exercise') {
@@ -125,18 +133,25 @@ export default function ExerciseSubmitScreen() {
           onPress: async () => {
             try {
               setIsSubmitting(true);
+              console.log('📤 Starting submission for lessonId:', lessonId);
 
               // Upload file first to get mediaId
+              console.log('📁 Uploading file:', selectedFile.name);
               const mediaId = await exerciseSubmissionService.uploadFile(
                 selectedFile.uri,
                 selectedFile.name,
                 selectedFile.mimeType
               );
+              console.log('✅ File uploaded, mediaId:', mediaId);
 
               // Submit exercise
+              console.log('📝 Submitting exercise with mediaId:', mediaId);
               const result = await exerciseSubmissionService.submitExercise(Number(lessonId), {
+                lessonId: Number(lessonId),
+                exerciseId: lesson.exercise!.id,
                 mediaId,
               });
+              console.log('✅ Submission successful:', JSON.stringify(result, null, 2));
 
               setSubmission(result);
               setSelectedFile(null);
@@ -144,10 +159,14 @@ export default function ExerciseSubmitScreen() {
               Alert.alert('Thành công', 'Đã nộp bài tập thành công', [
                 {
                   text: 'OK',
-                  onPress: () => fetchData(),
+                  onPress: () => {
+                    console.log('🔄 Refreshing data after submission...');
+                    fetchData();
+                  },
                 },
               ]);
             } catch (error: any) {
+              console.error('❌ Submission error:', error);
               Alert.alert('Lỗi', error.message || 'Không thể nộp bài tập');
             } finally {
               setIsSubmitting(false);

@@ -53,25 +53,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       const authenticated = await apiService.isAuthenticated();
       
+      console.log('🔐 Checking auth status...', { authenticated });
+      
       if (authenticated) {
         // Try to get user data
         try {
+          console.log('📱 Getting user data...');
           const userData = await apiService.getMe();
+          console.log('✅ User data loaded:', userData);
           setUser(userData);
           setIsAuthenticated(true);
-        } catch {
-          // Token might be expired, try to refresh
-          const refreshResult = await apiService.refreshToken();
-          if (refreshResult) {
-            const userData = await apiService.getMe();
-            setUser(userData);
-            setIsAuthenticated(true);
-          } else {
-            setUser(null);
-            setIsAuthenticated(false);
-          }
+        } catch (error: any) {
+          console.log('⚠️ Failed to get user data, attempting token refresh...', error.message);
+          // Token might be expired, the apiService will automatically try to refresh
+          // If refresh fails, it will throw an error
+          setUser(null);
+          setIsAuthenticated(false);
         }
       } else {
+        console.log('❌ No stored token found');
         setUser(null);
         setIsAuthenticated(false);
       }

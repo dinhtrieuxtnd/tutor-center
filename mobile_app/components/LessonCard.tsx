@@ -83,13 +83,10 @@ export default function LessonCard({ lesson, classroomId, onPress }: LessonCardP
       return;
     }
 
-    // Get lessonId (backend may return 'id' or 'lessonId')
-    const lessonId = lesson.lessonId || (lesson as any).id;
+    const lessonId = lesson.lessonId;
 
     console.log('🔍 Lesson clicked:', {
       lessonId: lesson.lessonId,
-      id: (lesson as any).id,
-      computed: lessonId,
       lessonType: lesson.lessonType,
       classroomId,
     });

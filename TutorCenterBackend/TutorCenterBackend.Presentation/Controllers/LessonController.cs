@@ -119,5 +119,57 @@ namespace TutorCenterBackend.Presentation.Controllers
                 return Forbid(ex.Message);
             }
         }
+
+        /// <summary>
+        /// Update a lesson (Tutor only)
+        /// Can update order, exercise due date, quiz times and settings
+        /// </summary>
+        [HttpPut("update")]
+        public async Task<ActionResult<LessonResponseDto>> UpdateLesson(
+            [FromBody] UpdateLessonRequestDto dto,
+            CancellationToken ct = default)
+        {
+            try
+            {
+                var result = await _lessonService.UpdateLessonAsync(dto, ct);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Unassign/remove a lesson from classroom (Tutor only)
+        /// Performs soft delete
+        /// </summary>
+        [HttpDelete("{lessonId}")]
+        public async Task<ActionResult> UnassignLesson(
+            int lessonId,
+            CancellationToken ct = default)
+        {
+            try
+            {
+                await _lessonService.UnassignLessonAsync(lessonId, ct);
+                return Ok(new { message = "Đã xóa bài học khỏi lớp học thành công." });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+        }
     }
 }

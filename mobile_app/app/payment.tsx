@@ -28,25 +28,31 @@ export default function PaymentScreen() {
         try {
             setIsProcessing(true);
 
-            // Create payment transaction
+            // Create payment transaction (auto-approved in test mode)
             const result = await paymentService.createPayment({
                 classroomId: Number(classroomId),
-                paymentMethod: 'VNPay',
-                returnUrl: 'tutorcenter://payment-return', // Deep link for mobile app
+                paymentMethod: 'momo',
+                returnUrl: 'tutorcenter://payment-return',
             });
 
-            // Open VNPay payment URL
-            const canOpen = await Linking.canOpenURL(result.paymentUrl);
-            if (canOpen) {
-                await Linking.openURL(result.paymentUrl);
+            // Simulate payment processing delay (40 seconds)
+            await new Promise(resolve => setTimeout(resolve, 40000));
 
-                // Navigate to payment history after opening payment URL
-                setTimeout(() => {
-                    router.replace('/payment-history');
-                }, 1000);
-            } else {
-                throw new Error('Không thể mở trang thanh toán');
-            }
+            // Show success message
+            Alert.alert(
+                'Thanh toán thành công!',
+                `Bạn đã thanh toán thành công cho khóa học "${classroomName}"`,
+                [
+                    {
+                        text: 'Xem lịch sử',
+                        onPress: () => router.replace('/payment-history'),
+                    },
+                    {
+                        text: 'Về trang chủ',
+                        onPress: () => router.replace('/(tabs)'),
+                    },
+                ]
+            );
         } catch (error: any) {
             console.error('Error creating payment:', error);
             Alert.alert('Lỗi', error.message || 'Không thể tạo giao dịch thanh toán');
@@ -97,12 +103,12 @@ export default function PaymentScreen() {
 
                     <View style={styles.methodCard}>
                         <View style={styles.methodIcon}>
-                            <Ionicons name="card" size={32} color="#007AFF" />
+                            <Ionicons name="wallet" size={32} color="#A50064" />
                         </View>
                         <View style={styles.methodInfo}>
-                            <Text style={styles.methodName}>VNPay</Text>
+                            <Text style={styles.methodName}>MoMo</Text>
                             <Text style={styles.methodDesc}>
-                                Thanh toán qua ví điện tử, thẻ ATM, thẻ tín dụng
+                                Thanh toán qua ví điện tử MoMo
                             </Text>
                         </View>
                         <Ionicons name="checkmark-circle" size={24} color="#10B981" />
@@ -114,7 +120,7 @@ export default function PaymentScreen() {
                     <View style={styles.noteItem}>
                         <Ionicons name="information-circle" size={20} color="#007AFF" />
                         <Text style={styles.noteText}>
-                            Bạn sẽ được chuyển đến trang thanh toán VNPay
+                            Bạn sẽ được chuyển đến ứng dụng MoMo để thanh toán
                         </Text>
                     </View>
                     <View style={styles.noteItem}>
@@ -145,7 +151,10 @@ export default function PaymentScreen() {
                     disabled={isProcessing}
                 >
                     {isProcessing ? (
-                        <ActivityIndicator size="small" color="white" />
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <ActivityIndicator size="small" color="white" />
+                            <Text style={styles.payButtonText}>Đang xử lý...</Text>
+                        </View>
                     ) : (
                         <>
                             <Ionicons name="card" size={24} color="white" />
@@ -260,7 +269,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         borderWidth: 2,
-        borderColor: '#007AFF',
+        borderColor: '#A50064',
         ...Platform.select({
             ios: {
                 shadowColor: '#000',
@@ -277,7 +286,7 @@ const styles = StyleSheet.create({
         width: 56,
         height: 56,
         borderRadius: 28,
-        backgroundColor: '#EBF5FF',
+        backgroundColor: '#FFE5F4',
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 12,

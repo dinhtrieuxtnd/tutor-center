@@ -141,6 +141,66 @@ public class PaymentController : ControllerBase
     }
 
     /// <summary>
+    /// MoMo payment return URL (redirect from MoMo)
+    /// </summary>
+    [HttpGet("momo-return")]
+    [AllowAnonymous]
+    public async Task<IActionResult> MoMoReturn([FromQuery] MoMoCallbackDto callback)
+    {
+        try
+        {
+            var result = await _paymentService.HandleMoMoCallbackAsync(callback);
+
+            if (result.Success)
+            {
+                return Ok(new
+                {
+                    success = true,
+                    message = result.Message,
+                    transactionId = result.TransactionId,
+                    orderCode = result.OrderCode,
+                    amount = result.Amount
+                });
+            }
+            else
+            {
+                return BadRequest(new { success = false, message = result.Message });
+            }
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// MoMo IPN (Instant Payment Notification) - for server-to-server callback
+    /// </summary>
+    [HttpPost("momo-ipn")]
+    [AllowAnonymous]
+    public async Task<IActionResult> MoMoIPN([FromBody] MoMoCallbackDto callback)
+    {
+        try
+        {
+            var result = await _paymentService.HandleMoMoCallbackAsync(callback);
+
+            // MoMo expects specific response format
+            if (result.Success)
+            {
+                return Ok(new { resultCode = 0, message = "Success" });
+            }
+            else
+            {
+                return Ok(new { resultCode = 97, message = "Invalid signature" });
+            }
+        }
+        catch (Exception ex)
+        {
+            return Ok(new { resultCode = 99, message = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Get payment detail by transaction ID
     /// </summary>
     [HttpGet("{transactionId}")]

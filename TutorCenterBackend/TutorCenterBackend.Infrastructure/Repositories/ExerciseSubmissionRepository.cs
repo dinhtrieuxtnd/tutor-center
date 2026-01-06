@@ -75,6 +75,16 @@ namespace TutorCenterBackend.Infrastructure.Repositories
                 .ToListAsync(ct);
         }
 
+        public async Task<ExerciseSubmission?> GetSubmissionByLessonAndStudentAsync(int lessonId, int studentId, CancellationToken ct = default)
+        {
+            return await _context.ExerciseSubmissions
+                .Include(s => s.Student)
+                .Include(s => s.Media)
+                .Include(s => s.Lesson)
+                    .ThenInclude(l => l.Exercise)
+                .FirstOrDefaultAsync(s => s.LessonId == lessonId && s.StudentId == studentId, ct);
+        }
+
         public async Task<bool> IsStudentInClassroomAsync(int studentId, int lessonId, CancellationToken ct = default)
         {
             return await _context.Lessons

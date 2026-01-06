@@ -224,10 +224,69 @@ const QuizQuestions = ({ quiz, onUpdate }) => {
             <div className="text-center py-12">
                 <FileQuestion size={48} className="text-gray-300 mx-auto mb-3" />
                 <p className="text-sm text-foreground-light mb-4">Chưa có câu hỏi nào</p>
-                <Button onClick={() => setShowAddSection(true)}>
-                    <Plus size={16} />
-                    Thêm phần thi đầu tiên
-                </Button>
+                <div className="flex items-center justify-center gap-3">
+                    <Button 
+                        onClick={() => {
+                            setContextSectionId(null);
+                            setContextGroupId(null);
+                            setShowAddQuestion(true);
+                        }}
+                    >
+                        <Plus size={16} />
+                        Thêm câu hỏi
+                    </Button>
+                    <Button 
+                        variant="outline"
+                        onClick={() => setShowAddSection(true)}
+                    >
+                        <FolderOpen size={16} />
+                        Thêm phần thi
+                    </Button>
+                    <Button 
+                        variant="outline"
+                        onClick={() => {
+                            setContextSectionId(null);
+                            setContextGroupId(null);
+                            setShowAddQGroup(true);
+                        }}
+                    >
+                        <Users size={16} />
+                        Thêm nhóm
+                    </Button>
+                </div>
+                
+                {/* Add Panels */}
+                <AddQuestionPanel
+                    isOpen={showAddQuestion}
+                    onClose={() => {
+                        setShowAddQuestion(false);
+                        setContextSectionId(null);
+                        setContextGroupId(null);
+                    }}
+                    onSubmit={handleAddQuestion}
+                    isLoading={isLoading}
+                    quizId={quiz.id}
+                    sectionId={contextSectionId}
+                    groupId={contextGroupId}
+                />
+                <AddSectionPanel
+                    isOpen={showAddSection}
+                    onClose={() => setShowAddSection(false)}
+                    onSubmit={handleAddSection}
+                    isLoading={isLoading}
+                    quizId={quiz.id}
+                />
+                <AddQGroupPanel
+                    isOpen={showAddQGroup}
+                    onClose={() => {
+                        setShowAddQGroup(false);
+                        setContextSectionId(null);
+                    }}
+                    onSubmit={handleAddQGroup}
+                    isLoading={isLoading}
+                    quizId={quiz.id}
+                    sectionId={contextSectionId}
+                />
             </div>
         );
     }
@@ -496,6 +555,7 @@ const QuizQuestions = ({ quiz, onUpdate }) => {
                 onSubmit={handleUpdateQuestion}
                 isLoading={isLoading}
                 question={editingQuestion}
+                quizId={quiz.id}
             />
             <EditOptionPanel
                 isOpen={showEditOption}

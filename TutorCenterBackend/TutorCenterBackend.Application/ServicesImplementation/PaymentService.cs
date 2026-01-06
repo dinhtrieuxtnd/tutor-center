@@ -12,15 +12,21 @@ public class PaymentService : IPaymentService
     private readonly IPaymentRepository _paymentRepository;
     private readonly IClassroomRepository _classroomRepository;
     private readonly IVNPayService _vnpayService;
+    private readonly IMoMoService _momoService;
+    private readonly IClrStudentRepository _clrStudentRepository;
 
     public PaymentService(
         IPaymentRepository paymentRepository,
         IClassroomRepository classroomRepository,
-        IVNPayService vnpayService)
+        IVNPayService vnpayService,
+        IMoMoService momoService,
+        IClrStudentRepository clrStudentRepository)
     {
         _paymentRepository = paymentRepository;
         _classroomRepository = classroomRepository;
         _vnpayService = vnpayService;
+        _momoService = momoService;
+        _clrStudentRepository = clrStudentRepository;
     }
 
     public async Task<CreatePaymentResponseDto> CreatePaymentAsync(int studentId, CreatePaymentRequestDto request)
@@ -46,6 +52,9 @@ public class PaymentService : IPaymentService
         // Generate unique order code
         var orderCode = GenerateOrderCode();
 
+        // For testing: Auto-approve MoMo payments (skip payment gateway)
+        var isMomoTestMode = request.PaymentMethod.ToLower() == PaymentMethod.Momo;
+        
         // Create payment transaction
         var payment = new PaymentTransaction
         {
@@ -53,22 +62,37 @@ public class PaymentService : IPaymentService
             StudentId = studentId,
             Amount = classroom.Price,
             Method = request.PaymentMethod.ToLower(),
-            Status = PaymentStatus.Pending,
+            Status = isMomoTestMode ? PaymentStatus.Paid : PaymentStatus.Pending,
             OrderCode = orderCode,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            PaidAt = isMomoTestMode ? DateTime.UtcNow : null,
+            ProviderTxnId = isMomoTestMode ? $"MOMO_TEST_{orderCode}" : null
         };
 
         await _paymentRepository.CreateAsync(payment);
+
+        // If payment is successful (test mode), update student payment info in classroom
+        if (isMomoTestMode)
+        {
+            var classroomStudent = await _clrStudentRepository.FindByStudentAndClassroomIdAsync(studentId, request.ClassroomId);
+            if (classroomStudent != null)
+            {
+                classroomStudent.HasPaid = true;
+                classroomStudent.PaidAt = DateTime.UtcNow;
+                classroomStudent.PaymentTransactionId = payment.TransactionId;
+                await _clrStudentRepository.UpdateAsync(classroomStudent);
+            }
+        }
 
         var response = new CreatePaymentResponseDto
         {
             TransactionId = payment.TransactionId,
             OrderCode = orderCode,
-            Status = PaymentStatus.Pending,
-            Message = "Payment created successfully"
+            Status = isMomoTestMode ? PaymentStatus.Paid : PaymentStatus.Pending,
+            Message = isMomoTestMode ? "Payment successful (Test mode)" : "Payment created successfully"
         };
 
-        // Generate payment URL for online payment methods
+        // Generate payment URL for online payment methods (VNPay only in production)
         if (request.PaymentMethod.ToLower() == PaymentMethod.VNPay)
         {
             var orderInfo = $"Thanh toan khoa hoc {classroom.Name}";
@@ -165,6 +189,89 @@ public class PaymentService : IPaymentService
             TransactionId = payment.TransactionId,
             OrderCode = payment.OrderCode,
             Amount = payment.Amount,
+            Status = payment.Status
+        };
+    }
+
+    public async Task<PaymentCallbackResponseDto> HandleMoMoCallbackAsync(MoMoCallbackDto callback)
+    {
+        // Build raw data for signature validation
+        var rawData = $"accessKey={callback.partnerCode}" +
+                     $"&amount={callback.amount}" +
+                     $"&extraData={callback.extraData}" +
+                     $"&message={callback.message}" +
+                     $"&orderId={callback.orderId}" +
+                     $"&orderInfo={callback.orderInfo}" +
+                     $"&orderType={callback.orderType}" +
+                     $"&partnerCode={callback.partnerCode}" +
+                     $"&payType={callback.payType}" +
+                     $"&requestId={callback.requestId}" +
+                     $"&responseTime={callback.responseTime}" +
+                     $"&resultCode={callback.resultCode}" +
+                     $"&transId={callback.transId}";
+
+        var isValidSignature = _momoService.ValidateSignature(rawData, callback.signature);
+        
+        if (!isValidSignature)
+        {
+            return new PaymentCallbackResponseDto
+            {
+                Success = false,
+                Message = "Invalid signature"
+            };
+        }
+
+        // Get payment by order code
+        var payment = await _paymentRepository.GetByOrderCodeAsync(callback.orderId);
+        if (payment == null)
+        {
+            return new PaymentCallbackResponseDto
+            {
+                Success = false,
+                Message = "Payment not found"
+            };
+        }
+
+        // Check if already processed
+        if (payment.Status != PaymentStatus.Pending)
+        {
+            return new PaymentCallbackResponseDto
+            {
+                Success = true,
+                Message = "Payment already processed",
+                TransactionId = payment.TransactionId,
+                OrderCode = payment.OrderCode,
+                Amount = payment.Amount,
+                Status = payment.Status
+            };
+        }
+
+        // Update payment status based on MoMo response
+        var isSuccess = callback.resultCode == 0;
+        
+        payment.Status = isSuccess ? PaymentStatus.Paid : PaymentStatus.Failed;
+        payment.ProviderTxnId = callback.transId;
+        payment.PaidAt = isSuccess ? DateTime.UtcNow : null;
+        
+        // Store MoMo metadata
+        var metadata = new
+        {
+            payType = callback.payType,
+            resultCode = callback.resultCode,
+            message = callback.message,
+            responseTime = callback.responseTime
+        };
+        payment.MetaData = JsonSerializer.Serialize(metadata);
+
+        await _paymentRepository.UpdateAsync(payment);
+
+        return new PaymentCallbackResponseDto
+        {
+            Success = isSuccess,
+            Message = callback.message,
+            TransactionId = payment.TransactionId,
+            OrderCode = payment.OrderCode,
+            Amount = payment.Amount / 100m, // Convert back from smallest unit
             Status = payment.Status
         };
     }
