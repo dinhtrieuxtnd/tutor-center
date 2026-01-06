@@ -136,6 +136,10 @@ export interface CreateQuizAttemptRequest {
 }
 
 class QuizService {
+  // In-memory cache for quiz data
+  private quizCache: Map<number, { data: QuizForStudentResponse; timestamp: number }> = new Map();
+  private CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
   private async getAuthHeaders(): Promise<Record<string, string>> {
     const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
     const token = await AsyncStorage.getItem(config.ACCESS_TOKEN_KEY);
@@ -168,6 +172,19 @@ class QuizService {
       }
 
       throw error;
+    }
+  }
+
+  /**
+   * Clear cache for a specific lesson or all lessons
+   */
+  clearCache(lessonId?: number): void {
+    if (lessonId) {
+      this.quizCache.delete(lessonId);
+      console.log('🗑️ Cleared cache for lesson:', lessonId);
+    } else {
+      this.quizCache.clear();
+      console.log('🗑️ Cleared all quiz cache');
     }
   }
 
@@ -260,8 +277,19 @@ class QuizService {
   /**
    * Get quiz detail for student (without correct answers)
    * Backend: GET /api/Quiz/lesson/{lessonId}/student
+   * With caching to improve performance
    */
-  async getQuizForStudent(lessonId: number): Promise<QuizForStudentResponse> {
+  async getQuizForStudent(lessonId: number, forceRefresh = false): Promise<QuizForStudentResponse> {
+    // Check cache first (unless force refresh)
+    if (!forceRefresh) {
+      const cached = this.quizCache.get(lessonId);
+      if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
+        console.log('📦 Using cached quiz data for lesson:', lessonId);
+        return cached.data;
+      }
+    }
+
+    console.log('🌐 Fetching quiz data from server for lesson:', lessonId);
     const headers = await this.getAuthHeaders();
     const url = `${config.API_BASE_URL}/Quiz/lesson/${lessonId}/student`;
 
@@ -271,7 +299,15 @@ class QuizService {
     });
 
     const backendData = await this.handleResponse<QuizBackendResponse>(response);
-    return this.transformQuizData(backendData);
+    const transformedData = this.transformQuizData(backendData);
+
+    // Cache the result
+    this.quizCache.set(lessonId, {
+      data: transformedData,
+      timestamp: Date.now(),
+    });
+
+    return transformedData;
   }
 
   /**
