@@ -15,7 +15,7 @@ public class GenerateQuestionsRequestValidator : AbstractValidator<GenerateQuest
             .NotEmpty()
             .WithMessage("QuestionType is required.")
             .Must(BeValidQuestionType)
-            .WithMessage("QuestionType must be one of: MultipleChoice, TrueFalse, ShortAnswer, FillInBlank, Mixed.");
+            .WithMessage("QuestionType must be one of: single_choice, multiple_choice.");
 
         RuleFor(x => x.QuestionCount)
             .GreaterThan(0)
@@ -37,7 +37,7 @@ public class GenerateQuestionsRequestValidator : AbstractValidator<GenerateQuest
 
     private bool BeValidQuestionType(string questionType)
     {
-        var validTypes = new[] { "MultipleChoice", "TrueFalse", "ShortAnswer", "FillInBlank", "Mixed" };
+        var validTypes = new[] { "single_choice", "multiple_choice" };
         return validTypes.Contains(questionType, StringComparer.OrdinalIgnoreCase);
     }
 

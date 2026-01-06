@@ -36,7 +36,7 @@ export const getDocumentByIdAsync = createAsyncThunk(
             () => aiDocumentApi.getById(documentId),
             thunkAPI,
             {
-                successTitle: null, // Silent success
+                showSuccess: false,
                 errorTitle: 'Lấy thông tin tài liệu thất bại',
             }
         );
@@ -50,7 +50,7 @@ export const getAllDocumentsAsync = createAsyncThunk(
             () => aiDocumentApi.getAll(params),
             thunkAPI,
             {
-                successTitle: null, // Silent success
+                showSuccess: false,
                 errorTitle: 'Lấy danh sách tài liệu thất bại',
             }
         );
@@ -64,7 +64,7 @@ export const getDocumentTextAsync = createAsyncThunk(
             () => aiDocumentApi.getText(documentId),
             thunkAPI,
             {
-                successTitle: null, // Silent success
+                showSuccess: false,
                 errorTitle: 'Lấy nội dung tài liệu thất bại',
             }
         );

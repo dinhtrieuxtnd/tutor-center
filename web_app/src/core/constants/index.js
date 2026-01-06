@@ -1,5 +1,5 @@
 // export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-export const API_BASE_URL = 'https://129qfzjl-5038.asse.devtunnels.ms/api';
+export const API_BASE_URL = 'http://localhost:5038/api';
 export const API_ENDPOINTS = {
   // Auth endpoints
   AUTH: {

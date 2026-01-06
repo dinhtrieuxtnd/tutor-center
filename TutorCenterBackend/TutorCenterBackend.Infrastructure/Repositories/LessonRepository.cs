@@ -60,6 +60,13 @@ namespace TutorCenterBackend.Infrastructure.Repositories
                 .FirstOrDefaultAsync(l => l.LessonId == lessonId && l.DeletedAt == null, ct);
         }
 
+        public async Task<Lesson?> GetByQuizIdAsync(int quizId, CancellationToken ct = default)
+        {
+            return await _context.Lessons
+                .Include(l => l.Classroom)
+                .FirstOrDefaultAsync(l => l.QuizId == quizId && l.DeletedAt == null, ct);
+        }
+
         public async Task AddAsync(Lesson lesson, CancellationToken ct = default)
         {
             await _context.Lessons.AddAsync(lesson, ct);

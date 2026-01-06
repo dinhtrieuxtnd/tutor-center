@@ -14,7 +14,7 @@ public class AIDocumentService : IAIDocumentService
     private readonly IAiDocumentRepository _documentRepository;
     private readonly IMediaRepository _mediaRepository;
     private readonly IStorageService _storageService;
-    private readonly IMistralAIOcrService _mistralOcrService;
+    private readonly IExternalOcrService _externalOcrService;
     private readonly IClassroomRepository _classroomRepository;
     private readonly IMapper _mapper;
     private readonly DocumentProcessingOptions _options;
@@ -23,7 +23,7 @@ public class AIDocumentService : IAIDocumentService
         IAiDocumentRepository documentRepository,
         IMediaRepository mediaRepository,
         IStorageService storageService,
-        IMistralAIOcrService mistralOcrService,
+        IExternalOcrService externalOcrService,
         IClassroomRepository classroomRepository,
         IMapper mapper,
         IOptions<DocumentProcessingOptions> options)
@@ -31,7 +31,7 @@ public class AIDocumentService : IAIDocumentService
         _documentRepository = documentRepository;
         _mediaRepository = mediaRepository;
         _storageService = storageService;
-        _mistralOcrService = mistralOcrService;
+        _externalOcrService = externalOcrService;
         _classroomRepository = classroomRepository;
         _mapper = mapper;
         _options = options.Value;
@@ -101,11 +101,14 @@ public class AIDocumentService : IAIDocumentService
 
         var savedMedia = await _mediaRepository.AddAsync(media, cancellationToken);
 
-        // Extract text from PDF using Mistral AI OCR
+        // Extract text from PDF using External OCR Service (BeeEdu API)
         string extractedText;
         using (var stream = file.OpenReadStream())
         {
-            extractedText = await _mistralOcrService.ExtractTextFromPdfAsync(stream, cancellationToken);
+            extractedText = await _externalOcrService.ExtractTextFromPdfAsync(
+                stream, 
+                file.FileName, 
+                cancellationToken);
         }
 
         if (string.IsNullOrWhiteSpace(extractedText))
@@ -129,7 +132,26 @@ public class AIDocumentService : IAIDocumentService
 
         var savedDocument = await _documentRepository.AddAsync(document, cancellationToken);
 
-        return _mapper.Map<AIDocumentResponseDto>(savedDocument);
+        // Map to response DTO
+        var responseDto = _mapper.Map<AIDocumentResponseDto>(savedDocument);
+        
+        // Set fileName from original file
+        responseDto.FileName = file.FileName;
+        
+        // Set media URL if storage service supports it
+        if (savedDocument.Media != null)
+        {
+            try
+            {
+                responseDto.MediaUrl = _storageService.GetFileUrl(savedDocument.Media.ObjectKey);
+            }
+            catch
+            {
+                // Continue without URL if not available
+            }
+        }
+
+        return responseDto;
     }
 
     public async Task<AIDocumentResponseDto> GetDocumentByIdAsync(
@@ -145,7 +167,35 @@ public class AIDocumentService : IAIDocumentService
 
         await VerifyDocumentAccessAsync(document, userId, cancellationToken);
 
-        return _mapper.Map<AIDocumentResponseDto>(document);
+        var responseDto = _mapper.Map<AIDocumentResponseDto>(document);
+
+        // Set fileName and mediaUrl
+        if (document.Media != null)
+        {
+            var objectKey = document.Media.ObjectKey;
+            
+            // Create meaningful filename
+            if (!string.IsNullOrEmpty(document.FileType))
+            {
+                responseDto.FileName = $"document_{document.DocumentId}.{document.FileType.ToLower()}";
+            }
+            else
+            {
+                responseDto.FileName = Path.GetFileName(objectKey);
+            }
+
+            // Set media URL
+            try
+            {
+                responseDto.MediaUrl = _storageService.GetFileUrl(objectKey);
+            }
+            catch
+            {
+                // Continue without URL if not available
+            }
+        }
+
+        return responseDto;
     }
 
     public async Task<List<AIDocumentResponseDto>> GetUserDocumentsAsync(
@@ -157,7 +207,42 @@ public class AIDocumentService : IAIDocumentService
             ? await _documentRepository.GetByClassroomAsync(classroomId.Value, cancellationToken)
             : await _documentRepository.GetByUserAsync(userId, cancellationToken);
 
-        return _mapper.Map<List<AIDocumentResponseDto>>(documents);
+        var responseDtos = _mapper.Map<List<AIDocumentResponseDto>>(documents);
+
+        // Set fileName and mediaUrl for each document
+        foreach (var dto in responseDtos)
+        {
+            var document = documents.FirstOrDefault(d => d.DocumentId == dto.DocumentId);
+            if (document?.Media != null)
+            {
+                // Extract original filename from ObjectKey
+                // ObjectKey format: "ai-documents/classroom-{id}/{guid}.pdf"
+                var objectKey = document.Media.ObjectKey;
+                var fileName = Path.GetFileName(objectKey);
+                
+                // If we have FileType, we can create a more meaningful name
+                if (!string.IsNullOrEmpty(document.FileType))
+                {
+                    dto.FileName = $"document_{document.DocumentId}.{document.FileType.ToLower()}";
+                }
+                else
+                {
+                    dto.FileName = fileName;
+                }
+
+                // Set media URL
+                try
+                {
+                    dto.MediaUrl = _storageService.GetFileUrl(objectKey);
+                }
+                catch
+                {
+                    // Continue without URL if not available
+                }
+            }
+        }
+
+        return responseDtos;
     }
 
     public async Task DeleteDocumentAsync(

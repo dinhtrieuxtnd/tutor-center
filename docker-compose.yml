@@ -1,8 +1,32 @@
 version: '3.8'
 
 services:
+  # SQL Server Database
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: tutor-center-sqlserver
+    ports:
+      - "1433:1433"
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "YourStrong@Password123"
+      MSSQL_PID: "Developer"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+      - ./TutorCenterBackend/complete_db_setup.sql:/docker-entrypoint-initdb.d/complete_db_setup.sql:ro
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "YourStrong@Password123" -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - tutor-center-network
+
+  # MinIO Object Storage
   minio:
     image: minio/minio:latest
+    container_name: tutor-center-minio
     ports:
       - "9000:9000"  # API Port
       - "9001:9001"  # Console Port
@@ -11,16 +35,20 @@ services:
       MINIO_ROOT_PASSWORD: minioadmin
     volumes:
       - minio_data:/data
+      - ./minio-cors-config.json:/config/cors.json:ro
     command: server /data --console-address ":9001"
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - tutor-center-network
 
-  # Creates default bucket and sets policies
+  # MinIO Client - Creates default bucket and sets policies
   minio-mc:
     image: minio/mc
+    container_name: tutor-center-minio-mc
     depends_on:
       minio:
         condition: service_healthy
@@ -28,9 +56,19 @@ services:
       /bin/sh -c "
       mc alias set myminio http://minio:9000 minioadmin minioadmin;
       mc mb myminio/tutor-center --ignore-existing;
-      mc anonymous set public myminio/tutor-center/;
+      mc anonymous set download myminio/tutor-center/;
+      echo 'MinIO bucket tutor-center created and configured successfully';
       exit 0;
       "
+    networks:
+      - tutor-center-network
 
 volumes:
+  sqlserver_data:
+    driver: local
   minio_data:
+    driver: local
+
+networks:
+  tutor-center-network:
+    driver: bridge

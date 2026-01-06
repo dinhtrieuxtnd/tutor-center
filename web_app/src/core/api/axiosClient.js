@@ -70,9 +70,9 @@ axiosClient.interceptors.response.use(
     // Handle 401 Unauthorized - Try to refresh token
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      
+
       const refreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
-      
+
       // If no refresh token, logout immediately
       if (!refreshToken) {
         localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
@@ -112,20 +112,20 @@ axiosClient.interceptors.response.use(
         if (import.meta.env.DEV) {
           console.error('❌ Refresh token failed:', refreshError);
         }
-        
+
         localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
         localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
         window.location.href = ROUTES.LOGIN;
-        
+
         return Promise.reject(refreshError);
       }
     }
 
     // Return error with formatted message
     const errorMessage = error.response?.data?.detail
-      || error.response?.data?.message 
+      || error.response?.data?.message
       || error.response?.data?.title
-      || error.message 
+      || error.message
       || 'Đã có lỗi xảy ra';
 
     return Promise.reject({

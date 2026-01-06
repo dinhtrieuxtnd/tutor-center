@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.Extensions.DependencyInjection;
 using TutorCenterBackend.Application.DTOs.AIDocument;
 using TutorCenterBackend.Application.Interfaces;
 using TutorCenterBackend.Domain.Entities;
@@ -19,6 +20,7 @@ public class AIQuestionService : IAIQuestionService
     private readonly ILessonRepository _lessonRepository;
     private readonly IClassroomRepository _classroomRepository;
     private readonly IAIQuestionGeneratorService _questionGeneratorService;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly IMapper _mapper;
 
     public AIQuestionService(
@@ -33,6 +35,7 @@ public class AIQuestionService : IAIQuestionService
         ILessonRepository lessonRepository,
         IClassroomRepository classroomRepository,
         IAIQuestionGeneratorService questionGeneratorService,
+        IServiceScopeFactory scopeFactory,
         IMapper mapper)
     {
         _documentRepository = documentRepository;
@@ -46,6 +49,7 @@ public class AIQuestionService : IAIQuestionService
         _lessonRepository = lessonRepository;
         _classroomRepository = classroomRepository;
         _questionGeneratorService = questionGeneratorService;
+        _scopeFactory = scopeFactory;
         _mapper = mapper;
     }
 
@@ -113,7 +117,7 @@ public class AIQuestionService : IAIQuestionService
 
         await VerifyDocumentAccessAsync(document, userId, cancellationToken);
 
-        var questions = await _questionRepository.GetByDocumentAsync(documentId, cancellationToken);
+        var questions = await _questionRepository.GetByDocumentWithOptionsAsync(documentId, cancellationToken);
         return _mapper.Map<List<AIGeneratedQuestionResponseDto>>(questions);
     }
 
@@ -144,7 +148,8 @@ public class AIQuestionService : IAIQuestionService
         int userId,
         CancellationToken cancellationToken = default)
     {
-        var question = await _questionRepository.GetByIdWithOptionsAsync(request.GeneratedQuestionId, cancellationToken);
+        // Use tracked version for update
+        var question = await _questionRepository.GetByIdWithOptionsTrackedAsync(request.GeneratedQuestionId, cancellationToken);
         if (question == null)
         {
             throw new KeyNotFoundException("Generated question not found");
@@ -203,9 +208,8 @@ public class AIQuestionService : IAIQuestionService
             throw new KeyNotFoundException("Quiz not found");
         }
 
-        // Find classroom through lessons
-        var lessons = await _lessonRepository.GetLessonsByClassroomIdAsync(0, cancellationToken); // Need to get all lessons
-        var lesson = lessons.FirstOrDefault(l => l.QuizId == request.QuizId);
+        // Find lesson by quizId to get classroom
+        var lesson = await _lessonRepository.GetByQuizIdAsync(request.QuizId, cancellationToken);
         
         if (lesson == null)
         {
@@ -229,32 +233,31 @@ public class AIQuestionService : IAIQuestionService
             }
 
             // Create QuestionGroup
-            var qgroup = new QuestionGroup
-            {
-                QuizId = request.QuizId,
-                Title = generatedQuestion.Topic ?? "AI Generated",
-                IntroText = generatedQuestion.ExplanationText,
-                OrderIndex = await GetNextQuestionGroupOrderAsync(request.QuizId, cancellationToken),
-                ShuffleInside = false
-            };
+            // var qgroup = new QuestionGroup
+            // {
+            //     QuizId = request.QuizId,
+            //     Title = generatedQuestion.Topic ?? "AI Generated",
+            //     IntroText = generatedQuestion.ExplanationText,
+            //     OrderIndex = await GetNextQuestionGroupOrderAsync(request.QuizId, cancellationToken),
+            //     ShuffleInside = false
+            // };
 
-            await _qgroupRepository.AddAsync(qgroup, cancellationToken);
+            // await _qgroupRepository.AddAsync(qgroup, cancellationToken);
 
             // Map question type
             string quizQuestionType = generatedQuestion.QuestionType switch
             {
-                "MultipleChoice" => "MultipleChoice",
-                "TrueFalse" => "TrueFalse",
-                "ShortAnswer" => "ShortAnswer",
-                "FillInBlank" => "Essay",
-                _ => "MultipleChoice"
+                "single_choice" => "single_choice",
+                "multiple_choice" => "multiple_choice",
+                _ => "single_choice"
             };
 
             // Create Question
             var question = new Question
             {
                 QuizId = request.QuizId,
-                GroupId = qgroup.QuestionGroupId,
+                // GroupId = qgroup.QuestionGroupId,
+                GroupId = null,
                 Content = generatedQuestion.QuestionText,
                 Explanation = generatedQuestion.ExplanationText,
                 QuestionType = quizQuestionType,
@@ -328,22 +331,45 @@ public class AIQuestionService : IAIQuestionService
 
     private async Task ProcessGenerationJobAsync(int jobId)
     {
+        // Create new scope for background task to avoid disposed context
+        using var scope = _scopeFactory.CreateScope();
+        
         try
         {
-            var job = await _jobRepository.GetByIdAsync(jobId, CancellationToken.None);
-            if (job == null) return;
+            Console.WriteLine($"[AIQuestionService] Starting ProcessGenerationJobAsync for jobId: {jobId}");
+            
+            // Get repositories from the new scope
+            var jobRepository = scope.ServiceProvider.GetRequiredService<IAiGenerationJobRepository>();
+            var documentRepository = scope.ServiceProvider.GetRequiredService<IAiDocumentRepository>();
+            var questionRepository = scope.ServiceProvider.GetRequiredService<IAiGeneratedQuestionRepository>();
+            var optionRepository = scope.ServiceProvider.GetRequiredService<IAiGeneratedQuestionOptionRepository>();
+            var questionGeneratorService = scope.ServiceProvider.GetRequiredService<IAIQuestionGeneratorService>();
+            
+            var job = await jobRepository.GetByIdAsync(jobId, CancellationToken.None);
+            if (job == null)
+            {
+                Console.WriteLine($"[AIQuestionService] Job {jobId} not found!");
+                return;
+            }
 
+            Console.WriteLine($"[AIQuestionService] Job {jobId} found. Status: {job.JobStatus}, DocumentId: {job.DocumentId}");
+            
             job.JobStatus = "processing";
             job.StartedAt = DateTime.UtcNow;
-            await _jobRepository.UpdateAsync(job, CancellationToken.None);
+            await jobRepository.UpdateAsync(job, CancellationToken.None);
+            Console.WriteLine($"[AIQuestionService] Job {jobId} status updated to 'processing'");
 
-            var document = await _documentRepository.GetByIdAsync(job.DocumentId, CancellationToken.None);
+            var document = await documentRepository.GetByIdAsync(job.DocumentId, CancellationToken.None);
             if (document == null || string.IsNullOrWhiteSpace(document.ExtractedText))
             {
+                Console.WriteLine($"[AIQuestionService] Document {job.DocumentId} not found or has no extracted text!");
                 throw new InvalidOperationException("Document text not available");
             }
 
-            var generatedQuestions = await _questionGeneratorService.GenerateQuestionsAsync(
+            Console.WriteLine($"[AIQuestionService] Document {job.DocumentId} found. ExtractedText length: {document.ExtractedText?.Length ?? 0}");
+            Console.WriteLine($"[AIQuestionService] Calling AI to generate {job.QuestionCount} questions of type {job.QuestionType}");
+
+            var generatedQuestions = await questionGeneratorService.GenerateQuestionsAsync(
                 document.ExtractedText,
                 job.QuestionType,
                 job.QuestionCount,
@@ -351,8 +377,17 @@ public class AIQuestionService : IAIQuestionService
                 job.Language,
                 CancellationToken.None);
 
+            Console.WriteLine($"[AIQuestionService] AI generated {generatedQuestions?.Count ?? 0} questions");
+
+            if (generatedQuestions == null || generatedQuestions.Count == 0)
+            {
+                throw new Exception("AI did not generate any questions");
+            }
+
             foreach (var genQ in generatedQuestions)
             {
+                Console.WriteLine($"[AIQuestionService] Saving question: {genQ.QuestionText?.Substring(0, Math.Min(50, genQ.QuestionText?.Length ?? 0))}...");
+                
                 var aiQuestion = new AigeneratedQuestion
                 {
                     DocumentId = job.DocumentId,
@@ -365,10 +400,11 @@ public class AIQuestionService : IAIQuestionService
                     CreatedAt = DateTime.UtcNow
                 };
 
-                await _questionRepository.AddAsync(aiQuestion, CancellationToken.None);
+                await questionRepository.AddAsync(aiQuestion, CancellationToken.None);
 
                 if (genQ.Options != null && genQ.Options.Any())
                 {
+                    Console.WriteLine($"[AIQuestionService] Saving {genQ.Options.Count} options for question {aiQuestion.GeneratedQuestionId}");
                     foreach (var opt in genQ.Options)
                     {
                         var option = new AigeneratedQuestionOption
@@ -380,7 +416,7 @@ public class AIQuestionService : IAIQuestionService
                             CreatedAt = DateTime.UtcNow
                         };
 
-                        await _optionRepository.AddAsync(option, CancellationToken.None);
+                        await optionRepository.AddAsync(option, CancellationToken.None);
                     }
                 }
             }
@@ -388,17 +424,31 @@ public class AIQuestionService : IAIQuestionService
             job.JobStatus = "completed";
             job.CompletedAt = DateTime.UtcNow;
             job.GeneratedCount = generatedQuestions.Count;
-            await _jobRepository.UpdateAsync(job, CancellationToken.None);
+            await jobRepository.UpdateAsync(job, CancellationToken.None);
+            
+            Console.WriteLine($"[AIQuestionService] Job {jobId} completed successfully! Generated {generatedQuestions.Count} questions");
         }
         catch (Exception ex)
         {
-            var job = await _jobRepository.GetByIdAsync(jobId, CancellationToken.None);
-            if (job != null)
+            Console.WriteLine($"[AIQuestionService] ERROR in ProcessGenerationJobAsync for jobId {jobId}: {ex.GetType().Name} - {ex.Message}");
+            Console.WriteLine($"[AIQuestionService] Stack trace: {ex.StackTrace}");
+            
+            try
             {
-                job.JobStatus = "failed";
-                job.ErrorMessage = ex.Message;
-                job.CompletedAt = DateTime.UtcNow;
-                await _jobRepository.UpdateAsync(job, CancellationToken.None);
+                var jobRepository = scope.ServiceProvider.GetRequiredService<IAiGenerationJobRepository>();
+                var job = await jobRepository.GetByIdAsync(jobId, CancellationToken.None);
+                if (job != null)
+                {
+                    job.JobStatus = "failed";
+                    job.ErrorMessage = ex.Message;
+                    job.CompletedAt = DateTime.UtcNow;
+                    await jobRepository.UpdateAsync(job, CancellationToken.None);
+                    Console.WriteLine($"[AIQuestionService] Job {jobId} marked as failed");
+                }
+            }
+            catch (Exception updateEx)
+            {
+                Console.WriteLine($"[AIQuestionService] Failed to update job status: {updateEx.Message}");
             }
         }
     }

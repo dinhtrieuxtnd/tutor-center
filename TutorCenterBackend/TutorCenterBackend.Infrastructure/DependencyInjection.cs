@@ -51,11 +51,15 @@ public static class DependencyInjection
 
         // Register AI Infrastructure Services
         services.AddScoped<IDocumentTextExtractionService, DocumentTextExtractionService>();
-        services.AddScoped<IAIProviderService, GeminiAIProviderService>();
+        services.AddHttpClient<IAIProviderService, GeminiAIProviderService>();
 
         // Register Mistral AI Settings and Service
         services.Configure<MistralAIOptions>(configuration.GetSection(MistralAIOptions.SectionName));
         services.AddHttpClient<IMistralAIOcrService, MistralAIOcrService>();
+
+        // Register External OCR Settings and Service (BeeEdu API)
+        services.Configure<ExternalOcrOptions>(configuration.GetSection("ExternalOcr"));
+        services.AddHttpClient<IExternalOcrService, ExternalOcrService>();
 
         // Register HttpClient for Resend
         services.AddHttpClient<IResend, ResendClient>();

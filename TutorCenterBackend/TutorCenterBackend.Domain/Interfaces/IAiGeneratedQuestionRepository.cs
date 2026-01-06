@@ -6,6 +6,7 @@ public interface IAiGeneratedQuestionRepository
 {
     Task<AigeneratedQuestion?> GetByIdAsync(int generatedQuestionId, CancellationToken ct = default);
     Task<AigeneratedQuestion?> GetByIdWithOptionsAsync(int generatedQuestionId, CancellationToken ct = default);
+    Task<AigeneratedQuestion?> GetByIdWithOptionsTrackedAsync(int generatedQuestionId, CancellationToken ct = default);
     Task<List<AigeneratedQuestion>> GetByDocumentAsync(int documentId, CancellationToken ct = default);
     Task<List<AigeneratedQuestion>> GetByDocumentWithOptionsAsync(int documentId, CancellationToken ct = default);
     Task<List<AigeneratedQuestion>> GetUnimportedByDocumentAsync(int documentId, CancellationToken ct = default);

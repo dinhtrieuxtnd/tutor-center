@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Plus, Trash2, FileQuestion, FolderOpen, Users, CheckCircle, Edit2, Shuffle } from 'lucide-react';
 import { useAppDispatch } from '../../../core/store/hooks';
 import { Button } from '../../../shared/components/ui';
+import { MarkdownRenderer } from '../../../shared/components/markdown/MarkdownRenderer';
 import { AddSectionPanel } from './AddSectionPanel';
 import { AddQGroupPanel } from './AddQGroupPanel';
 import { AddQuestionPanel } from './AddQuestionPanel';
@@ -529,7 +530,7 @@ const GroupCard = ({ group, sectionId, onEditGroup, onDeleteGroup, onAddQuestion
                         )}
                     </div>
                     {group.introText && (
-                        <p className="text-xs text-foreground-light mb-2 whitespace-pre-wrap">{group.introText}</p>
+                        <MarkdownRenderer text={group.introText} className="text-xs text-foreground-light mb-2" />
                     )}
                     {/* Group Media */}
                     {group.media && group.media.length > 0 && (
@@ -633,12 +634,11 @@ const QuestionCard = ({ question, index, onEdit, onDelete, onAddOption, onEditOp
 
             {/* Question Content */}
             <div className="mb-3 pl-11">
-                <p className="text-sm text-foreground whitespace-pre-wrap mb-2">{question.content}</p>
+                <MarkdownRenderer text={question.content} className="text-sm text-foreground mb-2" />
                 {question.explanation && (
                     <div className="mt-2 p-2 bg-blue-50 border-l-2 border-blue-300 rounded">
-                        <p className="text-xs text-blue-700">
-                            <span className="font-medium">Giải thích:</span> {question.explanation}
-                        </p>
+                        <p className="text-xs text-blue-700 font-medium mb-1">Giải thích:</p>
+                        <MarkdownRenderer text={question.explanation} className="text-xs text-blue-700" />
                     </div>
                 )}
                 {/* Question Media */}
@@ -682,14 +682,17 @@ const QuestionCard = ({ question, index, onEdit, onDelete, onAddOption, onEditOp
                                 )}
                             </div>
                             <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                    <span className={option.isCorrect ? 'text-success font-medium' : 'text-foreground'}>
-                                        {option.content}
-                                    </span>
+                                <div className="flex items-start gap-2">
+                                    <div className="flex-1">
+                                        <MarkdownRenderer 
+                                            text={option.content} 
+                                            className={option.isCorrect ? 'text-success font-medium' : 'text-foreground'}
+                                        />
+                                    </div>
                                     {option.isCorrect && (
-                                        <span className="text-xs text-success">(Đáp án đúng)</span>
+                                        <span className="text-xs text-success whitespace-nowrap">(Đáp án đúng)</span>
                                     )}
-                                    <span className="text-xs text-foreground-lighter">#{option.orderIndex}</span>
+                                    <span className="text-xs text-foreground-lighter whitespace-nowrap">#{option.orderIndex}</span>
                                 </div>
                             </div>
                             <div className="flex items-center gap-1">

@@ -18,6 +18,11 @@ public class AiGeneratedQuestionRepository(AppDbContext context) : IAiGeneratedQ
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.GeneratedQuestionId == generatedQuestionId, ct);
 
+    public Task<AigeneratedQuestion?> GetByIdWithOptionsTrackedAsync(int generatedQuestionId, CancellationToken ct = default)
+        => _context.AigeneratedQuestions
+            .Include(q => q.AigeneratedQuestionOptions.OrderBy(o => o.Order))
+            .FirstOrDefaultAsync(x => x.GeneratedQuestionId == generatedQuestionId, ct);
+
     public Task<List<AigeneratedQuestion>> GetByDocumentAsync(int documentId, CancellationToken ct = default)
         => _context.AigeneratedQuestions
             .Where(x => x.DocumentId == documentId)
@@ -104,12 +109,16 @@ public class AiGeneratedQuestionRepository(AppDbContext context) : IAiGeneratedQ
 
     public async Task DeleteAsync(int generatedQuestionId, CancellationToken ct = default)
     {
-        var question = await _context.AigeneratedQuestions.FindAsync([generatedQuestionId], ct);
-        if (question != null)
+        var question = await _context.AigeneratedQuestions
+            .FirstOrDefaultAsync(x => x.GeneratedQuestionId == generatedQuestionId, ct);
+        
+        if (question == null)
         {
-            _context.AigeneratedQuestions.Remove(question);
-            await _context.SaveChangesAsync(ct);
+            throw new KeyNotFoundException($"Generated question with ID {generatedQuestionId} not found");
         }
+
+        _context.AigeneratedQuestions.Remove(question);
+        await _context.SaveChangesAsync(ct);
     }
 
     public Task<int> GetCountByDocumentAsync(int documentId, CancellationToken ct = default)

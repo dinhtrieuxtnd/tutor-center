@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TutorCenterBackend.Application.DTOs.User;
 using TutorCenterBackend.Application.Interfaces;
@@ -10,6 +11,14 @@ namespace TutorCenterBackend.Presentation.Controllers
     public class UserController(IUserService userService) : ControllerBase
     {
         private readonly IUserService _userService = userService;
+
+        [HttpPost("admins")]
+        [AllowAnonymous]
+        public async Task<IActionResult> CreateAdminAccount([FromBody] CreateAdminRequestDto dto, CancellationToken ct = default)
+        {
+            var result = await _userService.CreateAdminAccountAsync(dto, ct);
+            return Ok(result);
+        }
 
         [HttpPost("tutors")]
         [RequirePermission("user.create")]

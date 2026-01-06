@@ -53,6 +53,29 @@ namespace TutorCenterBackend.Application.ServicesImplementation
             return MapWithAvatarUrl(newUser);
         }
 
+        public async Task<UserResponseDto> CreateAdminAccountAsync(CreateAdminRequestDto dto, CancellationToken ct = default)
+        {
+            var user = await _userRepository.FindByEmailAsync(dto.Email, ct);
+            if (user != null)
+            {
+                throw new Exception("Email đã tồn tại.");
+            }
+
+            var passwordHash = await _hashingService.HashPassword(dto.Password);
+            var newUser = new User
+            {
+                Email = dto.Email,
+                FullName = dto.FullName,
+                PasswordHash = passwordHash,
+                PhoneNumber = dto.PhoneNumber,
+                RoleId = 1, // Admin role
+                IsActive = true
+            };
+            await _userRepository.CreateUserAsync(newUser, ct);
+
+            return MapWithAvatarUrl(newUser);
+        }
+
         public async Task<PageResultDto<UserResponseDto>> GetUsersAsync(GetUsersQueryDto dto, CancellationToken ct = default)
         {
             var (users, total) = await _userRepository.GetUsersPaginatedAsync(

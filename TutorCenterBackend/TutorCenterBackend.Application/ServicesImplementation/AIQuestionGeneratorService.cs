@@ -48,30 +48,23 @@ public class AIQuestionGeneratorService : IAIQuestionGeneratorService
 
         sb.AppendLine();
         sb.AppendLine("=== DOCUMENT CONTENT ===");
-        sb.AppendLine(TruncateText(documentText, 30000)); // Giới hạn để tránh token limit
+        sb.AppendLine(TruncateText(documentText, 30000));
         sb.AppendLine("=== END DOCUMENT ===");
         sb.AppendLine();
 
         // Instructions based on question type
         switch (questionType.ToLowerInvariant())
         {
+            case "single_choice":
+            case "singlechoice":
+                AppendSingleChoiceInstructions(sb, count, difficultyLevel, isVietnamese);
+                break;
+            case "multiple_choice":
             case "multiplechoice":
                 AppendMultipleChoiceInstructions(sb, count, difficultyLevel, isVietnamese);
                 break;
-            case "truefalse":
-                AppendTrueFalseInstructions(sb, count, difficultyLevel, isVietnamese);
-                break;
-            case "shortanswer":
-                AppendShortAnswerInstructions(sb, count, difficultyLevel, isVietnamese);
-                break;
-            case "fillinblank":
-                AppendFillInBlankInstructions(sb, count, difficultyLevel, isVietnamese);
-                break;
-            case "mixed":
-                AppendMixedInstructions(sb, count, difficultyLevel, isVietnamese);
-                break;
             default:
-                throw new ArgumentException($"Unsupported question type: {questionType}");
+                throw new ArgumentException($"Unsupported question type: {questionType}. Only 'single_choice' and 'multiple_choice' are supported.");
         }
 
         sb.AppendLine();
@@ -80,15 +73,16 @@ public class AIQuestionGeneratorService : IAIQuestionGeneratorService
         return sb.ToString();
     }
 
-    private void AppendMultipleChoiceInstructions(StringBuilder sb, int count, string? difficulty, bool isVi)
+    private void AppendSingleChoiceInstructions(StringBuilder sb, int count, string? difficulty, bool isVi)
     {
         if (isVi)
         {
-            sb.AppendLine($"Hãy tạo {count} câu hỏi trắc nghiệm (Multiple Choice) từ tài liệu.");
+            sb.AppendLine($"Hãy tạo {count} câu hỏi trắc nghiệm CHỌN 1 ĐÁP ÁN ĐÚNG (Single Choice) từ tài liệu.");
             sb.AppendLine("Mỗi câu hỏi phải có:");
             sb.AppendLine("- 1 câu hỏi rõ ràng, dễ hiểu");
             sb.AppendLine("- 4 đáp án (A, B, C, D)");
-            sb.AppendLine("- CHỈ 1 đáp án đúng");
+            sb.AppendLine("- CHỈ ĐÚNG 1 đáp án đúng duy nhất");
+            sb.AppendLine("- 3 đáp án còn lại là sai");
             sb.AppendLine("- Giải thích ngắn gọn tại sao đáp án đó đúng");
             sb.AppendLine("- Chủ đề của câu hỏi");
             if (!string.IsNullOrEmpty(difficulty))
@@ -96,11 +90,12 @@ public class AIQuestionGeneratorService : IAIQuestionGeneratorService
         }
         else
         {
-            sb.AppendLine($"Create {count} Multiple Choice questions from the document.");
+            sb.AppendLine($"Create {count} Single Choice questions (ONLY ONE CORRECT ANSWER) from the document.");
             sb.AppendLine("Each question must have:");
             sb.AppendLine("- 1 clear, understandable question");
             sb.AppendLine("- 4 options (A, B, C, D)");
-            sb.AppendLine("- ONLY 1 correct answer");
+            sb.AppendLine("- EXACTLY 1 correct answer");
+            sb.AppendLine("- 3 incorrect answers");
             sb.AppendLine("- Brief explanation why that answer is correct");
             sb.AppendLine("- Topic of the question");
             if (!string.IsNullOrEmpty(difficulty))
@@ -108,99 +103,31 @@ public class AIQuestionGeneratorService : IAIQuestionGeneratorService
         }
     }
 
-    private void AppendTrueFalseInstructions(StringBuilder sb, int count, string? difficulty, bool isVi)
+    private void AppendMultipleChoiceInstructions(StringBuilder sb, int count, string? difficulty, bool isVi)
     {
         if (isVi)
         {
-            sb.AppendLine($"Hãy tạo {count} câu hỏi Đúng/Sai (True/False) từ tài liệu.");
+            sb.AppendLine($"Hãy tạo {count} câu hỏi trắc nghiệm CHỌN NHIỀU ĐÁP ÁN ĐÚNG (Multiple Choice) từ tài liệu.");
             sb.AppendLine("Mỗi câu hỏi phải có:");
-            sb.AppendLine("- 1 phát biểu rõ ràng");
-            sb.AppendLine("- 2 đáp án: Đúng và Sai");
-            sb.AppendLine("- Giải thích tại sao phát biểu đúng hoặc sai");
+            sb.AppendLine("- 1 câu hỏi rõ ràng, dễ hiểu");
+            sb.AppendLine("- 4 đáp án (A, B, C, D)");
+            sb.AppendLine("- TỪ 2 ĐẾN 3 đáp án đúng (có thể 2 đúng, hoặc 3 đúng)");
+            sb.AppendLine("- Ít nhất 1 đáp án sai");
+            sb.AppendLine("- Giải thích ngắn gọn tại sao các đáp án đó đúng");
+            sb.AppendLine("- Chủ đề của câu hỏi");
             if (!string.IsNullOrEmpty(difficulty))
                 sb.AppendLine($"- Độ khó: {difficulty}");
         }
         else
         {
-            sb.AppendLine($"Create {count} True/False questions from the document.");
+            sb.AppendLine($"Create {count} Multiple Choice questions (MULTIPLE CORRECT ANSWERS) from the document.");
             sb.AppendLine("Each question must have:");
-            sb.AppendLine("- 1 clear statement");
-            sb.AppendLine("- 2 options: True and False");
-            sb.AppendLine("- Explanation why the statement is true or false");
-            if (!string.IsNullOrEmpty(difficulty))
-                sb.AppendLine($"- Difficulty: {difficulty}");
-        }
-    }
-
-    private void AppendShortAnswerInstructions(StringBuilder sb, int count, string? difficulty, bool isVi)
-    {
-        if (isVi)
-        {
-            sb.AppendLine($"Hãy tạo {count} câu hỏi tự luận ngắn (Short Answer) từ tài liệu.");
-            sb.AppendLine("Mỗi câu hỏi phải có:");
-            sb.AppendLine("- 1 câu hỏi mở");
-            sb.AppendLine("- Đáp án mẫu chi tiết");
-            sb.AppendLine("- Các ý chính cần có trong câu trả lời");
-            if (!string.IsNullOrEmpty(difficulty))
-                sb.AppendLine($"- Độ khó: {difficulty}");
-        }
-        else
-        {
-            sb.AppendLine($"Create {count} Short Answer questions from the document.");
-            sb.AppendLine("Each question must have:");
-            sb.AppendLine("- 1 open-ended question");
-            sb.AppendLine("- Detailed sample answer");
-            sb.AppendLine("- Key points that should be in the answer");
-            if (!string.IsNullOrEmpty(difficulty))
-                sb.AppendLine($"- Difficulty: {difficulty}");
-        }
-    }
-
-    private void AppendFillInBlankInstructions(StringBuilder sb, int count, string? difficulty, bool isVi)
-    {
-        if (isVi)
-        {
-            sb.AppendLine($"Hãy tạo {count} câu hỏi điền vào chỗ trống (Fill in the Blank) từ tài liệu.");
-            sb.AppendLine("Mỗi câu hỏi phải có:");
-            sb.AppendLine("- 1 câu với chỗ trống (sử dụng _____ hoặc [blank])");
-            sb.AppendLine("- Đáp án chính xác cho chỗ trống");
-            sb.AppendLine("- Giải thích ngắn gọn");
-            if (!string.IsNullOrEmpty(difficulty))
-                sb.AppendLine($"- Độ khó: {difficulty}");
-        }
-        else
-        {
-            sb.AppendLine($"Create {count} Fill in the Blank questions from the document.");
-            sb.AppendLine("Each question must have:");
-            sb.AppendLine("- 1 sentence with a blank (use _____ or [blank])");
-            sb.AppendLine("- Correct answer for the blank");
-            sb.AppendLine("- Brief explanation");
-            if (!string.IsNullOrEmpty(difficulty))
-                sb.AppendLine($"- Difficulty: {difficulty}");
-        }
-    }
-
-    private void AppendMixedInstructions(StringBuilder sb, int count, string? difficulty, bool isVi)
-    {
-        if (isVi)
-        {
-            sb.AppendLine($"Hãy tạo tổng cộng {count} câu hỏi MIX nhiều loại từ tài liệu.");
-            sb.AppendLine("Bao gồm:");
-            sb.AppendLine("- Trắc nghiệm (Multiple Choice)");
-            sb.AppendLine("- Đúng/Sai (True/False)");
-            sb.AppendLine("- Tự luận ngắn (Short Answer)");
-            sb.AppendLine("Phân bổ đều các loại câu hỏi.");
-            if (!string.IsNullOrEmpty(difficulty))
-                sb.AppendLine($"- Độ khó: {difficulty}");
-        }
-        else
-        {
-            sb.AppendLine($"Create a total of {count} MIXED type questions from the document.");
-            sb.AppendLine("Include:");
-            sb.AppendLine("- Multiple Choice");
-            sb.AppendLine("- True/False");
-            sb.AppendLine("- Short Answer");
-            sb.AppendLine("Distribute question types evenly.");
+            sb.AppendLine("- 1 clear, understandable question");
+            sb.AppendLine("- 4 options (A, B, C, D)");
+            sb.AppendLine("- FROM 2 TO 3 correct answers (can be 2 or 3 correct answers)");
+            sb.AppendLine("- At least 1 incorrect answer");
+            sb.AppendLine("- Brief explanation why those answers are correct");
+            sb.AppendLine("- Topic of the question");
             if (!string.IsNullOrEmpty(difficulty))
                 sb.AppendLine($"- Difficulty: {difficulty}");
         }
@@ -221,7 +148,7 @@ public class AIQuestionGeneratorService : IAIQuestionGeneratorService
   ""questions"": [
     {
       ""questionText"": ""Câu hỏi ở đây"",
-      ""questionType"": ""MultipleChoice"",
+      ""questionType"": ""single_choice"",
       ""difficultyLevel"": ""Easy"",
       ""explanationText"": ""Giải thích"",
       ""topic"": ""Chủ đề"",
@@ -238,19 +165,23 @@ public class AIQuestionGeneratorService : IAIQuestionGeneratorService
         sb.AppendLine();
         if (isVi)
         {
-            sb.AppendLine("LƯU Ý:");
-            sb.AppendLine("- CHỈ trả về JSON, KHÔNG có text giải thích thêm");
-            sb.AppendLine("- questionType phải là: MultipleChoice, TrueFalse, ShortAnswer, hoặc FillInBlank");
-            sb.AppendLine("- Với TrueFalse, chỉ có 2 options");
-            sb.AppendLine("- Với ShortAnswer và FillInBlank, có thể có 1 hoặc nhiều options là đáp án mẫu");
+            sb.AppendLine("LƯU Ý QUAN TRỌNG:");
+            sb.AppendLine("- CHỈ trả về JSON, KHÔNG có text giải thích thêm, KHÔNG có markdown code blocks");
+            sb.AppendLine("- questionType phải là: \"single_choice\" (1 đáp án đúng) hoặc \"multiple_choice\" (2-3 đáp án đúng)");
+            sb.AppendLine("- Với single_choice: CHỈ có ĐÚNG 1 option có isCorrect = true");
+            sb.AppendLine("- Với multiple_choice: phải có TỪ 2 ĐẾN 3 options có isCorrect = true");
+            sb.AppendLine("- Mỗi câu hỏi PHẢI có đủ 4 options");
+            sb.AppendLine("- KHÔNG sử dụng ký tự escape không hợp lệ như backslash-s trong JSON");
         }
         else
         {
-            sb.AppendLine("IMPORTANT:");
-            sb.AppendLine("- ONLY return JSON, NO additional text or explanation");
-            sb.AppendLine("- questionType must be: MultipleChoice, TrueFalse, ShortAnswer, or FillInBlank");
-            sb.AppendLine("- For TrueFalse, only 2 options");
-            sb.AppendLine("- For ShortAnswer and FillInBlank, can have 1 or more options as sample answers");
+            sb.AppendLine("IMPORTANT NOTES:");
+            sb.AppendLine("- ONLY return JSON, NO additional text or explanation, NO markdown code blocks");
+            sb.AppendLine("- questionType must be: \"single_choice\" (1 correct answer) or \"multiple_choice\" (2-3 correct answers)");
+            sb.AppendLine("- For single_choice: EXACTLY 1 option with isCorrect = true");
+            sb.AppendLine("- For multiple_choice: FROM 2 TO 3 options with isCorrect = true");
+            sb.AppendLine("- Each question MUST have exactly 4 options");
+            sb.AppendLine("- DO NOT use invalid escape characters in JSON");
         }
     }
 

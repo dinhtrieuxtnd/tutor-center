@@ -56,7 +56,7 @@ export const AIDocumentsTab = ({ classroomId }) => {
 
     const handleViewText = async (document) => {
         setSelectedDocument(document);
-        await dispatch(getDocumentTextAsync(document.id));
+        await dispatch(getDocumentTextAsync(document.documentId));
         setViewTextModalOpen(true);
     };
 
@@ -74,7 +74,7 @@ export const AIDocumentsTab = ({ classroomId }) => {
     const handleDeleteConfirm = async () => {
         if (!documentToDelete) return;
 
-        const result = await dispatch(deleteDocumentAsync(documentToDelete.id));
+        const result = await dispatch(deleteDocumentAsync(documentToDelete.documentId));
         if (result.type.endsWith('/fulfilled')) {
             setDeleteModalOpen(false);
             setDocumentToDelete(null);
@@ -95,12 +95,13 @@ export const AIDocumentsTab = ({ classroomId }) => {
 
     const getStatusBadge = (status) => {
         const statusMap = {
-            Extracted: { label: 'Đã trích xuất', color: 'bg-green-100 text-green-700' },
-            Failed: { label: 'Thất bại', color: 'bg-red-100 text-red-700' },
-            Processing: { label: 'Đang xử lý', color: 'bg-yellow-100 text-yellow-700' },
+            completed: { label: 'Đã xử lý', color: 'bg-green-100 text-green-700' },
+            failed: { label: 'Thất bại', color: 'bg-red-100 text-red-700' },
+            processing: { label: 'Đang xử lý', color: 'bg-yellow-100 text-yellow-700' },
+            pending: { label: 'Đang chờ', color: 'bg-blue-100 text-blue-700' },
         };
 
-        const statusInfo = statusMap[status] || { label: status, color: 'bg-gray-100 text-gray-700' };
+        const statusInfo = statusMap[status?.toLowerCase()] || { label: status, color: 'bg-gray-100 text-gray-700' };
 
         return (
             <span className={`inline-block px-2 py-1 text-xs font-medium rounded-sm ${statusInfo.color}`}>
@@ -204,26 +205,41 @@ export const AIDocumentsTab = ({ classroomId }) => {
                             </thead>
                             <tbody className="bg-primary divide-y divide-border">
                                 {documents.map((document) => (
-                                    <tr key={document.id} className="hover:bg-secondary/50 transition-colors">
+                                    <tr key={document.documentId} className="hover:bg-secondary/50 transition-colors">
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center gap-2">
                                                 <FileText size={16} className="text-foreground-light" />
-                                                <span className="text-sm font-medium text-foreground">
-                                                    {document.fileName}
-                                                </span>
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-medium text-foreground">
+                                                        {document.fileName || 'Không có tên'}
+                                                    </span>
+                                                    {document.fileType && (
+                                                        <span className="text-xs text-foreground-light">
+                                                            {document.fileType}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground-light">
-                                            {formatDate(document.uploadedAt)}
+                                            {formatDate(document.createdAt)}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            {getStatusBadge(document.status)}
+                                            <div className="flex flex-col gap-1">
+                                                {getStatusBadge(document.processingStatus)}
+                                                {document.characterCount && (
+                                                    <span className="text-xs text-foreground-light">
+                                                        {document.characterCount.toLocaleString()} ký tự
+                                                    </span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <div className="flex items-center justify-end gap-2">
                                                 <button
                                                     onClick={() => handleViewText(document)}
-                                                    className="text-foreground-light hover:text-foreground transition-colors p-2 hover:bg-secondary rounded-sm"
+                                                    disabled={document.processingStatus?.toLowerCase() !== 'completed'}
+                                                    className="text-foreground-light hover:text-foreground transition-colors p-2 hover:bg-secondary rounded-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                                     title="Xem nội dung"
                                                 >
                                                     <Eye size={16} />

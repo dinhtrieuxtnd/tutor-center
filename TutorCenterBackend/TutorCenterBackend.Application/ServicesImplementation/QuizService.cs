@@ -120,7 +120,7 @@ namespace TutorCenterBackend.Application.ServicesImplementation
                 GroupId = question.GroupId,
                 Content = question.Content,
                 Explanation = question.Explanation,
-                QuestionType = Enum.Parse<QuestionTypeEnum>(question.QuestionType),
+                QuestionType = ParseQuestionType(question.QuestionType),
                 Points = question.Points,
                 OrderIndex = question.OrderIndex,
                 Media = question.QuestionMedia.Select(qm => new QuestionMediaResponseDto
@@ -333,6 +333,16 @@ namespace TutorCenterBackend.Application.ServicesImplementation
                     OrderIndex = o.OrderIndex,
                     Media = new List<OptionMediaResponseDto>() // Not loading media for simplicity
                 }).ToList()
+            };
+        }
+
+        private static QuestionTypeEnum ParseQuestionType(string questionType)
+        {
+            return questionType?.ToLower() switch
+            {
+                "single_choice" => QuestionTypeEnum.SINGLE_CHOICE,
+                "multiple_choice" => QuestionTypeEnum.MULTIPLE_CHOICE,
+                _ => QuestionTypeEnum.SINGLE_CHOICE
             };
         }
     }

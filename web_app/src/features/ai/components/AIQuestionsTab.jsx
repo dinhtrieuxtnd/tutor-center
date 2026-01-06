@@ -10,11 +10,12 @@ import {
     clearCurrentQuestion,
 } from '../store/aiQuestionSlice';
 import { getAllDocumentsAsync } from '../store/aiDocumentSlice';
-import { getAllQuizzesAsync } from '../../quiz/store/quizSlice';
+import { getLessonsByClassroomAsync } from '../../lesson/store/lessonSlice';
 import { Sparkles, RefreshCw, Edit2, Trash2, CheckCircle, X, FileQuestion, Upload } from 'lucide-react';
 import { Spinner } from '../../../shared/components/loading/Loading';
 import { Button } from '../../../shared/components';
 import { ConfirmModal } from '../../../shared/components';
+import { MarkdownRenderer } from '../../../shared/components/markdown/MarkdownRenderer';
 
 export const AIQuestionsTab = ({ classroomId }) => {
     const dispatch = useAppDispatch();
@@ -28,13 +29,13 @@ export const AIQuestionsTab = ({ classroomId }) => {
         importLoading,
     } = useAppSelector((state) => state.aiQuestion);
     const { documents } = useAppSelector((state) => state.aiDocument);
-    const { quizzes } = useAppSelector((state) => state.quiz);
+    const { lessons } = useAppSelector((state) => state.lesson);
 
     // Generate form state
     const [selectedDocumentId, setSelectedDocumentId] = useState('');
     const [numberOfQuestions, setNumberOfQuestions] = useState(10);
     const [difficultyLevel, setDifficultyLevel] = useState('Medium');
-    const [questionTypes, setQuestionTypes] = useState(['MultipleChoice']);
+    const [questionTypes, setQuestionTypes] = useState(['single_choice']);
 
     // Job tracking
     const [jobPollingInterval, setJobPollingInterval] = useState(null);
@@ -55,13 +56,20 @@ export const AIQuestionsTab = ({ classroomId }) => {
     useEffect(() => {
         if (classroomId) {
             dispatch(getAllDocumentsAsync({ classroomId }));
-            dispatch(getAllQuizzesAsync({ classroomId }));
+            dispatch(getLessonsByClassroomAsync(classroomId));
         }
     }, [classroomId, dispatch]);
 
+    // Load questions when document is selected
+    useEffect(() => {
+        if (selectedDocumentId) {
+            dispatch(getQuestionsByDocumentAsync(parseInt(selectedDocumentId)));
+        }
+    }, [selectedDocumentId, dispatch]);
+
     // Poll job status
     useEffect(() => {
-        if (currentJob && (currentJob.status === 'Pending' || currentJob.status === 'Processing')) {
+        if (currentJob && (currentJob.jobStatus === 'pending' || currentJob.jobStatus === 'processing')) {
             const interval = setInterval(() => {
                 dispatch(getJobStatusAsync(currentJob.jobId));
             }, 3000);
@@ -76,7 +84,7 @@ export const AIQuestionsTab = ({ classroomId }) => {
                 setJobPollingInterval(null);
             }
             // If job completed, load questions
-            if (currentJob && currentJob.status === 'Completed' && currentJob.documentId) {
+            if (currentJob && currentJob.jobStatus === 'completed' && currentJob.documentId) {
                 dispatch(getQuestionsByDocumentAsync(currentJob.documentId));
             }
         }
@@ -87,9 +95,10 @@ export const AIQuestionsTab = ({ classroomId }) => {
 
         const data = {
             documentId: parseInt(selectedDocumentId),
-            numberOfQuestions,
+            questionCount: numberOfQuestions,
             difficultyLevel,
-            questionTypes,
+            questionType: questionTypes[0],
+            language: 'vi',
         };
 
         await dispatch(generateQuestionsAsync(data));
@@ -105,7 +114,7 @@ export const AIQuestionsTab = ({ classroomId }) => {
         setEditingQuestion(question);
         setEditFormData({
             questionText: question.questionText,
-            explanation: question.explanation || '',
+            explanationText: question.explanationText || '',
             options: question.options ? [...question.options] : [],
         });
     };
@@ -115,8 +124,11 @@ export const AIQuestionsTab = ({ classroomId }) => {
 
         const result = await dispatch(
             updateQuestionAsync({
-                questionId: editingQuestion.id,
-                data: editFormData,
+                questionId: editingQuestion.generatedQuestionId,
+                data: {
+                    generatedQuestionId: editingQuestion.generatedQuestionId,
+                    ...editFormData,
+                },
             })
         );
 
@@ -134,11 +146,12 @@ export const AIQuestionsTab = ({ classroomId }) => {
     const handleDeleteConfirm = async () => {
         if (!questionToDelete) return;
 
-        const result = await dispatch(deleteQuestionAsync(questionToDelete.id));
+        const result = await dispatch(deleteQuestionAsync(questionToDelete.generatedQuestionId));
         if (result.type.endsWith('/fulfilled')) {
+            console.log('Deleted question:', questionToDelete.generatedQuestionId);
             setDeleteModalOpen(false);
             setQuestionToDelete(null);
-            setSelectedQuestions(selectedQuestions.filter((id) => id !== questionToDelete.id));
+            setSelectedQuestions(selectedQuestions.filter((id) => id !== questionToDelete.generatedQuestionId));
             // Reload questions
             if (selectedDocumentId) {
                 dispatch(getQuestionsByDocumentAsync(parseInt(selectedDocumentId)));
@@ -156,7 +169,7 @@ export const AIQuestionsTab = ({ classroomId }) => {
         if (selectedQuestions.length === questions.length) {
             setSelectedQuestions([]);
         } else {
-            setSelectedQuestions(questions.map((q) => q.id));
+            setSelectedQuestions(questions.map((q) => q.generatedQuestionId));
         }
     };
 
@@ -183,10 +196,10 @@ export const AIQuestionsTab = ({ classroomId }) => {
 
     const getStatusBadge = (status) => {
         const statusMap = {
-            Pending: { label: 'Đang chờ', color: 'bg-gray-100 text-gray-700' },
-            Processing: { label: 'Đang xử lý', color: 'bg-blue-100 text-blue-700' },
-            Completed: { label: 'Hoàn thành', color: 'bg-green-100 text-green-700' },
-            Failed: { label: 'Thất bại', color: 'bg-red-100 text-red-700' },
+            pending: { label: 'Đang chờ', color: 'bg-gray-100 text-gray-700' },
+            processing: { label: 'Đang xử lý', color: 'bg-blue-100 text-blue-700' },
+            completed: { label: 'Hoàn thành', color: 'bg-green-100 text-green-700' },
+            failed: { label: 'Thất bại', color: 'bg-red-100 text-red-700' },
         };
 
         const statusInfo = statusMap[status] || { label: status, color: 'bg-gray-100 text-gray-700' };
@@ -237,9 +250,9 @@ export const AIQuestionsTab = ({ classroomId }) => {
                         >
                             <option value="">-- Chọn tài liệu --</option>
                             {documents
-                                .filter((doc) => doc.status === 'Extracted')
+                                .filter((doc) => doc.processingStatus?.toLowerCase() === 'completed')
                                 .map((doc) => (
-                                    <option key={doc.id} value={doc.id}>
+                                    <option key={doc.documentId} value={doc.documentId}>
                                         {doc.fileName}
                                     </option>
                                 ))}
@@ -284,8 +297,8 @@ export const AIQuestionsTab = ({ classroomId }) => {
                             onChange={(e) => setQuestionTypes([e.target.value])}
                             className="w-full px-3 py-2 border border-border rounded-sm bg-secondary text-foreground"
                         >
-                            <option value="MultipleChoice">Trắc nghiệm</option>
-                            <option value="TrueFalse">Đúng/Sai</option>
+                            <option value="single_choice">Trắc nghiệm (1 đáp án đúng)</option>
+                            <option value="multiple_choice">Trắc nghiệm (nhiều đáp án đúng)</option>
                         </select>
                     </div>
                 </div>
@@ -327,20 +340,20 @@ export const AIQuestionsTab = ({ classroomId }) => {
                     <h3 className="text-lg font-semibold text-foreground mb-4">Trạng thái công việc AI</h3>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            {(currentJob.status === 'Pending' || currentJob.status === 'Processing') && (
+                            {(currentJob.jobStatus === 'pending' || currentJob.jobStatus === 'processing') && (
                                 <Spinner size="md" />
                             )}
                             <div>
                                 <p className="text-sm font-medium text-foreground">Job ID: {currentJob.jobId}</p>
                                 <p className="text-xs text-foreground-light mt-1">
-                                    {currentJob.status === 'Processing' && 'AI đang phân tích và tạo câu hỏi...'}
-                                    {currentJob.status === 'Pending' && 'Đang chờ xử lý...'}
-                                    {currentJob.status === 'Completed' && 'Đã hoàn thành! Tải câu hỏi để xem kết quả.'}
-                                    {currentJob.status === 'Failed' && 'Xử lý thất bại. Vui lòng thử lại.'}
+                                    {currentJob.jobStatus === 'processing' && 'AI đang phân tích và tạo câu hỏi...'}
+                                    {currentJob.jobStatus === 'pending' && 'Đang chờ xử lý...'}
+                                    {currentJob.jobStatus === 'completed' && 'Đã hoàn thành! Tải câu hỏi để xem kết quả.'}
+                                    {currentJob.jobStatus === 'failed' && 'Xử lý thất bại. Vui lòng thử lại.'}
                                 </p>
                             </div>
                         </div>
-                        {getStatusBadge(currentJob.status)}
+                        {getStatusBadge(currentJob.jobStatus)}
                     </div>
                 </div>
             )}
@@ -374,16 +387,15 @@ export const AIQuestionsTab = ({ classroomId }) => {
                     <div className="divide-y divide-border max-h-[600px] overflow-y-auto">
                         {questions.map((question, index) => (
                             <div
-                                key={question.id}
-                                className={`p-4 hover:bg-secondary/50 transition-colors ${
-                                    selectedQuestions.includes(question.id) ? 'bg-blue-50' : ''
-                                }`}
+                                key={question.generatedQuestionId}
+                                className={`p-4 hover:bg-secondary/50 transition-colors ${selectedQuestions.includes(question.generatedQuestionId) ? 'bg-blue-50' : ''
+                                    }`}
                             >
                                 <div className="flex items-start gap-3">
                                     <input
                                         type="checkbox"
-                                        checked={selectedQuestions.includes(question.id)}
-                                        onChange={() => handleSelectQuestion(question.id)}
+                                        checked={selectedQuestions.includes(question.generatedQuestionId)}
+                                        onChange={() => handleSelectQuestion(question.generatedQuestionId)}
                                         className="mt-1 w-4 h-4 rounded border-gray-300"
                                     />
 
@@ -414,18 +426,20 @@ export const AIQuestionsTab = ({ classroomId }) => {
                                             </div>
                                         </div>
 
-                                        <p className="text-sm text-foreground mb-3">{question.questionText}</p>
+                                        <MarkdownRenderer 
+                                            text={question.questionText} 
+                                            className="text-sm text-foreground mb-3"
+                                        />
 
                                         {question.options && question.options.length > 0 && (
                                             <div className="space-y-2 mb-3">
                                                 {question.options.map((option, optIndex) => (
                                                     <div
                                                         key={optIndex}
-                                                        className={`flex items-center gap-2 text-sm p-2 rounded-sm ${
-                                                            option.isCorrect
-                                                                ? 'bg-green-50 border border-green-200'
-                                                                : 'bg-secondary'
-                                                        }`}
+                                                        className={`flex items-center gap-2 text-sm p-2 rounded-sm ${option.isCorrect
+                                                            ? 'bg-green-50 border border-green-200'
+                                                            : 'bg-secondary'
+                                                            }`}
                                                     >
                                                         {option.isCorrect && (
                                                             <CheckCircle size={14} className="text-green-600" />
@@ -433,18 +447,24 @@ export const AIQuestionsTab = ({ classroomId }) => {
                                                         <span className="font-medium text-foreground-light">
                                                             {String.fromCharCode(65 + optIndex)}.
                                                         </span>
-                                                        <span className="text-foreground">{option.optionText}</span>
+                                                        <MarkdownRenderer 
+                                                            text={option.optionText} 
+                                                            className="text-foreground"
+                                                        />
                                                     </div>
                                                 ))}
                                             </div>
                                         )}
 
-                                        {question.explanation && (
+                                        {question.explanationText && (
                                             <div className="bg-secondary p-3 rounded-sm">
                                                 <p className="text-xs font-medium text-foreground-light mb-1">
                                                     Giải thích:
                                                 </p>
-                                                <p className="text-sm text-foreground">{question.explanation}</p>
+                                                <MarkdownRenderer 
+                                                    text={question.explanationText} 
+                                                    className="text-sm text-foreground"
+                                                />
                                             </div>
                                         )}
                                     </div>
@@ -503,9 +523,9 @@ export const AIQuestionsTab = ({ classroomId }) => {
                                     Giải thích
                                 </label>
                                 <textarea
-                                    value={editFormData.explanation}
+                                    value={editFormData.explanationText}
                                     onChange={(e) =>
-                                        setEditFormData({ ...editFormData, explanation: e.target.value })
+                                        setEditFormData({ ...editFormData, explanationText: e.target.value })
                                     }
                                     rows={2}
                                     className="w-full px-3 py-2 border border-border rounded-sm bg-secondary text-foreground"
@@ -524,8 +544,11 @@ export const AIQuestionsTab = ({ classroomId }) => {
                                                     type="checkbox"
                                                     checked={option.isCorrect}
                                                     onChange={(e) => {
-                                                        const newOptions = [...editFormData.options];
-                                                        newOptions[index].isCorrect = e.target.checked;
+                                                        const newOptions = editFormData.options.map((opt, i) => 
+                                                            i === index 
+                                                                ? { ...opt, isCorrect: e.target.checked }
+                                                                : opt
+                                                        );
                                                         setEditFormData({ ...editFormData, options: newOptions });
                                                     }}
                                                     className="w-4 h-4 rounded border-gray-300"
@@ -534,8 +557,11 @@ export const AIQuestionsTab = ({ classroomId }) => {
                                                     type="text"
                                                     value={option.optionText}
                                                     onChange={(e) => {
-                                                        const newOptions = [...editFormData.options];
-                                                        newOptions[index].optionText = e.target.value;
+                                                        const newOptions = editFormData.options.map((opt, i) => 
+                                                            i === index 
+                                                                ? { ...opt, optionText: e.target.value }
+                                                                : opt
+                                                        );
                                                         setEditFormData({ ...editFormData, options: newOptions });
                                                     }}
                                                     className="flex-1 px-3 py-2 border border-border rounded-sm bg-secondary text-foreground"
@@ -595,11 +621,11 @@ export const AIQuestionsTab = ({ classroomId }) => {
                                     className="w-full px-3 py-2 border border-border rounded-sm bg-secondary text-foreground"
                                 >
                                     <option value="">-- Chọn Quiz --</option>
-                                    {quizzes
-                                        .filter((quiz) => quiz.classroomId === classroomId)
-                                        .map((quiz) => (
-                                            <option key={quiz.id} value={quiz.id}>
-                                                {quiz.title}
+                                    {lessons
+                                        .filter((lesson) => lesson.lessonType?.toLowerCase() === 'quiz' && lesson.quiz)
+                                        .map((lesson) => (
+                                            <option key={lesson.id} value={lesson.quiz.id}>
+                                                {lesson.quiz.title}
                                             </option>
                                         ))}
                                 </select>

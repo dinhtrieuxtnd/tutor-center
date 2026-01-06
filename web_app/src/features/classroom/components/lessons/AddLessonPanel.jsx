@@ -8,9 +8,12 @@ export const AddLessonPanel = ({ isOpen, onClose, onSubmit, isLoading, classroom
         lectureId: '',
         exerciseId: '',
         quizId: '',
-        scheduledDate: '',
-        dueDate: '',
-        isActive: true,
+        orderIndex: 1,
+        dueAt: '', // for exercise
+        startAt: '', // for quiz
+        endAt: '', // for quiz
+        showQuizAnswers: false, // for quiz
+        showQuizScore: true, // for quiz
     });
     const [errors, setErrors] = useState({});
 
@@ -62,17 +65,22 @@ export const AddLessonPanel = ({ isOpen, onClose, onSubmit, isLoading, classroom
         // Prepare data based on lesson type
         const submitData = {
             classroomId: parseInt(classroomId),
-            scheduledDate: formData.scheduledDate || null,
-            dueDate: formData.dueDate || null,
-            isActive: formData.isActive,
         };
 
         if (lessonType === 'lecture') {
             submitData.lectureId = parseInt(formData.lectureId);
+            submitData.orderIndex = parseInt(formData.orderIndex) || 1;
         } else if (lessonType === 'exercise') {
             submitData.exerciseId = parseInt(formData.exerciseId);
+            submitData.dueAt = formData.dueAt || null;
+            submitData.orderIndex = parseInt(formData.orderIndex) || 1;
         } else if (lessonType === 'quiz') {
             submitData.quizId = parseInt(formData.quizId);
+            submitData.startAt = formData.startAt;
+            submitData.endAt = formData.endAt;
+            submitData.showQuizAnswers = formData.showQuizAnswers;
+            submitData.showQuizScore = formData.showQuizScore;
+            submitData.orderIndex = parseInt(formData.orderIndex) || 1;
         }
 
         onSubmit(submitData, lessonType);
@@ -83,9 +91,12 @@ export const AddLessonPanel = ({ isOpen, onClose, onSubmit, isLoading, classroom
             lectureId: '',
             exerciseId: '',
             quizId: '',
-            scheduledDate: '',
-            dueDate: '',
-            isActive: true,
+            orderIndex: 1,
+            dueAt: '',
+            startAt: '',
+            endAt: '',
+            showQuizAnswers: false,
+            showQuizScore: true,
         });
         setLessonType('lecture');
         setErrors({});
@@ -173,38 +184,72 @@ export const AddLessonPanel = ({ isOpen, onClose, onSubmit, isLoading, classroom
                             />
                         )}
 
-                        {/* Scheduled Date */}
-                        <DateTimePicker
-                            label="Ngày bắt đầu"
-                            value={formData.scheduledDate}
-                            onChange={(value) => setFormData(prev => ({ ...prev, scheduledDate: value }))}
+                        {/* Order Index */}
+                        <Input
+                            label="Thứ tự"
+                            name="orderIndex"
+                            type="number"
+                            value={formData.orderIndex}
+                            onChange={handleChange}
+                            placeholder="Thứ tự hiển thị"
                             disabled={isLoading}
-                            placeholder="Chọn ngày giờ bắt đầu"
+                            min="1"
                         />
 
-                        {/* Due Date */}
-                        <DateTimePicker
-                            label="Hạn chót"
-                            value={formData.dueDate}
-                            onChange={(value) => setFormData(prev => ({ ...prev, dueDate: value }))}
-                            disabled={isLoading}
-                            placeholder="Chọn ngày giờ hết hạn"
-                        />
+                        {/* Exercise specific: Due Date */}
+                        {lessonType === 'exercise' && (
+                            <DateTimePicker
+                                label="Hạn nộp bài"
+                                value={formData.dueAt}
+                                onChange={(value) => setFormData(prev => ({ ...prev, dueAt: value }))}
+                                disabled={isLoading}
+                                placeholder="Chọn thời gian hạn nộp"
+                            />
+                        )}
 
-                        {/* Is Active */}
-                        <Checkbox
-                            id="isActive"
-                            checked={formData.isActive}
-                            onChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
-                            label="Kích hoạt ngay"
-                        />
+                        {/* Quiz specific fields */}
+                        {lessonType === 'quiz' && (
+                            <>
+                                <DateTimePicker
+                                    label="Thời gian bắt đầu"
+                                    value={formData.startAt}
+                                    onChange={(value) => setFormData(prev => ({ ...prev, startAt: value }))}
+                                    disabled={isLoading}
+                                    placeholder="Chọn thời gian bắt đầu"
+                                    required
+                                />
+
+                                <DateTimePicker
+                                    label="Thời gian kết thúc"
+                                    value={formData.endAt}
+                                    onChange={(value) => setFormData(prev => ({ ...prev, endAt: value }))}
+                                    disabled={isLoading}
+                                    placeholder="Chọn thời gian kết thúc"
+                                    required
+                                />
+
+                                <Checkbox
+                                    id="showQuizAnswers"
+                                    checked={formData.showQuizAnswers}
+                                    onChange={(checked) => setFormData(prev => ({ ...prev, showQuizAnswers: checked }))}
+                                    label="Hiển thị đáp án sau khi làm"
+                                />
+
+                                <Checkbox
+                                    id="showQuizScore"
+                                    checked={formData.showQuizScore}
+                                    onChange={(checked) => setFormData(prev => ({ ...prev, showQuizScore: checked }))}
+                                    label="Hiển thị điểm số"
+                                />
+                            </>
+                        )}
 
                         {/* Info box */}
                         <div className="bg-info-bg border-l-4 border-info px-3 py-2 rounded-sm">
                             <p className="text-xs text-info-text">
-                                {lessonType === 'lecture' && 'Bài giảng sẽ được gán vào lớp học và hiển thị cho học sinh.'}
-                                {lessonType === 'exercise' && 'Bài tập sẽ được gán với hạn nộp bài. Học sinh có thể nộp bài qua hệ thống.'}
-                                {lessonType === 'quiz' && 'Bài kiểm tra sẽ được mở trong khoảng thời gian đã định. Học sinh chỉ làm bài khi đang mở.'}
+                                {lessonType === 'lecture' && 'Bài giảng sẽ được gán vào lớp học theo thứ tự.'}
+                                {lessonType === 'exercise' && 'Bài tập sẽ được gán với hạn nộp bài (tùy chọn). Học sinh có thể nộp bài qua hệ thống.'}
+                                {lessonType === 'quiz' && 'Bài kiểm tra yêu cầu thời gian bắt đầu và kết thúc. Học sinh chỉ làm bài trong khoảng thời gian này.'}
                             </p>
                         </div>
                     </div>

@@ -8,6 +8,7 @@ const initialState = {
     generationJobs: [],
     currentJob: null,
     loading: false,
+    jobStatusLoading: false,
     generateLoading: false,
     updateLoading: false,
     deleteLoading: false,
@@ -38,7 +39,7 @@ export const getJobStatusAsync = createAsyncThunk(
             () => aiQuestionApi.getJobStatus(jobId),
             thunkAPI,
             {
-                successTitle: null, // Silent success
+                showSuccess: false,
                 errorTitle: 'Lấy trạng thái công việc thất bại',
             }
         );
@@ -52,7 +53,7 @@ export const getAllJobsAsync = createAsyncThunk(
             () => aiQuestionApi.getAllJobs(),
             thunkAPI,
             {
-                successTitle: null, // Silent success
+                showSuccess: false,
                 errorTitle: 'Lấy danh sách công việc thất bại',
             }
         );
@@ -66,7 +67,7 @@ export const getQuestionsByDocumentAsync = createAsyncThunk(
             () => aiQuestionApi.getByDocument(documentId),
             thunkAPI,
             {
-                successTitle: null, // Silent success
+                showSuccess: false,
                 errorTitle: 'Lấy danh sách câu hỏi thất bại',
             }
         );
@@ -80,7 +81,7 @@ export const getQuestionByIdAsync = createAsyncThunk(
             () => aiQuestionApi.getById(questionId),
             thunkAPI,
             {
-                successTitle: null, // Silent success
+                showSuccessMessage: false,
                 errorTitle: 'Lấy thông tin câu hỏi thất bại',
             }
         );
@@ -162,15 +163,15 @@ const aiQuestionSlice = createSlice({
 
             // Get job status
             .addCase(getJobStatusAsync.pending, (state) => {
-                state.loading = true;
+                state.jobStatusLoading = true;
                 state.error = null;
             })
             .addCase(getJobStatusAsync.fulfilled, (state, action) => {
-                state.loading = false;
+                state.jobStatusLoading = false;
                 state.currentJob = action.payload;
             })
             .addCase(getJobStatusAsync.rejected, (state, action) => {
-                state.loading = false;
+                state.jobStatusLoading = false;
                 state.error = action.payload;
             })
 
