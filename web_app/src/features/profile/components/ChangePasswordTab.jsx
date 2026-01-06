@@ -34,13 +34,14 @@ export const ChangePasswordTab = () => {
 
   // Check if form is valid
   const isFormValid = useMemo(() => {
+    const hasErrors = Object.values(errors).some(error => error !== '');
     return (
       passwordData.currentPassword.trim() !== '' &&
       passwordData.newPassword.trim() !== '' &&
       passwordData.confirmNewPassword.trim() !== '' &&
       passwordData.newPassword === passwordData.confirmNewPassword &&
       passwordData.newPassword.length >= 6 &&
-      Object.keys(errors).length === 0
+      !hasErrors
     );
   }, [passwordData, errors]);
 
@@ -50,7 +51,9 @@ export const ChangePasswordTab = () => {
 
     // Clear error when user types
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      const newErrors = { ...errors };
+      delete newErrors[name];
+      setErrors(newErrors);
     }
 
     // Validate new password
@@ -58,6 +61,10 @@ export const ChangePasswordTab = () => {
       const error = validatePassword(value);
       if (error) {
         setErrors(prev => ({ ...prev, newPassword: error }));
+      } else {
+        const newErrors = { ...errors };
+        delete newErrors.newPassword;
+        setErrors(newErrors);
       }
     }
 
@@ -65,6 +72,10 @@ export const ChangePasswordTab = () => {
     if (name === 'confirmNewPassword' && value) {
       if (value !== passwordData.newPassword) {
         setErrors(prev => ({ ...prev, confirmNewPassword: 'Mật khẩu xác nhận không khớp' }));
+      } else {
+        const newErrors = { ...errors };
+        delete newErrors.confirmNewPassword;
+        setErrors(newErrors);
       }
     }
 
@@ -73,7 +84,9 @@ export const ChangePasswordTab = () => {
       if (value !== passwordData.confirmNewPassword) {
         setErrors(prev => ({ ...prev, confirmNewPassword: 'Mật khẩu xác nhận không khớp' }));
       } else {
-        setErrors(prev => ({ ...prev, confirmNewPassword: '' }));
+        const newErrors = { ...errors };
+        delete newErrors.confirmNewPassword;
+        setErrors(newErrors);
       }
     }
   };
@@ -122,6 +135,19 @@ export const ChangePasswordTab = () => {
         confirmNewPassword: '',
       });
       setErrors({});
+      setShowPasswords({
+        current: false,
+        new: false,
+        confirm: false,
+      });
+    } else if (changePasswordAsync.rejected.match(result)) {
+      // Handle error from backend (e.g., incorrect current password)
+      // The error will be shown via toast notification from asyncThunkHelper
+      // But we can also highlight the current password field
+      const errorMessage = result.payload?.message || result.error?.message;
+      if (errorMessage && errorMessage.includes('Mật khẩu hiện tại')) {
+        setErrors(prev => ({ ...prev, currentPassword: 'Mật khẩu hiện tại không đúng' }));
+      }
     }
   };
 

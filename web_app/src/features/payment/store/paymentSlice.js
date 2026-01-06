@@ -16,7 +16,7 @@ export const getPaymentsByClassroomAsync = createAsyncThunk(
             () => paymentApi.getByClassroom(classroomId),
             thunkAPI,
             {
-                successTitle: null, // Silent success
+                showSuccess: false,
                 errorTitle: 'Lấy danh sách thanh toán thất bại',
             }
         );

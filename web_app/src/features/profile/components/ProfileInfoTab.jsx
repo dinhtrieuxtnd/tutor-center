@@ -85,7 +85,7 @@ export const ProfileInfoTab = () => {
 
         // Validate before submit
         const newErrors = {};
-        
+
         if (!formData.fullName.trim()) {
             newErrors.fullName = 'Họ và tên không được để trống';
         }

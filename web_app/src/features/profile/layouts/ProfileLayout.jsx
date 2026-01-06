@@ -6,10 +6,10 @@ export const ProfileLayout = ({ children }) => {
       {/* Header */}
       <Header title="Thông tin cá nhân" />
 
-        {/* Main Content */}
-        <main className="flex p-6 w-full">
-          {children}
-        </main>
+      {/* Main Content */}
+      <main className="flex p-6 w-full">
+        {children}
+      </main>
     </div>
   );
 };

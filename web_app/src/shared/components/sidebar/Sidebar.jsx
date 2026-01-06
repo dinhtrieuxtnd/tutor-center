@@ -33,7 +33,7 @@ export const Sidebar = ({ menuItems }) => {
                     <div className="space-y-1">
                         {menuItems.map((item) => {
                             const Icon = item.icon;
-                            const isActive = location.pathname === item.href;
+                            const isActive = location.pathname.includes(item.href);
 
                             return (
                                 <Link
