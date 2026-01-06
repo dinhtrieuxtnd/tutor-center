@@ -81,6 +81,8 @@ interface QuizAttemptBackendDetailResponse {
   status: string;
   scoreRaw?: number;
   scoreScaled10?: number;
+  showQuizAnswers: boolean;
+  showQuizScore: boolean;
   quiz: {
     id: number;
     title: string;
@@ -115,6 +117,8 @@ export interface QuizAttemptDetailResponse {
   status: string;
   scoreRaw?: number;
   scoreScaled10?: number;
+  showQuizAnswers: boolean;
+  showQuizScore: boolean;
   answers: QuizAnswerDetailResponse[];
 }
 
@@ -197,7 +201,8 @@ class QuizService {
       if (contentType && contentType.includes('application/json')) {
         try {
           const errorData = await response.json();
-          errorMessage = errorData.message || errorData.title || errorMessage;
+          // Backend returns ProblemDetails with 'detail', 'title', or 'message'
+          errorMessage = errorData.detail || errorData.message || errorData.title || errorMessage;
         } catch {
           // Ignore parse errors
         }
@@ -244,6 +249,8 @@ class QuizService {
       status: backendData.status,
       scoreRaw: backendData.scoreRaw,
       scoreScaled10: backendData.scoreScaled10,
+      showQuizAnswers: backendData.showQuizAnswers,
+      showQuizScore: backendData.showQuizScore,
       answers,
     };
   }

@@ -70,7 +70,7 @@ class ExerciseSubmissionService {
         try {
           const errorData = await response.json();
           console.log('   Error Data:', JSON.stringify(errorData, null, 2));
-          errorMessage = errorData.message || errorData.title || errorMessage;
+          errorMessage = errorData.detail || errorData.message || errorData.title || errorMessage;
         } catch {
           // Ignore JSON parse error, use default message
         }
@@ -157,6 +157,28 @@ class ExerciseSubmissionService {
         return null;
       }
       throw error;
+    }
+  }
+
+  /**
+   * Get all my submissions
+   */
+  async getMySubmissions(): Promise<ExerciseSubmissionResponse[]> {
+    const headers = await this.getAuthHeaders();
+    
+    try {
+      const response = await this.fetchWithTimeout(
+        `${config.API_BASE_URL}/ExerciseSubmission/my-submissions`,
+        {
+          method: 'GET',
+          headers,
+        }
+      );
+
+      return this.handleResponse<ExerciseSubmissionResponse[]>(response);
+    } catch (error: any) {
+      console.error('Error getting my submissions:', error);
+      return [];
     }
   }
 

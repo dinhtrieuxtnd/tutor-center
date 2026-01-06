@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import MarkdownViewer from '../components/MarkdownViewer';
+import LatexMarkdownViewer from '../components/LatexMarkdownViewer';
 import {
   quizService,
   QuizAttemptResponse,
@@ -302,19 +302,34 @@ export default function QuizAttemptScreen() {
       </ScrollView>
 
       {/* Question Content */}
-      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
+      <View style={styles.content}>
         <View style={styles.questionCard}>
           <View style={styles.questionHeader}>
             <Text style={styles.questionNumber}>Câu hỏi {currentQuestionIndex + 1}</Text>
             <Text style={styles.questionPoints}>{currentQuestion?.points || 1} điểm</Text>
           </View>
-          <MarkdownViewer content={currentQuestion?.content || ''} />
+          
+          {/* Question content with scroll */}
+          <ScrollView 
+            style={styles.questionContentScroll}
+            nestedScrollEnabled={true}
+            showsVerticalScrollIndicator={true}
+          >
+            <LatexMarkdownViewer content={currentQuestion?.content || ''} />
+          </ScrollView>
 
           {/* Options */}
           <Text style={styles.optionsNote}>
             Chọn một đáp án đúng nhất:
           </Text>
-          {currentQuestion?.options.map((option) => {
+          
+          {/* Options with scroll */}
+          <ScrollView 
+            style={styles.optionsScrollView}
+            nestedScrollEnabled={true}
+            showsVerticalScrollIndicator={true}
+          >
+            {currentQuestion?.options.map((option) => {
             const currentQuestionAnswers = selectedAnswers[currentQuestion.questionId];
             const isSelected = currentQuestionAnswers?.includes(option.questionOptionId);
             
@@ -346,13 +361,14 @@ export default function QuizAttemptScreen() {
                   )}
                 </View>
                 <View style={{ flex: 1 }}>
-                  <MarkdownViewer content={option.content} />
+                  <LatexMarkdownViewer content={option.content} />
                 </View>
               </TouchableOpacity>
             );
           })}
+          </ScrollView>
         </View>
-      </ScrollView>
+      </View>
 
       {/* Footer Actions */}
       <View style={styles.footer}>
@@ -527,6 +543,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 16,
+    paddingBottom: 100, 
   },
   questionCard: {
     backgroundColor: 'white',
@@ -571,32 +588,44 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
   },
+  questionContentScroll: {
+    maxHeight: 300,
+    marginBottom: 16,
+  },
+  optionsScrollView: {
+    maxHeight: 400,
+    paddingHorizontal: 16,
+  },
   optionsNote: {
     fontSize: 13,
     color: '#6B7280',
+    marginTop: 20, // Add top margin to separate from question
     marginBottom: 8,
   },
   optionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 8,
+    padding: 6,
+    paddingVertical: 8,
+    borderRadius: 6,
     backgroundColor: '#F9FAFB',
-    marginBottom: 8,
-    borderWidth: 2,
+    marginBottom: 6,
+    borderWidth: 1.5,
     borderColor: '#E5E7EB',
+    maxWidth: '90%',
+    alignSelf: 'center',
   },
   optionSelected: {
     backgroundColor: '#EBF5FF',
     borderColor: '#007AFF',
   },
   optionRadio: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     borderWidth: 2,
     borderColor: '#9CA3AF',
-    marginRight: 12,
+    marginRight: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -604,9 +633,9 @@ const styles = StyleSheet.create({
     borderColor: '#007AFF',
   },
   optionRadioInner: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: '#007AFF',
   },
   optionText: {

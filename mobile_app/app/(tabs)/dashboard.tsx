@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,156 +6,182 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
+import { useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { classroomService, ClassroomResponse } from '../../services/classroomService';
+import { exerciseSubmissionService, ExerciseSubmissionResponse } from '../../services/exerciseSubmissionService';
+import { paymentService, PaymentResponse } from '../../services/paymentService';
 
 const { width } = Dimensions.get('window');
 
+interface DashboardStats {
+  totalClasses: number;
+  totalSubmissions: number;
+  averageGrade: number;
+  paidClasses: number;
+}
+
 export default function DashboardScreen() {
   const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [stats, setStats] = useState<DashboardStats>({
+    totalClasses: 0,
+    totalSubmissions: 0,
+    averageGrade: 0,
+    paidClasses: 0,
+  });
+  const [classrooms, setClassrooms] = useState<ClassroomResponse[]>([]);
+  const [submissions, setSubmissions] = useState<ExerciseSubmissionResponse[]>([]);
+  const [payments, setPayments] = useState<PaymentResponse[]>([]);
 
-  // Mock data - Thống kê
-  const stats = [
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  // Refresh data when dashboard tab is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      loadDashboardData();
+    }, [])
+  );
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      
+      console.log('📊 Loading dashboard data...');
+      
+      // Gọi các API song song
+      const [classroomsData, submissionsData, paymentsData] = await Promise.all([
+        classroomService.getMyEnrollments()
+          .then(data => {
+            console.log('✅ Classrooms loaded:', data);
+            return data;
+          })
+          .catch(err => {
+            console.error('❌ Error loading classrooms:', err.message);
+            return [];
+          }),
+        exerciseSubmissionService.getMySubmissions()
+          .then(data => {
+            console.log('✅ Submissions loaded:', data.length, 'items');
+            return data;
+          })
+          .catch(err => {
+            console.error('❌ Error loading submissions:', err.message);
+            return [];
+          }),
+        paymentService.getMyPayments()
+          .then(data => {
+            console.log('✅ Payments loaded:', data.length, 'items');
+            return data;
+          })
+          .catch(err => {
+            console.error('❌ Error loading payments:', err.message);
+            return [];
+          }),
+      ]);
+
+      const classroomsList = classroomsData || [];
+      console.log('📚 Total classrooms:', classroomsList.length);
+      console.log('📝 Total submissions:', submissionsData.length);
+      console.log('💰 Total payments:', paymentsData.length);
+      
+      // Don't modify hasPaid - payment API doesn't return classroomId
+      // Backend should handle this via ClassroomStudents.HasPaid
+      
+      setClassrooms(classroomsList);
+      setSubmissions(submissionsData);
+      setPayments(paymentsData);
+
+      // Tính toán thống kê
+      const gradedSubmissions = submissionsData.filter((s: ExerciseSubmissionResponse) => s.score != null);
+      const avgGrade = gradedSubmissions.length > 0
+        ? gradedSubmissions.reduce((sum: number, s: ExerciseSubmissionResponse) => sum + (s.score || 0), 0) / gradedSubmissions.length
+        : 0;
+
+      const paidCount = paymentsData.filter((p: PaymentResponse) => p.status === 'paid').length;
+
+      const calculatedStats = {
+        totalClasses: classroomsList.length,
+        totalSubmissions: submissionsData.length,
+        averageGrade: Math.round(avgGrade * 10) / 10,
+        paidClasses: paidCount,
+      };
+      
+      console.log('📊 Stats:', calculatedStats);
+      setStats(calculatedStats);
+    } catch (error) {
+      console.error('❌ Error loading dashboard:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadDashboardData();
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#3B82F6" />
+          <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Thống kê cards với dữ liệu thực
+  const statsCards = [
     {
       title: 'Lớp học',
-      value: 4,
+      value: stats.totalClasses,
       description: 'Đã tham gia',
       icon: 'school-outline' as const,
       color: '#3B82F6',
       bgColor: '#EFF6FF',
-      trend: '+1 lớp mới',
+      trend: stats.paidClasses > 0 ? `${stats.paidClasses} đã thanh toán` : 'Chưa thanh toán',
     },
     {
       title: 'Bài tập',
-      value: 18,
+      value: stats.totalSubmissions,
       description: 'Đã nộp',
       icon: 'document-text-outline' as const,
       color: '#10B981',
       bgColor: '#F0FDF4',
-      trend: '12/15 đạt điểm tốt',
+      trend: stats.averageGrade > 0 ? `Điểm TB: ${stats.averageGrade}` : 'Chưa có điểm',
     },
     {
-      title: 'Bài kiểm tra',
-      value: 6,
-      description: 'Đã hoàn thành',
-      icon: 'clipboard-outline' as const,
-      color: '#8B5CF6',
-      bgColor: '#F5F3FF',
-      trend: 'Điểm TB: 8.5',
-    },
-    {
-      title: 'Điểm TB',
-      value: '8.5',
-      description: 'Tổng quát',
-      icon: 'trophy-outline' as const,
+      title: 'Thanh toán',
+      value: stats.paidClasses,
+      description: 'Hoàn tất',
+      icon: 'card-outline' as const,
       color: '#F59E0B',
       bgColor: '#FFFBEB',
-      trend: '+0.5 so với kỳ trước',
+      trend: `${payments.length} giao dịch`,
     },
   ];
 
-  // Mock data - Tiến độ học tập theo lớp
-  const progressByClass = [
-    {
-      className: 'Toán 12 - Chuyên đề hàm số',
-      completed: 12,
-      total: 15,
-      percentage: 80,
-      color: '#3B82F6',
-    },
-    {
-      className: 'Vật lý 11',
-      completed: 8,
-      total: 10,
-      percentage: 80,
-      color: '#10B981',
-    },
-    {
-      className: 'Hóa học 10',
-      completed: 9,
-      total: 12,
-      percentage: 75,
-      color: '#8B5CF6',
-    },
-    {
-      className: 'Toán 10 - Cơ bản',
-      completed: 14,
-      total: 16,
-      percentage: 87.5,
-      color: '#F59E0B',
-    },
-  ];
-
-  // Mock data - Thông báo
-  const notifications = [
-    {
-      id: 1,
-      className: 'Toán 12 - Chuyên đề hàm số',
-      teacher: 'Thầy Nguyễn Văn A',
-      announcement: 'Bài tập tuần 5 đã được đăng. Hạn nộp: 25/11/2025',
-      time: '30 phút trước',
-      priority: 'high' as const,
-      type: 'exercise' as const,
-      icon: 'create-outline' as const,
-    },
-    {
-      id: 2,
-      className: 'Vật lý 11',
-      teacher: 'Cô Trần Thị B',
-      announcement: 'Bài kiểm tra giữa kỳ sẽ diễn ra vào 20/11/2025',
-      time: '1 giờ trước',
-      priority: 'high' as const,
-      type: 'quiz' as const,
-      icon: 'stats-chart-outline' as const,
-    },
-    {
-      id: 3,
-      className: 'Hóa học 10',
-      teacher: 'Thầy Lê Văn C',
-      announcement: 'Lớp học ngày mai sẽ bắt đầu lúc 2:00 PM',
-      time: '2 giờ trước',
-      priority: 'medium' as const,
-      type: 'class' as const,
-      icon: 'home-outline' as const,
-    },
-    {
-      id: 4,
-      className: 'Toán 10 - Cơ bản',
-      teacher: 'Cô Phạm Thị D',
-      announcement: 'Bài giảng mới về phương trình đã được cập nhật',
-      time: '3 giờ trước',
-      priority: 'low' as const,
-      type: 'lecture' as const,
-      icon: 'book-outline' as const,
-    },
-  ];
-
-  const getPriorityColor = (priority: 'high' | 'medium' | 'low') => {
-    switch (priority) {
-      case 'high':
-        return '#EF4444';
-      case 'medium':
-        return '#F59E0B';
-      case 'low':
-        return '#6B7280';
-      default:
-        return '#6B7280';
-    }
-  };
-
-  const getPriorityLabel = (priority: 'high' | 'medium' | 'low') => {
-    switch (priority) {
-      case 'high':
-        return 'Quan trọng';
-      case 'medium':
-        return 'Bình thường';
-      case 'low':
-        return 'Thông tin';
-      default:
-        return 'Thông tin';
-    }
+  // Tính tiến độ theo lớp (số bài tập đã nộp / tổng bài tập)
+  const getClassProgress = (classroom: ClassroomResponse) => {
+    // Note: ExerciseSubmissionResponse doesn't have classroomId, so we can't filter by classroom
+    // For now, just show total submissions divided by number of classes
+    const submissionsPerClass = Math.floor(submissions.length / (classrooms.length || 1));
+    // Giả sử mỗi lớp có khoảng 10-15 bài (có thể điều chỉnh)
+    const estimatedTotal = 12;
+    const completed = submissionsPerClass;
+    const percentage = Math.min((completed / estimatedTotal) * 100, 100);
+    return { completed, total: estimatedTotal, percentage };
   };
 
   return (
@@ -163,6 +189,9 @@ export default function DashboardScreen() {
       <ScrollView 
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         {/* Header */}
         <View style={styles.header}>
@@ -176,7 +205,7 @@ export default function DashboardScreen() {
 
         {/* Statistics Cards */}
         <View style={styles.statsContainer}>
-          {stats.map((stat, index) => (
+          {statsCards.map((stat, index) => (
             <TouchableOpacity
               key={index}
               style={[styles.statCard, { backgroundColor: stat.bgColor }]}
@@ -196,7 +225,7 @@ export default function DashboardScreen() {
                   {stat.description}
                 </Text>
                 <View style={styles.statTrend}>
-                  <Ionicons name="trending-up" size={12} color={stat.color} />
+                  <Ionicons name="information-circle" size={12} color={stat.color} />
                   <Text style={[styles.statTrendText, { color: stat.color }]}>
                     {stat.trend}
                   </Text>
@@ -207,104 +236,111 @@ export default function DashboardScreen() {
         </View>
 
         {/* Progress Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="analytics-outline" size={24} color="#3B82F6" />
-            <Text style={styles.sectionTitle}>Tiến độ học tập</Text>
-          </View>
-          <View style={styles.card}>
-            {progressByClass.map((item, index) => (
-              <View key={index} style={styles.progressItem}>
-                <View style={styles.progressHeader}>
-                  <Text style={styles.progressClassName} numberOfLines={1}>
-                    {item.className}
-                  </Text>
-                  <Text style={styles.progressStats}>
-                    {item.completed}/{item.total} bài ({Math.round(item.percentage)}%)
-                  </Text>
-                </View>
-                <View style={styles.progressBarContainer}>
-                  <View
-                    style={[
-                      styles.progressBar,
-                      {
-                        width: `${item.percentage}%`,
-                        backgroundColor: item.color,
-                      },
-                    ]}
-                  />
-                </View>
-              </View>
-            ))}
-            <View style={styles.totalProgress}>
-              <Text style={styles.totalProgressLabel}>Tổng tiến độ</Text>
-              <Text style={styles.totalProgressValue}>
-                {Math.round(
-                  progressByClass.reduce((sum, item) => sum + item.percentage, 0) /
-                    progressByClass.length
-                )}%
-              </Text>
+        {classrooms.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="analytics-outline" size={24} color="#3B82F6" />
+              <Text style={styles.sectionTitle}>Tiến độ học tập</Text>
             </View>
-          </View>
-        </View>
-
-        {/* Notifications Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="notifications-outline" size={24} color="#3B82F6" />
-            <Text style={styles.sectionTitle}>Thông báo mới</Text>
-            <TouchableOpacity style={styles.viewAllButton}>
-              <Text style={styles.viewAllText}>Xem tất cả</Text>
-              <Ionicons name="chevron-forward" size={16} color="#3B82F6" />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.notificationsContainer}>
-            {notifications.map((notification) => (
-              <TouchableOpacity
-                key={notification.id}
-                style={styles.notificationCard}
-                activeOpacity={0.7}
-              >
-                <View style={styles.notificationIcon}>
-                  <Ionicons
-                    name={notification.icon}
-                    size={24}
-                    color={getPriorityColor(notification.priority)}
-                  />
-                </View>
-                <View style={styles.notificationContent}>
-                  <View style={styles.notificationHeader}>
-                    <Text style={styles.notificationClassName} numberOfLines={1}>
-                      {notification.className}
-                    </Text>
-                    <View
-                      style={[
-                        styles.priorityBadge,
-                        { backgroundColor: getPriorityColor(notification.priority) + '20' },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.priorityText,
-                          { color: getPriorityColor(notification.priority) },
-                        ]}
-                      >
-                        {getPriorityLabel(notification.priority)}
+            <View style={styles.card}>
+              {classrooms.slice(0, 5).map((classroom, index) => {
+                const progress = getClassProgress(classroom);
+                const colors = ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EC4899'];
+                const color = colors[index % colors.length];
+                
+                return (
+                  <View key={classroom.id} style={styles.progressItem}>
+                    <View style={styles.progressHeader}>
+                      <Text style={styles.progressClassName} numberOfLines={1}>
+                        {classroom.name}
+                      </Text>
+                      <Text style={styles.progressStats}>
+                        {progress.completed}/{progress.total} bài ({Math.round(progress.percentage)}%)
                       </Text>
                     </View>
+                    <View style={styles.progressBarContainer}>
+                      <View
+                        style={[
+                          styles.progressBar,
+                          {
+                            width: `${progress.percentage}%`,
+                            backgroundColor: color,
+                          },
+                        ]}
+                      />
+                    </View>
                   </View>
-                  <Text style={styles.notificationTeacher}>
-                    {notification.teacher}
+                );
+              })}
+              {classrooms.length > 0 && (
+                <View style={styles.totalProgress}>
+                  <Text style={styles.totalProgressLabel}>Tổng số lớp</Text>
+                  <Text style={styles.totalProgressValue}>
+                    {classrooms.length}
                   </Text>
-                  <Text style={styles.notificationAnnouncement} numberOfLines={2}>
-                    {notification.announcement}
-                  </Text>
-                  <Text style={styles.notificationTime}>{notification.time}</Text>
                 </View>
-              </TouchableOpacity>
-            ))}
+              )}
+            </View>
           </View>
-        </View>
+        )}
+
+        {/* Recent Payments Section */}
+        {payments.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="cash-outline" size={24} color="#3B82F6" />
+              <Text style={styles.sectionTitle}>Giao dịch gần đây</Text>
+            </View>
+            <View style={styles.paymentsContainer}>
+              {payments.slice(0, 3).map((payment) => (
+                <View key={payment.transactionId} style={styles.paymentCard}>
+                  <View style={styles.paymentIcon}>
+                    <Ionicons
+                      name={payment.status === 'paid' ? 'checkmark-circle' : 'time-outline'}
+                      size={24}
+                      color={payment.status === 'paid' ? '#10B981' : '#F59E0B'}
+                    />
+                  </View>
+                  <View style={styles.paymentContent}>
+                    <Text style={styles.paymentOrder}>Mã: {payment.orderCode}</Text>
+                    <Text style={styles.paymentAmount}>
+                      {payment.amount.toLocaleString('vi-VN')} VNĐ
+                    </Text>
+                    <Text style={styles.paymentDate}>
+                      {new Date(payment.createdAt).toLocaleDateString('vi-VN')}
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.paymentStatusBadge,
+                      { backgroundColor: payment.status === 'paid' ? '#10B98120' : '#F59E0B20' },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.paymentStatusText,
+                        { color: payment.status === 'paid' ? '#10B981' : '#F59E0B' },
+                      ]}
+                    >
+                      {payment.status === 'paid' ? 'Đã thanh toán' : 'Chờ xử lý'}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Empty State */}
+        {classrooms.length === 0 && (
+          <View style={styles.emptyState}>
+            <Ionicons name="school-outline" size={64} color="#9CA3AF" />
+            <Text style={styles.emptyStateText}>Chưa tham gia lớp học nào</Text>
+            <Text style={styles.emptyStateSubtext}>
+              Hãy tìm và đăng ký các lớp học phù hợp với bạn
+            </Text>
+          </View>
+        )}
 
         {/* Bottom Spacing */}
         <View style={styles.bottomSpacing} />
@@ -317,6 +353,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#6B7280',
   },
   scrollView: {
     flex: 1,
@@ -400,16 +446,6 @@ const styles = StyleSheet.create({
     color: '#111827',
     flex: 1,
   },
-  viewAllButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  viewAllText: {
-    fontSize: 14,
-    color: '#3B82F6',
-    fontWeight: '500',
-  },
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
@@ -469,10 +505,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#10B981',
   },
-  notificationsContainer: {
+  paymentsContainer: {
     gap: 12,
   },
-  notificationCard: {
+  paymentCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
@@ -485,8 +521,9 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     borderWidth: 1,
     borderColor: '#E5E7EB',
+    alignItems: 'center',
   },
-  notificationIcon: {
+  paymentIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -494,44 +531,49 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  notificationContent: {
+  paymentContent: {
     flex: 1,
-    gap: 4,
+    gap: 2,
   },
-  notificationHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: 8,
-  },
-  notificationClassName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
-    flex: 1,
-  },
-  priorityBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
-  },
-  priorityText: {
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  notificationTeacher: {
+  paymentOrder: {
     fontSize: 12,
     color: '#6B7280',
   },
-  notificationAnnouncement: {
-    fontSize: 13,
-    color: '#374151',
-    lineHeight: 18,
+  paymentAmount: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
   },
-  notificationTime: {
+  paymentDate: {
     fontSize: 11,
     color: '#9CA3AF',
-    marginTop: 4,
+  },
+  paymentStatusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  paymentStatusText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 32,
+  },
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#374151',
+    marginTop: 16,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 8,
+    textAlign: 'center',
   },
   bottomSpacing: {
     height: 24,

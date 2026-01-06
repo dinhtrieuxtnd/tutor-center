@@ -10,13 +10,15 @@ import {
   Alert,
   TextInput,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {
   classroomService,
   ClassroomResponse,
   ClassroomQueryRequest
 } from '../../services/classroomService';
+import { paymentService, PaymentResponse } from '../../services/paymentService';
+import { joinRequestService, JoinRequestResponse } from '../../services/joinRequestService';
 import { useAuth } from '../../contexts/AuthContext';
 
 type TabType = 'enrolled' | 'all';
@@ -36,6 +38,12 @@ export default function ClassroomsScreen() {
 
   // Enrolled classrooms data
   const [enrolledClassrooms, setEnrolledClassrooms] = useState<ClassroomResponse[]>([]);
+
+  // Payment data for status checking
+  const [payments, setPayments] = useState<PaymentResponse[]>([]);
+
+  // Join request data for pending status
+  const [joinRequests, setJoinRequests] = useState<JoinRequestResponse[]>([]);
 
   // UI states
   const [isLoadingAll, setIsLoadingAll] = useState(true);
@@ -65,6 +73,10 @@ export default function ClassroomsScreen() {
 
       const response = await classroomService.query(params);
       console.log('📚 All classrooms response:', JSON.stringify(response, null, 2));
+      
+      // Don't modify hasPaid - payment API doesn't have classroomId
+      // Backend should return correct hasPaid status
+      
       setAllClassrooms(response.items);
       setTotalClassrooms(response.total);
       setCurrentPage(page);
@@ -74,16 +86,33 @@ export default function ClassroomsScreen() {
     } finally {
       setIsLoadingAll(false);
     }
-  }, [searchQuery, pageSize]);
+  }, [searchQuery, pageSize, payments]);
 
   const fetchEnrolledClassrooms = useCallback(async (showLoader = true) => {
     try {
       if (showLoader) {
         setIsLoadingEnrolled(true);
       }
-      const data = await classroomService.getMyEnrollments();
-      console.log('📚 Enrolled classrooms:', JSON.stringify(data, null, 2));
-      setEnrolledClassrooms(data);
+      // Fetch enrollments, payments, and join requests in parallel
+      const [enrolledData, paymentsData, joinRequestsData] = await Promise.all([
+        classroomService.getMyEnrollments(),
+        paymentService.getMyPayments(),
+        joinRequestService.getMy()
+      ]);
+      
+      console.log('📚 Enrolled classrooms:', JSON.stringify(enrolledData, null, 2));
+      console.log('💰 Payments loaded:', paymentsData.length);
+      console.log('💰 Payments detail:', JSON.stringify(paymentsData, null, 2));
+      console.log('📩 Join requests loaded:', joinRequestsData.length);
+      console.log('📩 Join requests detail:', JSON.stringify(joinRequestsData, null, 2));
+      
+      // NOTE: Payment API doesn't return classroomId, so we can't map payments to specific classrooms
+      // We rely on backend's hasPaid field in ClassroomStudents instead
+      // Don't modify hasPaid here - use what backend returns
+      
+      setEnrolledClassrooms(enrolledData);
+      setPayments(paymentsData);
+      setJoinRequests(joinRequestsData);
     } catch (error: any) {
       console.error('Error fetching enrolled classrooms:', error);
       Alert.alert('Lỗi', error.message || 'Không thể tải lớp học đã tham gia');
@@ -104,6 +133,16 @@ export default function ClassroomsScreen() {
     fetchAllData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Refresh data when screen comes into focus (e.g., after creating join request)
+  useFocusEffect(
+    useCallback(() => {
+      console.log('🔄 ClassroomsScreen focused - refreshing data');
+      fetchEnrolledClassrooms(false);
+      fetchAllClassrooms(false, currentPage);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+  );
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -171,9 +210,22 @@ export default function ClassroomsScreen() {
     return enrolledClassrooms.some(c => getClassroomId(c) === classroomId);
   };
 
+  const hasJoinRequest = (classroomId: number) => {
+    const hasPending = joinRequests.some(jr => {
+      const jrClassroomId = jr.classroomId || jr.classRoomId; // Backend uses classRoomId with capital R
+      const jrStatus = jr.status.toLowerCase(); // Normalize status to lowercase
+      const match = jrClassroomId === classroomId && jrStatus === 'pending';
+      console.log(`🔍 Check JR: classroomId=${jrClassroomId}, status=${jrStatus}, match=${match}`);
+      return match;
+    });
+    console.log(`🎯 Classroom ${classroomId} has pending request: ${hasPending}`);
+    return hasPending;
+  };
+
   const renderClassroomItem = ({ item }: { item: ClassroomResponse }) => {
     const classroomId = getClassroomId(item);
     const enrolled = classroomId ? isEnrolled(classroomId) : false;
+    const hasPendingRequest = classroomId ? hasJoinRequest(classroomId) : false;
     const tutorName = item.tutorName || item.tutor?.fullName || 'Unknown';
 
     return (
@@ -220,7 +272,12 @@ export default function ClassroomsScreen() {
                 <Ionicons name="checkmark-circle" size={16} color="#34C759" />
                 <Text style={styles.enrolledStatusText}>Đã tham gia</Text>
               </View>
-              {(item.hasPaid === false || item.hasPaid === null) && (
+              {item.hasPaid === true ? (
+                <View style={styles.paidStatusBadge}>
+                  <Ionicons name="checkmark-circle" size={16} color="#34C759" />
+                  <Text style={styles.paidStatusText}>Đã thanh toán</Text>
+                </View>
+              ) : (
                 <View style={styles.unpaidStatusBadge}>
                   <Ionicons name="alert-circle" size={16} color="#FF3B30" />
                   <Text style={styles.unpaidStatusText}>Chưa thanh toán</Text>
@@ -229,22 +286,31 @@ export default function ClassroomsScreen() {
             </>
           ) : (
             <>
-              <View style={styles.notEnrolledBadge}>
-                <Ionicons name="alert-circle" size={16} color="#FF9500" />
-                <Text style={styles.notEnrolledText}>Chưa tham gia</Text>
-              </View>
-              {/* Only show join button in 'all' tab, not in 'enrolled' tab */}
-              {activeTab === 'all' && (
-                <TouchableOpacity
-                  style={styles.joinClassButton}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    handleJoinClassroom(item);
-                  }}
-                >
-                  <Ionicons name="add-circle" size={16} color="#fff" />
-                  <Text style={styles.joinClassButtonText}>Tham gia</Text>
-                </TouchableOpacity>
+              {hasPendingRequest ? (
+                <View style={styles.pendingRequestBadge}>
+                  <Ionicons name="time" size={16} color="#FF9500" />
+                  <Text style={styles.pendingRequestText}>Đã gửi yêu cầu</Text>
+                </View>
+              ) : (
+                <>
+                  <View style={styles.notEnrolledBadge}>
+                    <Ionicons name="alert-circle" size={16} color="#FF9500" />
+                    <Text style={styles.notEnrolledText}>Chưa tham gia</Text>
+                  </View>
+                  {/* Only show join button in 'all' tab, not in 'enrolled' tab */}
+                  {activeTab === 'all' && (
+                    <TouchableOpacity
+                      style={styles.joinClassButton}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleJoinClassroom(item);
+                      }}
+                    >
+                      <Ionicons name="add-circle" size={16} color="#fff" />
+                      <Text style={styles.joinClassButtonText}>Tham gia</Text>
+                    </TouchableOpacity>
+                  )}
+                </>
               )}
             </>
           )}
@@ -595,6 +661,20 @@ const styles = StyleSheet.create({
     color: '#34C759',
     fontWeight: '600',
   },
+  paidStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E3F2FD',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 4,
+  },
+  paidStatusText: {
+    fontSize: 12,
+    color: '#2196F3',
+    fontWeight: '600',
+  },
   notEnrolledBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -605,6 +685,20 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   notEnrolledText: {
+    fontSize: 12,
+    color: '#FF9500',
+    fontWeight: '600',
+  },
+  pendingRequestBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF3E0',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 4,
+  },
+  pendingRequestText: {
     fontSize: 12,
     color: '#FF9500',
     fontWeight: '600',

@@ -134,17 +134,54 @@ export default function ClassroomDetailScreen() {
       return;
     }
 
+    console.log('🔍 Checking join requests for classroom:', classroomId);
+    console.log('📋 My requests:', myRequests);
+
+    // Check if already has pending join request for this classroom
+    // Backend uses classRoomId (capital R) and may return status in uppercase
+    const hasPendingRequest = myRequests.some(
+      req => {
+        const reqClassroomId = req.classroomId || req.classRoomId;
+        const reqStatus = req.status.toLowerCase();
+        return reqClassroomId === classroomId && reqStatus === 'pending';
+      }
+    );
+    
+    console.log('✅ Has pending request:', hasPendingRequest);
+
+    if (hasPendingRequest) {
+      Alert.alert('Thông báo', 'Bạn đã gửi yêu cầu tham gia lớp học này rồi. Vui lòng chờ giáo viên duyệt.');
+      return;
+    }
+
     setIsJoining(true);
     try {
       await joinRequestService.create({
         classRoomId: classroomId,
       });
 
-      Alert.alert('Thành công', 'Đã gửi yêu cầu tham gia. Vui lòng chờ giáo viên duyệt.');
-      fetchClassroomDetail(false);
+      // Refresh to update UI
+      await fetchClassroomDetail(false);
+      
+      Alert.alert(
+        'Thành công', 
+        'Đã gửi yêu cầu tham gia. Vui lòng chờ giáo viên duyệt.',
+        [
+          {
+            text: 'OK',
+            onPress: () => router.back() // Navigate back to refresh classrooms list
+          }
+        ]
+      );
     } catch (error: any) {
       console.error('Error creating join request:', error);
-      Alert.alert('Lỗi', error.message || 'Không thể gửi yêu cầu tham gia');
+      // Check if error message contains the duplicate request message from backend
+      const errorMsg = error.message || 'Không thể gửi yêu cầu tham gia';
+      if (errorMsg.includes('đã gửi yêu cầu') || errorMsg.includes('đang chờ xử lý')) {
+        Alert.alert('Thông báo', errorMsg);
+      } else {
+        Alert.alert('Lỗi', errorMsg);
+      }
     } finally {
       setIsJoining(false);
     }
@@ -188,16 +225,21 @@ export default function ClassroomDetailScreen() {
       return { type: 'enrolled' as const, text: 'Đã tham gia', color: '#34C759' };
     }
 
-    const pendingRequest = myRequests.find(
-      r => r.classroomId === currentClassroomId && r.status === 'pending'
-    );
+    // Backend uses classRoomId (capital R) and may return uppercase status
+    const pendingRequest = myRequests.find(r => {
+      const rClassroomId = r.classroomId || r.classRoomId;
+      const rStatus = r.status.toLowerCase();
+      return rClassroomId === currentClassroomId && rStatus === 'pending';
+    });
     if (pendingRequest) {
       return { type: 'pending' as const, text: 'Đang chờ duyệt', color: '#FF9500' };
     }
 
-    const rejectedRequest = myRequests.find(
-      r => r.classroomId === currentClassroomId && r.status === 'rejected'
-    );
+    const rejectedRequest = myRequests.find(r => {
+      const rClassroomId = r.classroomId || r.classRoomId;
+      const rStatus = r.status.toLowerCase();
+      return rClassroomId === currentClassroomId && rStatus === 'rejected';
+    });
     if (rejectedRequest) {
       return { type: 'rejected' as const, text: 'Đã bị từ chối', color: '#FF3B30' };
     }

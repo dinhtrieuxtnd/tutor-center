@@ -12,6 +12,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { quizService, QuizAttemptDetailResponse } from '../services/quizService';
+import LatexMarkdownViewer from '../components/LatexMarkdownViewer';
 
 export default function QuizResultScreen() {
   const { lessonId } = useLocalSearchParams<{ lessonId: string }>();
@@ -114,6 +115,11 @@ export default function QuizResultScreen() {
   const scoreValue = calculateScore();
   const scoreColor = getScoreColor(scoreValue);
 
+  // Check display permissions
+  const showScore = attemptDetail.showQuizScore;
+  const showAnswers = attemptDetail.showQuizAnswers;
+  const showNothing = !showScore && !showAnswers;
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -128,7 +134,19 @@ export default function QuizResultScreen() {
       </View>
 
       <ScrollView style={styles.content}>
-        {/* Score Card */}
+        {/* Show completion message only if nothing is allowed */}
+        {showNothing && (
+          <View style={styles.completionCard}>
+            <Ionicons name="checkmark-circle" size={64} color="#10B981" />
+            <Text style={styles.completionTitle}>Bạn đã hoàn thành bài thi</Text>
+            <Text style={styles.completionText}>
+              Giáo viên sẽ công bố kết quả sau
+            </Text>
+          </View>
+        )}
+
+        {/* Score Card - only show if showScore is true */}
+        {showScore && (
         <View style={styles.scoreCard}>
           <View style={styles.scoreHeader}>
             <Ionicons name="trophy" size={32} color={scoreColor} />
@@ -170,11 +188,12 @@ export default function QuizResultScreen() {
             </View>
           </View>
         </View>
+        )}
 
         {/* Attempt Info */}
         <View style={styles.infoCard}>
           <View style={styles.infoRow}>
-            <View style={styles.infoItem}>
+            {/* <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Trạng thái</Text>
               <View style={[
                 styles.statusBadge,
@@ -187,7 +206,7 @@ export default function QuizResultScreen() {
                    'Đang làm'}
                 </Text>
               </View>
-            </View>
+            </View> */}
           </View>
 
           <View style={styles.infoRow}>
@@ -207,7 +226,8 @@ export default function QuizResultScreen() {
           )}
         </View>
 
-        {/* Answer Details */}
+        {/* Answer Details - only show if showAnswers is true */}
+        {showAnswers && (
         <View style={styles.answersSection}>
           <Text style={styles.sectionTitle}>Chi tiết câu trả lời</Text>
           
@@ -236,29 +256,32 @@ export default function QuizResultScreen() {
                 </View>
               </View>
 
-              <Text style={styles.questionText}>{answer.questionContent}</Text>
+              <View style={styles.questionTextContainer}>
+                <LatexMarkdownViewer content={answer.questionContent} />
+              </View>
 
               <View style={styles.answerContent}>
                 <Text style={styles.answerLabel}>Câu trả lời của bạn:</Text>
-                <Text style={[
-                  styles.answerText,
+                <View style={[
+                  styles.answerTextContainer,
                   answer.isCorrect ? styles.answerTextCorrect : styles.answerTextIncorrect
                 ]}>
-                  {answer.selectedOptionContent}
-                </Text>
+                  <LatexMarkdownViewer content={answer.selectedOptionContent} />
+                </View>
               </View>
 
               {!answer.isCorrect && answer.correctOptionContent && (
                 <View style={styles.answerContent}>
                   <Text style={styles.answerLabel}>Đáp án đúng:</Text>
-                  <Text style={[styles.answerText, styles.answerTextCorrect]}>
-                    {answer.correctOptionContent}
-                  </Text>
+                  <View style={[styles.answerTextContainer, styles.answerTextCorrect]}>
+                    <LatexMarkdownViewer content={answer.correctOptionContent} />
+                  </View>
                 </View>
               )}
             </View>
           ))}
         </View>
+        )}
 
         {/* Bottom spacing */}
         <View style={{ height: 24 }} />
@@ -531,6 +554,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  questionTextContainer: {
+    marginBottom: 12,
+  },
   questionText: {
     fontSize: 16,
     lineHeight: 24,
@@ -544,6 +570,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
   },
+  answerTextContainer: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
   answerText: {
     fontSize: 15,
     fontWeight: '500',
@@ -553,11 +584,39 @@ const styles = StyleSheet.create({
   },
   answerTextCorrect: {
     backgroundColor: '#D1FAE5',
-    color: '#065F46',
   },
   answerTextIncorrect: {
     backgroundColor: '#FEE2E2',
-    color: '#991B1B',
+  },
+  completionCard: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 32,
+    marginBottom: 16,
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  completionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#10B981',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  completionText: {
+    fontSize: 15,
+    color: '#6B7280',
+    textAlign: 'center',
   },
   footer: {
     backgroundColor: 'white',
