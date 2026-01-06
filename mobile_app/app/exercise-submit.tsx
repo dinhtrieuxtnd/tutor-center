@@ -8,10 +8,12 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  Linking,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
 import { exerciseSubmissionService, ExerciseSubmissionResponse } from '../services/exerciseSubmissionService';
 import { lessonService, LessonResponse } from '../services/lessonService';
 import { mediaService } from '../services/mediaService';
@@ -34,6 +36,7 @@ export default function ExerciseSubmitScreen() {
     mimeType: string;
   } | null>(null);
   const [submittedFileUrl, setSubmittedFileUrl] = useState<string | null>(null);
+  const [downloadingExerciseFile, setDownloadingExerciseFile] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -114,6 +117,54 @@ export default function ExerciseSubmitScreen() {
       });
     } catch (error: any) {
       Alert.alert('Lỗi', 'Không thể chọn file: ' + error.message);
+    }
+  };
+
+  const handleDownloadExerciseFile = async () => {
+    if (!lesson?.exercise?.attachMediaUrl) {
+      Alert.alert('Lỗi', 'Không tìm thấy file đề bài');
+      return;
+    }
+
+    try {
+      setDownloadingExerciseFile(true);
+
+      const filename = `${lesson.exercise.title || 'Exercise'}.pdf`;
+      const fileUri = FileSystem.cacheDirectory + filename;
+
+      console.log('📥 Downloading exercise file from:', lesson.exercise.attachMediaUrl);
+      console.log('📁 Saving to:', fileUri);
+
+      // Download the file
+      const downloadResult = await FileSystem.downloadAsync(
+        lesson.exercise.attachMediaUrl,
+        fileUri
+      );
+
+      if (downloadResult.status !== 200) {
+        throw new Error('Tải file thất bại');
+      }
+
+      // Check if file exists
+      const fileInfo = await FileSystem.getInfoAsync(fileUri);
+      if (!fileInfo.exists) {
+        throw new Error('File không tồn tại sau khi tải');
+      }
+
+      console.log('✅ File downloaded successfully:', fileUri);
+
+      // Open the file with default PDF viewer
+      await Linking.openURL(fileUri);
+    } catch (error: any) {
+      console.error('❌ Error downloading file:', error);
+      // Fallback: try to open the URL directly
+      try {
+        await Linking.openURL(lesson.exercise.attachMediaUrl);
+      } catch (linkError) {
+        Alert.alert('Lỗi', 'Không thể tải file: ' + error.message);
+      }
+    } finally {
+      setDownloadingExerciseFile(false);
     }
   };
 
@@ -292,6 +343,24 @@ export default function ExerciseSubmitScreen() {
                   Hạn nộp: {formatDate(lesson.exerciseDueAt)}
                 </Text>
               </View>
+            )}
+            
+            {/* Exercise Attachment */}
+            {lesson.exercise?.attachMediaUrl && (
+              <TouchableOpacity 
+                style={styles.attachmentButton}
+                onPress={handleDownloadExerciseFile}
+                disabled={downloadingExerciseFile}
+              >
+                {downloadingExerciseFile ? (
+                  <ActivityIndicator size="small" color="#007AFF" />
+                ) : (
+                  <Ionicons name="download-outline" size={18} color="#007AFF" />
+                )}
+                <Text style={styles.attachmentText}>
+                  {downloadingExerciseFile ? 'Đang tải...' : 'Tải đề bài'}
+                </Text>
+              </TouchableOpacity>
             )}
           </View>
         </View>
@@ -515,6 +584,23 @@ const styles = StyleSheet.create({
     color: '#FF9500',
     marginLeft: 4,
     fontWeight: '500',
+  },
+  attachmentButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: '#EBF5FF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+    gap: 8,
+  },
+  attachmentText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#007AFF',
   },
   submissionSection: {
     backgroundColor: '#fff',

@@ -8,9 +8,12 @@ import {
   Alert,
   TouchableOpacity,
   RefreshControl,
+  Linking,
+  Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as FileSystem from 'expo-file-system';
 import { lessonService, LessonResponse } from '../services/lessonService';
 import { mediaService } from '../services/mediaService';
 import MarkdownViewer from '../components/MarkdownViewer';
@@ -29,6 +32,7 @@ export default function LectureDetailScreen() {
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<string | null>(null);
   const [showPDF, setShowPDF] = useState(false);
+  const [isDownloadingMedia, setIsDownloadingMedia] = useState(false);
 
   const lecture = lectureId && lesson?.lecture?.children
     ? lesson.lecture.children.find((child) => child.lectureId === Number(lectureId))
@@ -123,6 +127,54 @@ export default function LectureDetailScreen() {
   const handleRefresh = () => {
     setIsRefreshing(true);
     fetchLessonDetail(false);
+  };
+
+  const handleDownloadMedia = async () => {
+    if (!mediaUrl) {
+      Alert.alert('Lỗi', 'Không tìm thấy tài liệu');
+      return;
+    }
+
+    try {
+      setIsDownloadingMedia(true);
+
+      const filename = `${lecture?.title || 'Lecture'}.pdf`;
+      const fileUri = FileSystem.cacheDirectory + filename;
+
+      console.log('📥 Downloading lecture media from:', mediaUrl);
+      console.log('📁 Saving to:', fileUri);
+
+      // Download the file
+      const downloadResult = await FileSystem.downloadAsync(
+        mediaUrl,
+        fileUri
+      );
+
+      if (downloadResult.status !== 200) {
+        throw new Error('Tải file thất bại');
+      }
+
+      // Check if file exists
+      const fileInfo = await FileSystem.getInfoAsync(fileUri);
+      if (!fileInfo.exists) {
+        throw new Error('File không tồn tại sau khi tải');
+      }
+
+      console.log('✅ File downloaded successfully:', fileUri);
+
+      // Open the file with default PDF viewer
+      await Linking.openURL(fileUri);
+    } catch (error: any) {
+      console.error('❌ Error downloading file:', error);
+      // Fallback: try to open the URL directly
+      try {
+        await Linking.openURL(mediaUrl);
+      } catch (linkError) {
+        Alert.alert('Lỗi', 'Không thể tải file: ' + error.message);
+      }
+    } finally {
+      setIsDownloadingMedia(false);
+    }
   };
 
   const formatDate = (dateString?: string) => {
@@ -315,6 +367,24 @@ export default function LectureDetailScreen() {
           </View>
         </View>
 
+        {/* Download Media Button */}
+        {mediaUrl && (
+          <TouchableOpacity 
+            style={styles.downloadButton}
+            onPress={handleDownloadMedia}
+            disabled={isDownloadingMedia}
+          >
+            {isDownloadingMedia ? (
+              <ActivityIndicator size="small" color="#007AFF" />
+            ) : (
+              <Ionicons name="download-outline" size={18} color="#007AFF" />
+            )}
+            <Text style={styles.downloadButtonText}>
+              {isDownloadingMedia ? 'Đang tải...' : 'Tải tài liệu'}
+            </Text>
+          </TouchableOpacity>
+        )}
+
         {/* Content Section */}
         <View style={styles.contentSection}>
           <Text style={styles.sectionTitle}>Nội dung bài giảng</Text>
@@ -474,6 +544,23 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#6B7280',
     marginLeft: 6,
+  },
+  downloadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: '#EBF5FF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+    gap: 8,
+  },
+  downloadButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#007AFF',
   },
   contentSection: {
     marginBottom: 16,

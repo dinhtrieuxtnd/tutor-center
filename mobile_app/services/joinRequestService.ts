@@ -2,10 +2,12 @@ import config from '../config';
 
 // Types
 export interface JoinRequestResponse {
-  joinRequestId: number;
-  classroomId: number;
+  joinRequestId?: number;
+  id?: number;
+  classroomId?: number;
+  classRoomId?: number; // Backend uses classRoomId with capital R
   studentId: number;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'APPROVED' | 'PENDING' | 'REJECTED'; // Backend may return uppercase
   note?: string | null;
   requestedAt: string;
   handledBy?: number | null;
@@ -62,7 +64,8 @@ class JoinRequestService {
       if (contentType && contentType.includes('application/json')) {
         try {
           const errorData = await response.json();
-          errorMessage = errorData.message || errorData.title || errorMessage;
+          // Backend returns ProblemDetails with 'detail', 'title', or 'message'
+          errorMessage = errorData.detail || errorData.message || errorData.title || errorMessage;
         } catch {
           // Ignore JSON parse error, use default message
         }
@@ -106,7 +109,7 @@ class JoinRequestService {
   // Student: Get my join requests
   async getMy(): Promise<JoinRequestResponse[]> {
     const headers = await this.getAuthHeaders();
-    const url = `${config.API_BASE_URL}/JoinRequests/my`;
+    const url = `${config.API_BASE_URL}/JoinRequest/my-requests`;
 
     const response = await this.fetchWithTimeout(url, {
       method: 'GET',

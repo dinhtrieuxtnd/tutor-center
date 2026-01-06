@@ -476,7 +476,7 @@ export default function ProfileScreen() {
           {renderTabButton('stats', 'bar-chart-outline', 'Thống kê')}
           {renderTabButton('payment-history', 'wallet-outline', 'Lịch sử thanh toán')}
           {renderTabButton('security', 'shield-checkmark-outline', 'Bảo mật')}
-          {renderTabButton('notifications', 'notifications-outline', 'Thông báo')}
+          
         </ScrollView>
       </View>
 
