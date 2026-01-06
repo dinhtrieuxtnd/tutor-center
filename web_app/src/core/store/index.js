@@ -20,6 +20,7 @@ import optionReducer from '../../features/quiz/store/optionSlice';
 import quizAttemptReducer from '../../features/quiz/store/quizAttemptSlice';
 import quizAnswerReducer from '../../features/quiz/store/quizAnswerSlice';
 import paymentReducer from '../../features/payment/store/paymentSlice';
+import joinRequestReducer from '../../features/joinRequest/store/joinRequestSlice';
 import aiDocumentReducer from '../../features/ai/store/aiDocumentSlice';
 import aiQuestionReducer from '../../features/ai/store/aiQuestionSlice';
 
@@ -46,6 +47,7 @@ export const store = configureStore({
     quizAttempt: quizAttemptReducer,
     quizAnswer: quizAnswerReducer,
     payment: paymentReducer,
+    joinRequest: joinRequestReducer,
     aiDocument: aiDocumentReducer,
     aiQuestion: aiQuestionReducer,
   },

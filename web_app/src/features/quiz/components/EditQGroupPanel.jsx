@@ -75,8 +75,8 @@ export const EditQGroupPanel = ({ isOpen, onClose, onSubmit, isLoading, group })
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="flex-1 flex flex-col">
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
                         <Input
                             label="Tiêu đề nhóm"
                             name="title"

@@ -1,8 +1,19 @@
-import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Upload, Trash2, Image as ImageIcon } from 'lucide-react';
+import { useAppDispatch, useAppSelector } from '../../../core/store/hooks';
 import { Button, Input } from '../../../shared/components/ui';
+import { uploadMediaAsync } from '../../media/store/mediaSlice';
+import { 
+    attachMediaToQuestionAsync, 
+    detachMediaFromQuestionAsync,
+    getQuestionMediasAsync
+} from '../store/questionSlice';
 
 export const EditQuestionPanel = ({ isOpen, onClose, onSubmit, isLoading, question }) => {
+    const dispatch = useAppDispatch();
+    const { questionMedias, mediaLoading } = useAppSelector(state => state.question);
+    const fileInputRef = useRef(null);
+    
     const [formData, setFormData] = useState({
         content: '',
         explanation: '',
@@ -11,6 +22,7 @@ export const EditQuestionPanel = ({ isOpen, onClose, onSubmit, isLoading, questi
         orderIndex: 0,
     });
     const [errors, setErrors] = useState({});
+    const [uploading, setUploading] = useState(false);
 
     useEffect(() => {
         if (question) {
@@ -21,8 +33,13 @@ export const EditQuestionPanel = ({ isOpen, onClose, onSubmit, isLoading, questi
                 points: question.points || 1,
                 orderIndex: question.orderIndex || 0,
             });
+            
+            // Load existing medias
+            if (question.id) {
+                dispatch(getQuestionMediasAsync(question.id));
+            }
         }
-    }, [question]);
+    }, [question, dispatch]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -66,6 +83,65 @@ export const EditQuestionPanel = ({ isOpen, onClose, onSubmit, isLoading, questi
         onClose();
     };
 
+    const handleFileSelect = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file || !question?.id) return;
+
+        if (file.size > 50 * 1024 * 1024) {
+            setErrors(prev => ({ ...prev, media: 'Kích thước file không được vượt quá 50MB' }));
+            return;
+        }
+
+        try {
+            setUploading(true);
+            setErrors(prev => ({ ...prev, media: '' }));
+
+            const uploadResult = await dispatch(uploadMediaAsync({
+                file: file,
+                visibility: 'public'
+            }));
+
+            if (uploadMediaAsync.fulfilled.match(uploadResult)) {
+                const mediaId = uploadResult.payload.mediaId;
+
+                await dispatch(attachMediaToQuestionAsync({
+                    questionId: question.id,
+                    mediaId: mediaId
+                }));
+
+                // Reload medias
+                dispatch(getQuestionMediasAsync(question.id));
+            }
+        } catch (err) {
+            setErrors(prev => ({ ...prev, media: 'Tải lên thất bại' }));
+        } finally {
+            setUploading(false);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+        }
+    };
+
+    const handleRemoveMedia = async (mediaId) => {
+        if (!question?.id) return;
+
+        try {
+            await dispatch(detachMediaFromQuestionAsync({
+                questionId: question.id,
+                mediaId: mediaId
+            }));
+
+            // Reload medias
+            dispatch(getQuestionMediasAsync(question.id));
+        } catch (err) {
+            console.error('Remove media error:', err);
+        }
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -79,8 +155,8 @@ export const EditQuestionPanel = ({ isOpen, onClose, onSubmit, isLoading, questi
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="flex-1 flex flex-col">
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
                         <div>
                             <label className="block text-sm font-medium text-foreground mb-1">
                                 Nội dung câu hỏi <span className="text-red-500">*</span>
@@ -147,6 +223,66 @@ export const EditQuestionPanel = ({ isOpen, onClose, onSubmit, isLoading, questi
                             onChange={handleChange}
                             disabled={isLoading}
                         />
+
+                        {/* Media Section */}
+                        <div>
+                            <label className="block text-sm font-medium text-foreground mb-2">
+                                Hình ảnh đính kèm
+                            </label>
+
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                onChange={handleFileChange}
+                                className="hidden"
+                            />
+
+                            {/* Media List */}
+                            {questionMedias && questionMedias.length > 0 && (
+                                <div className="grid grid-cols-2 gap-2 mb-3">
+                                    {questionMedias.map((media) => (
+                                        <div key={media.mediaId} className="relative group">
+                                            <img
+                                                src={media.mediaUrl}
+                                                alt="Question media"
+                                                className="w-full h-32 object-cover rounded border border-border"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveMedia(media.mediaId)}
+                                                disabled={mediaLoading}
+                                                className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Upload Button */}
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={handleFileSelect}
+                                disabled={uploading || isLoading}
+                                className="w-full gap-2"
+                            >
+                                {uploading ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-foreground border-t-transparent" />
+                                        Đang tải lên...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Upload size={16} />
+                                        Thêm hình ảnh
+                                    </>
+                                )}
+                            </Button>
+                            {errors.media && <p className="text-xs text-red-500 mt-1">{errors.media}</p>}
+                        </div>
                     </div>
 
                     <div className="p-4 border-t border-border flex gap-2">

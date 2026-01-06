@@ -218,60 +218,58 @@ const QuizQuestions = ({ quiz, onUpdate }) => {
         }
     };
 
-    // Empty state
-    if (totalQuestions === 0) {
-        return (
-            <div className="text-center py-12">
-                <FileQuestion size={48} className="text-gray-300 mx-auto mb-3" />
-                <p className="text-sm text-foreground-light mb-4">Chưa có câu hỏi nào</p>
-                <Button onClick={() => setShowAddSection(true)}>
-                    <Plus size={16} />
-                    Thêm phần thi đầu tiên
-                </Button>
-            </div>
-        );
-    }
-
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-foreground">
-                    Cấu trúc bài kiểm tra ({totalQuestions} câu hỏi)
-                </h2>
-                <div className="flex items-center gap-2">
-                    <Button onClick={() => setShowAddSection(true)} size="sm" variant="outline">
-                        <FolderOpen size={16} />
-                        Thêm phần thi
-                    </Button>
-                    <Button
-                        onClick={() => {
-                            setContextSectionId(null);
-                            setContextGroupId(null);
-                            setShowAddQGroup(true);
-                        }}
-                        size="sm"
-                        variant="outline"
-                    >
-                        <Users size={16} />
-                        Thêm nhóm
-                    </Button>
-                    <Button
-                        onClick={() => {
-                            setContextSectionId(null);
-                            setContextGroupId(null);
-                            setShowAddQuestion(true);
-                        }}
-                        size="sm"
-                    >
+            {/* Empty state */}
+            {totalQuestions === 0 ? (
+                <div className="text-center py-12">
+                    <FileQuestion size={48} className="text-gray-300 mx-auto mb-3" />
+                    <p className="text-sm text-foreground-light mb-4">Chưa có câu hỏi nào</p>
+                    <Button onClick={() => setShowAddSection(true)}>
                         <Plus size={16} />
-                        Thêm câu hỏi
+                        Thêm phần thi đầu tiên
                     </Button>
                 </div>
-            </div>
+            ) : (
+                <>
+                    {/* Header */}
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-lg font-semibold text-foreground">
+                            Cấu trúc bài kiểm tra ({totalQuestions} câu hỏi)
+                        </h2>
+                        <div className="flex items-center gap-2">
+                            <Button onClick={() => setShowAddSection(true)} size="sm" variant="outline">
+                                <FolderOpen size={16} />
+                                Thêm phần thi
+                            </Button>
+                            <Button
+                                onClick={() => {
+                                    setContextSectionId(null);
+                                    setContextGroupId(null);
+                                    setShowAddQGroup(true);
+                                }}
+                                size="sm"
+                                variant="outline"
+                            >
+                                <Users size={16} />
+                                Thêm nhóm
+                            </Button>
+                            <Button
+                                onClick={() => {
+                                    setContextSectionId(null);
+                                    setContextGroupId(null);
+                                    setShowAddQuestion(true);
+                                }}
+                                size="sm"
+                            >
+                                <Plus size={16} />
+                                Thêm câu hỏi
+                            </Button>
+                        </div>
+                    </div>
 
-            {/* Sections */}
-            <div className="space-y-6">
+                    {/* Sections */}
+                    <div className="space-y-6">
                 {sections.map((section, sIdx) => (
                     <div key={section.id} className="border border-border rounded-sm">
                         {/* Section Header */}
@@ -424,6 +422,8 @@ const QuizQuestions = ({ quiz, onUpdate }) => {
                     </div>
                 )}
             </div>
+                </>
+            )}
 
             {/* Panels */}
             <AddSectionPanel
@@ -688,6 +688,19 @@ const QuestionCard = ({ question, index, onEdit, onDelete, onAddOption, onEditOp
                                             text={option.content} 
                                             className={option.isCorrect ? 'text-success font-medium' : 'text-foreground'}
                                         />
+                                        {/* Option Media */}
+                                        {option.media && option.media.length > 0 && (
+                                            <div className="flex flex-wrap gap-2 mt-2">
+                                                {option.media.map((m) => (
+                                                    <img
+                                                        key={m.optionMediaId || m.mediaId}
+                                                        src={m.mediaUrl}
+                                                        alt="Option media"
+                                                        className="w-20 h-20 object-cover rounded border border-border"
+                                                    />
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                     {option.isCorrect && (
                                         <span className="text-xs text-success whitespace-nowrap">(Đáp án đúng)</span>

@@ -157,6 +157,13 @@ export const API_ENDPOINTS = {
   PAYMENTS: {
     GET_BY_CLASSROOM: (classroomId) => `/Payment/classroom/${classroomId}`,
   },
+  // Join Request endpoints
+  JOIN_REQUESTS: {
+    CREATE: '/JoinRequest',
+    GET_BY_CLASSROOM: (classroomId) => `/JoinRequest/classroom/${classroomId}`,
+    HANDLE_STATUS: (joinRequestId) => `/JoinRequest/${joinRequestId}/handle`,
+    GET_MY_REQUESTS: '/JoinRequest/my-requests',
+  },
   // AI Document endpoints
   AI_DOCUMENTS: {
     UPLOAD: '/ai-documents/upload',

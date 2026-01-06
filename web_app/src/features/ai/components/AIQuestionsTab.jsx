@@ -426,8 +426,8 @@ export const AIQuestionsTab = ({ classroomId }) => {
                                             </div>
                                         </div>
 
-                                        <MarkdownRenderer 
-                                            text={question.questionText} 
+                                        <MarkdownRenderer
+                                            text={question.questionText}
                                             className="text-sm text-foreground mb-3"
                                         />
 
@@ -447,8 +447,8 @@ export const AIQuestionsTab = ({ classroomId }) => {
                                                         <span className="font-medium text-foreground-light">
                                                             {String.fromCharCode(65 + optIndex)}.
                                                         </span>
-                                                        <MarkdownRenderer 
-                                                            text={option.optionText} 
+                                                        <MarkdownRenderer
+                                                            text={option.optionText}
                                                             className="text-foreground"
                                                         />
                                                     </div>
@@ -461,8 +461,8 @@ export const AIQuestionsTab = ({ classroomId }) => {
                                                 <p className="text-xs font-medium text-foreground-light mb-1">
                                                     Giải thích:
                                                 </p>
-                                                <MarkdownRenderer 
-                                                    text={question.explanationText} 
+                                                <MarkdownRenderer
+                                                    text={question.explanationText}
                                                     className="text-sm text-foreground"
                                                 />
                                             </div>
@@ -544,8 +544,8 @@ export const AIQuestionsTab = ({ classroomId }) => {
                                                     type="checkbox"
                                                     checked={option.isCorrect}
                                                     onChange={(e) => {
-                                                        const newOptions = editFormData.options.map((opt, i) => 
-                                                            i === index 
+                                                        const newOptions = editFormData.options.map((opt, i) =>
+                                                            i === index
                                                                 ? { ...opt, isCorrect: e.target.checked }
                                                                 : opt
                                                         );
@@ -557,8 +557,8 @@ export const AIQuestionsTab = ({ classroomId }) => {
                                                     type="text"
                                                     value={option.optionText}
                                                     onChange={(e) => {
-                                                        const newOptions = editFormData.options.map((opt, i) => 
-                                                            i === index 
+                                                        const newOptions = editFormData.options.map((opt, i) =>
+                                                            i === index
                                                                 ? { ...opt, optionText: e.target.value }
                                                                 : opt
                                                         );
