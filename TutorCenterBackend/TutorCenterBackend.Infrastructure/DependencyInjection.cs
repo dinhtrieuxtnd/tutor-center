@@ -42,6 +42,7 @@ public static class DependencyInjection
         services.AddScoped<IQuizAnswerRepository, QuizAnswerRepository>();
         services.AddScoped<IClassroomChatRepository, ClassroomChatRepository>();
         services.AddScoped<IPaymentRepository, PaymentRepository>();
+        services.AddScoped<IStatisticsRepository, StatisticsRepository>();
 
         // Register AI Document Repositories
         services.AddScoped<IAiDocumentRepository, AiDocumentRepository>();

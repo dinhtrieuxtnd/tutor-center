@@ -42,6 +42,7 @@ namespace TutorCenterBackend.Application
             services.AddScoped<IQuizAnswerService, QuizAnswerService>();
             services.AddScoped<IClassroomChatService, ClassroomChatService>();
             services.AddScoped<IPaymentService, PaymentService>();
+            services.AddScoped<ITutorStatisticsService, TutorStatisticsService>();
 
             // Register AI Provider Options
             services.Configure<AIProviderOptions>(configuration.GetSection("AIProvider"));

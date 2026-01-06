@@ -65,7 +65,7 @@ namespace TutorCenterBackend.Application.ServicesImplementation
                 MaxAttempts = quiz.MaxAttempts,
                 ShuffleQuestions = quiz.ShuffleQuestions,
                 ShuffleOptions = quiz.ShuffleOptions,
-                GradingMethod = Enum.Parse<GradingMethodEnum>(quiz.GradingMethod),
+                GradingMethod = Enum.Parse<GradingMethodEnum>(quiz.GradingMethod, ignoreCase: true),
                 CreatedBy = quiz.CreatedBy,
                 CreatedAt = quiz.CreatedAt,
                 UpdatedAt = quiz.UpdatedAt,
@@ -272,7 +272,7 @@ namespace TutorCenterBackend.Application.ServicesImplementation
                 MaxAttempts = lesson.Quiz.MaxAttempts,
                 ShuffleQuestions = lesson.Quiz.ShuffleQuestions,
                 ShuffleOptions = lesson.Quiz.ShuffleOptions,
-                GradingMethod = Enum.Parse<GradingMethodEnum>(lesson.Quiz.GradingMethod),
+                GradingMethod = Enum.Parse<GradingMethodEnum>(lesson.Quiz.GradingMethod, ignoreCase: true),
                 CreatedBy = lesson.Quiz.CreatedBy,
                 CreatedAt = lesson.Quiz.CreatedAt,
                 UpdatedAt = lesson.Quiz.UpdatedAt,
@@ -320,7 +320,7 @@ namespace TutorCenterBackend.Application.ServicesImplementation
                 GroupId = question.GroupId,
                 Content = question.Content,
                 Explanation = null, // Don't show explanation to students during quiz
-                QuestionType = Enum.Parse<QuestionTypeEnum>(question.QuestionType),
+                QuestionType = Enum.Parse<QuestionTypeEnum>(question.QuestionType, ignoreCase: true),
                 Points = question.Points,
                 OrderIndex = question.OrderIndex,
                 Media = new List<QuestionMediaResponseDto>(), // Not loading media for simplicity
