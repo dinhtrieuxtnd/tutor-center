@@ -34,11 +34,6 @@ export const AdminSidebar = () => {
       href: '/admin/students',
       icon: Users
     },
-    {
-      name: 'Quản lý báo cáo',
-      href: '/admin/reports',
-      icon: FileText
-    }
   ];
 
   return <Sidebar menuItems={menuItems} />;

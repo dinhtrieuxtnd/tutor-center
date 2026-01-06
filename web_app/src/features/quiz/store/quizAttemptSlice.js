@@ -33,7 +33,7 @@ export const getQuizAttemptByLessonAndStudentAsync = createAsyncThunk(
             () => quizAttemptApi.getByLessonAndStudent(lessonId),
             thunkAPI,
             {
-                successTitle: null, // Silent success
+                showSuccess: false,
                 errorTitle: 'Lấy thông tin bài làm thất bại',
             }
         );
@@ -47,7 +47,7 @@ export const getQuizAttemptsByLessonAsync = createAsyncThunk(
             () => quizAttemptApi.getByLesson(lessonId),
             thunkAPI,
             {
-                successTitle: null, // Silent success
+                showSuccess: false,
                 errorTitle: 'Lấy danh sách bài làm thất bại',
             }
         );

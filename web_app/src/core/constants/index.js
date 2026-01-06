@@ -183,6 +183,21 @@ export const API_ENDPOINTS = {
     IMPORT: '/ai-questions/import',
     DELETE: (questionId) => `/ai-questions/${questionId}`,
   },
+  // Tutor Statistics endpoints
+  TUTOR_STATISTICS: {
+    GET_OVERVIEW: '/tutor/statistics/overview',
+    GET_CLASSROOMS: '/tutor/statistics/classrooms',
+    GET_REVENUE_TIME_SERIES: '/tutor/statistics/revenue-time-series',
+    GET_SUBMISSION_TIME_SERIES: '/tutor/statistics/submission-time-series',
+    GET_STUDENT_PERFORMANCE: (classroomId) => `/tutor/statistics/students/performance/${classroomId}`,
+  },
+  // Admin Statistics endpoints
+  ADMIN_STATISTICS: {
+    GET_OVERVIEW: '/admin/statistics/overview',
+    GET_TOP_TUTORS: '/admin/statistics/top-tutors',
+    GET_GROWTH_TIME_SERIES: '/admin/statistics/growth-time-series',
+    GET_REVENUE_TIME_SERIES: '/admin/statistics/revenue-time-series',
+  },
 };
 
 export const ROUTES = {

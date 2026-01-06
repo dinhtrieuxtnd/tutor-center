@@ -748,6 +748,19 @@ const QuestionCard = ({ question, index, onEdit, onDelete, onAddOption, onEditOp
                                             text={option.content} 
                                             className={option.isCorrect ? 'text-success font-medium' : 'text-foreground'}
                                         />
+                                        {/* Option Media */}
+                                        {option.media && option.media.length > 0 && (
+                                            <div className="flex flex-wrap gap-2 mt-2">
+                                                {option.media.map((m) => (
+                                                    <img
+                                                        key={m.questionOptionMediaId || m.mediaId}
+                                                        src={m.mediaUrl}
+                                                        alt="Option media"
+                                                        className="w-20 h-20 object-cover rounded border border-border"
+                                                    />
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                     {option.isCorrect && (
                                         <span className="text-xs text-success whitespace-nowrap">(Đáp án đúng)</span>

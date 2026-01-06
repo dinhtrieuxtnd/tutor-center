@@ -7,3 +7,5 @@ export { roleApi } from './roleApi';
 export { permissionApi } from './permissionApi';
 export { classroomApi } from './classroomApi';
 export { joinRequestApi } from './joinRequestApi';
+export { tutorStatisticsApi } from './tutorStatisticsApi';
+export { adminStatisticsApi } from './adminStatisticsApi';

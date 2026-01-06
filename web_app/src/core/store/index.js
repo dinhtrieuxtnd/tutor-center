@@ -23,6 +23,8 @@ import paymentReducer from '../../features/payment/store/paymentSlice';
 import aiDocumentReducer from '../../features/ai/store/aiDocumentSlice';
 import aiQuestionReducer from '../../features/ai/store/aiQuestionSlice';
 import joinRequestReducer from '../../features/joinRequest/store/joinRequestSlice';
+import tutorStatisticsReducer from '../../features/tutor/store/tutorStatisticsSlice';
+import adminStatisticsReducer from '../../features/admin/store/adminStatisticsSlice';
 
 export const store = configureStore({
   reducer: {
@@ -50,5 +52,7 @@ export const store = configureStore({
     aiDocument: aiDocumentReducer,
     aiQuestion: aiQuestionReducer,
     joinRequest: joinRequestReducer,
+    tutorStatistics: tutorStatisticsReducer,
+    adminStatistics: adminStatisticsReducer,
   },
 });
