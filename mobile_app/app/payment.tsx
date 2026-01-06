@@ -31,6 +31,7 @@ export default function PaymentScreen() {
             // Create payment transaction
             const result = await paymentService.createPayment({
                 classroomId: Number(classroomId),
+                paymentMethod: 'VNPay',
                 returnUrl: 'tutorcenter://payment-return', // Deep link for mobile app
             });
 
