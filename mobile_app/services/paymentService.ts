@@ -20,6 +20,7 @@ export interface PaymentResponse {
 
 export interface CreatePaymentRequest {
     classroomId: number;
+    paymentMethod: string;
     returnUrl?: string;
 }
 
