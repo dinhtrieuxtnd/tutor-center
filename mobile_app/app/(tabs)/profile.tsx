@@ -16,7 +16,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { profileService, ProfileResponse, UpdateProfileRequest, ChangePasswordRequest } from '../../services/profileService';
 
-type TabType = 'profile' | 'stats' | 'security' | 'notifications';
+type TabType = 'profile' | 'stats' | 'payment-history' | 'security' | 'notifications';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -153,7 +153,13 @@ export default function ProfileScreen() {
   const renderTabButton = (tab: TabType, icon: keyof typeof Ionicons.glyphMap, label: string) => (
     <TouchableOpacity
       style={[styles.tabButton, activeTab === tab && styles.tabButtonActive]}
-      onPress={() => setActiveTab(tab)}
+      onPress={() => {
+        if (tab === 'payment-history') {
+          router.push('/payment-history');
+        } else {
+          setActiveTab(tab);
+        }
+      }}
     >
       <Ionicons
         name={icon}
@@ -333,6 +339,25 @@ export default function ProfileScreen() {
     </View>
   );
 
+  const renderPaymentHistoryTab = () => (
+    <View style={styles.tabContent}>
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Lịch sử thanh toán</Text>
+        <Text style={styles.cardDescription}>
+          Xem chi tiết lịch sử giao dịch và thanh toán của bạn
+        </Text>
+
+        <TouchableOpacity
+          style={styles.primaryButton}
+          onPress={() => router.push('/payment-history')}
+        >
+          <Ionicons name="receipt-outline" size={18} color="#FFFFFF" />
+          <Text style={styles.primaryButtonText}>Xem lịch sử đầy đủ</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
   const renderSecurityTab = () => (
     <View style={styles.tabContent}>
       <View style={styles.card}>
@@ -449,6 +474,7 @@ export default function ProfileScreen() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs}>
           {renderTabButton('profile', 'person-outline', 'Hồ sơ')}
           {renderTabButton('stats', 'bar-chart-outline', 'Thống kê')}
+          {renderTabButton('payment-history', 'wallet-outline', 'Lịch sử thanh toán')}
           {renderTabButton('security', 'shield-checkmark-outline', 'Bảo mật')}
           {renderTabButton('notifications', 'notifications-outline', 'Thông báo')}
         </ScrollView>
@@ -463,6 +489,7 @@ export default function ProfileScreen() {
       >
         {activeTab === 'profile' && renderProfileTab()}
         {activeTab === 'stats' && renderStatsTab()}
+        {activeTab === 'payment-history' && renderPaymentHistoryTab()}
         {activeTab === 'security' && renderSecurityTab()}
         {activeTab === 'notifications' && renderNotificationsTab()}
       </ScrollView>
@@ -801,5 +828,36 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     backgroundColor: '#FFFFFF',
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  actionButtonIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#EFF6FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  actionButtonContent: {
+    flex: 1,
+  },
+  actionButtonTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 2,
+  },
+  actionButtonDescription: {
+    fontSize: 13,
+    color: '#6B7280',
   },
 });

@@ -39,6 +39,10 @@ export default function LectureDetailScreen() {
   console.log('Lesson data:', lesson);
   console.log('Lecture:', lecture);
   console.log('Exercise:', lesson?.exercise);
+  console.log('Quiz:', lesson?.quiz);
+  console.log('Lesson type check (lowercase):', lesson?.lessonType?.toLowerCase());
+  console.log('Is Quiz?:', lesson?.lessonType?.toLowerCase() === 'quiz');
+  console.log('Has quiz data?:', !!lesson?.quiz);
   console.log('Render - lecture.mediaId:', lecture?.mediaId);
   console.log('Render - mediaUrl:', mediaUrl);
   console.log('Render - mediaType:', mediaType);
