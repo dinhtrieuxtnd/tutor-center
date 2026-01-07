@@ -50,10 +50,11 @@ namespace TutorCenterBackend.Application.ServicesImplementation
             var now = DateTime.UtcNow;
 
             // Check if quiz has started
-            if (lesson.QuizStartAt == null || lesson.QuizStartAt > now)
-            {
-                throw new InvalidOperationException("Bài kiểm tra chưa đến thời gian bắt đầu");
-            }
+            // TODO: Tạm thời comment để cho phép học sinh làm bài trước giờ bắt đầu
+            // if (lesson.QuizStartAt == null || lesson.QuizStartAt > now)
+            // {
+            //     throw new InvalidOperationException("Bài kiểm tra chưa đến thời gian bắt đầu");
+            // }
 
             // Check if quiz has ended
             if (lesson.QuizEndAt != null && lesson.QuizEndAt <= now)
@@ -147,10 +148,11 @@ namespace TutorCenterBackend.Application.ServicesImplementation
 
             // Check if quiz has started
             var now = DateTime.UtcNow;
-            if (attempt.Lesson.QuizStartAt == null || attempt.Lesson.QuizStartAt > now)
-            {
-                throw new InvalidOperationException("Bài kiểm tra chưa đến thời gian bắt đầu");
-            }
+            // TODO: Tạm thời comment để cho phép học sinh làm bài trước giờ bắt đầu
+            // if (attempt.Lesson.QuizStartAt == null || attempt.Lesson.QuizStartAt > now)
+            // {
+            //     throw new InvalidOperationException("Bài kiểm tra chưa đến thời gian bắt đầu");
+            // }
 
             var quizDetail = MapQuizDetail(attempt.Quiz);
 

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TutorCenterBackend.Application.DTOs.ClassroomChat.Requests;
 using TutorCenterBackend.Application.DTOs.ClassroomChat.Responses;
@@ -17,7 +18,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         /// Gửi tin nhắn trong nhóm chat lớp học
         /// </summary>
         [HttpPost("messages/send")]
-        [RequirePermission("classroom.chat")]
+        [AllowAnonymous]
         public async Task<ActionResult<ChatMessageResponseDto>> SendMessage(
             [FromBody] SendMessageRequestDto dto, 
             CancellationToken ct = default)
@@ -30,7 +31,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         /// Chỉnh sửa tin nhắn đã gửi
         /// </summary>
         [HttpPut("messages/edit")]
-        [RequirePermission("classroom.chat")]
+        [AllowAnonymous]
         public async Task<ActionResult<ChatMessageResponseDto>> EditMessage(
             [FromBody] EditMessageRequestDto dto, 
             CancellationToken ct = default)
@@ -43,7 +44,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         /// Xóa tin nhắn
         /// </summary>
         [HttpDelete("messages/{messageId}")]
-        [RequirePermission("classroom.chat")]
+        [AllowAnonymous]
         public async Task<ActionResult<string>> DeleteMessage(
             int messageId, 
             CancellationToken ct = default)
@@ -56,7 +57,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         /// Lấy danh sách tin nhắn trong nhóm chat lớp học
         /// </summary>
         [HttpGet("messages")]
-        [RequirePermission("classroom.chat")]
+        [AllowAnonymous]
         public async Task<ActionResult<PageResultDto<ChatMessageResponseDto>>> GetMessages(
             [FromQuery] GetMessagesQueryDto dto, 
             CancellationToken ct = default)

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API Integration</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; }
+        h2 { color: #666; margin-top: 0; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test API Integration - Docker Deployment</h1>
+    
+    <div class="test-section">
+        <h2>1. Test CORS & Backend Health</h2>
+        <button onclick="testBackendHealth()">Test Backend Health</button>
+        <button onclick="testBackendAPI()">Test Backend API (401 expected)</button>
+        <div id="backend-result" class="result" style="display:none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Test Frontend API URL Configuration</h2>
+        <p><strong>Expected API Base URL:</strong> <code>/api</code> (relative path)</p>
+        <button onclick="checkAPIUrl()">Check API URL from Console</button>
+        <div id="api-url-result" class="result info" style="display:block;">
+            <strong>Instructions:</strong><br>
+            1. Open browser DevTools (F12)<br>
+            2. Go to Network tab<br>
+            3. Click "Test Backend API" button above<br>
+            4. Check the request URL - should be: http://localhost:8080/api/...
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Test CORS Headers</h2>
+        <button onclick="testCORS()">Test CORS Preflight</button>
+        <div id="cors-result" class="result" style="display:none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Full Integration Test</h2>
+        <button onclick="runAllTests()">Run All Tests</button>
+        <div id="full-result" class="result" style="display:none;"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = '/api';
+
+        function showResult(elementId, message, type = 'info') {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.className = `result ${type}`;
+            el.style.display = 'block';
+        }
+
+        async function testBackendHealth() {
+            try {
+                const response = await fetch('/health');
+                const text = await response.text();
+                showResult('backend-result', 
+                    `✓ Backend Health Check\nStatus: ${response.status}\nResponse: ${text}`,
+                    response.ok ? 'success' : 'error'
+                );
+            } catch (error) {
+                showResult('backend-result', 
+                    `✗ Backend Health Check Failed\nError: ${error.message}`,
+                    'error'
+                );
+            }
+        }
+
+        async function testBackendAPI() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/tutors`);
+                const data = await response.text();
+                
+                if (response.status === 401) {
+                    showResult('backend-result', 
+                        `✓ Backend API Working!\nStatus: 401 Unauthorized (Expected - Authentication required)\nAPI URL: ${API_BASE_URL}/tutors`,
+                        'success'
+                    );
+                } else {
+                    showResult('backend-result', 
+                        `⚠ Backend API Response\nStatus: ${response.status}\nResponse: ${data.substring(0, 200)}`,
+                        'info'
+                    );
+                }
+            } catch (error) {
+                showResult('backend-result', 
+                    `✗ Backend API Test Failed\nError: ${error.message}\nCheck CORS configuration!`,
+                    'error'
+                );
+            }
+        }
+
+        function checkAPIUrl() {
+            showResult('api-url-result', 
+                `Current Configuration:\n` +
+                `API_BASE_URL: ${API_BASE_URL}\n` +
+                `Full URL: ${window.location.origin}${API_BASE_URL}\n\n` +
+                `Expected: /api (relative path)\n` +
+                `Actual: ${API_BASE_URL}\n` +
+                `✓ ${API_BASE_URL === '/api' ? 'CORRECT' : 'INCORRECT - Should be /api'}`,
+                API_BASE_URL === '/api' ? 'success' : 'error'
+            );
+        }
+
+        async function testCORS() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/tutors`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': window.location.origin,
+                        'Access-Control-Request-Method': 'GET',
+                        'Access-Control-Request-Headers': 'Content-Type'
+                    }
+                });
+
+                const corsHeaders = {
+                    'access-control-allow-origin': response.headers.get('access-control-allow-origin'),
+                    'access-control-allow-methods': response.headers.get('access-control-allow-methods'),
+                    'access-control-allow-headers': response.headers.get('access-control-allow-headers'),
+                };
+
+                showResult('cors-result', 
+                    `CORS Preflight Test\nStatus: ${response.status}\n\n` +
+                    `CORS Headers:\n${JSON.stringify(corsHeaders, null, 2)}`,
+                    response.ok ? 'success' : 'error'
+                );
+            } catch (error) {
+                showResult('cors-result', 
+                    `✗ CORS Test Failed\nError: ${error.message}`,
+                    'error'
+                );
+            }
+        }
+
+        async function runAllTests() {
+            let results = '=== RUNNING ALL TESTS ===\n\n';
+            
+            // Test 1: Health
+            try {
+                const health = await fetch('/health');
+                results += `1. Health Check: ${health.ok ? '✓ PASS' : '✗ FAIL'} (${health.status})\n`;
+            } catch (e) {
+                results += `1. Health Check: ✗ FAIL (${e.message})\n`;
+            }
+
+            // Test 2: API URL
+            results += `2. API URL Config: ${API_BASE_URL === '/api' ? '✓ PASS' : '✗ FAIL'} (${API_BASE_URL})\n`;
+
+            // Test 3: Backend API
+            try {
+                const api = await fetch(`${API_BASE_URL}/tutors`);
+                results += `3. Backend API: ${api.status === 401 ? '✓ PASS' : '⚠ UNEXPECTED'} (${api.status})\n`;
+            } catch (e) {
+                results += `3. Backend API: ✗ FAIL (${e.message})\n`;
+            }
+
+            // Test 4: CORS
+            try {
+                const cors = await fetch(`${API_BASE_URL}/tutors`, {method: 'GET'});
+                results += `4. CORS: ✓ PASS (No CORS errors)\n`;
+            } catch (e) {
+                if (e.message.includes('CORS')) {
+                    results += `4. CORS: ✗ FAIL (${e.message})\n`;
+                } else {
+                    results += `4. CORS: ⚠ UNCERTAIN\n`;
+                }
+            }
+
+            results += '\n=== TEST SUMMARY ===\n';
+            results += 'All tests should show ✓ PASS or 401 for authentication-required endpoints.';
+            
+            showResult('full-result', results, 'info');
+        }
+
+        // Auto-run basic check on load
+        window.addEventListener('load', () => {
+            checkAPIUrl();
+        });
+    </script>
+</body>
+</html>

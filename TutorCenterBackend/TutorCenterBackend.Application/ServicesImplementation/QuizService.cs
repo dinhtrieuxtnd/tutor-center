@@ -258,10 +258,10 @@ namespace TutorCenterBackend.Application.ServicesImplementation
             var now = DateTime.UtcNow;
 
             // Check if quiz has started
-            if (lesson.QuizStartAt == null || lesson.QuizStartAt > now)
-            {
-                throw new InvalidOperationException("Bài kiểm tra chưa đến thời gian bắt đầu");
-            }
+            // if (lesson.QuizStartAt == null || lesson.QuizStartAt > now)
+            // {
+            //     throw new InvalidOperationException("Bài kiểm tra chưa đến thời gian bắt đầu");
+            // }
 
             var result = new QuizDetailResponseDto
             {

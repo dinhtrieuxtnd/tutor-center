@@ -129,7 +129,13 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:5173", "http://localhost:5174", "http://localhost:5175")
+        policy.WithOrigins(
+                  "http://localhost:5173",   // Vite dev server
+                  "http://localhost:5174",   // Vite dev server alt port
+                  "http://localhost:5175",   // Vite dev server alt port
+                  "http://localhost:8080",   // Nginx reverse proxy (production)
+                  "http://localhost:3000"    // Common dev port
+              )
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -162,6 +168,12 @@ app.UseAuthorization();
 
 // 3. Permission middleware - checks role & permission
 app.UseMiddleware<PermissionMiddleware>();
+
+// Health check endpoint (must be after middleware registration)
+app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }))
+   .AllowAnonymous();
+app.MapGet("/api/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }))
+   .AllowAnonymous();
 
 app.MapControllers();
 // Map SignalR Hub

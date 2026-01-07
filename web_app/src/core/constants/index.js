@@ -1,5 +1,7 @@
-// export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-export const API_BASE_URL = 'http://localhost:5038/api';
+// Sử dụng environment variable từ Docker build args hoặc .env
+// Trong production (Docker): VITE_API_BASE_URL='/api' (relative path qua nginx)
+// Trong development: VITE_API_BASE_URL='http://localhost:5038/api'
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
 export const API_ENDPOINTS = {
   // Auth endpoints
   AUTH: {

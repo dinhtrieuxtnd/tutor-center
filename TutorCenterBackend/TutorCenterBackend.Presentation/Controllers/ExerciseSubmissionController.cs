@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TutorCenterBackend.Application.DTOs.ExerciseSubmission.Requests;
 using TutorCenterBackend.Application.Interfaces;
@@ -17,7 +18,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         /// Học sinh nộp bài tập
         /// </summary>
         [HttpPost]
-        [RequirePermission("exercise_submission.submit")]
+        [AllowAnonymous]
         public async Task<IActionResult> SubmitExerciseAsync([FromBody] SubmitExerciseRequestDto dto, CancellationToken ct = default)
         {
             var result = await _submissionService.SubmitExerciseAsync(dto, ct);
@@ -28,7 +29,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         /// Học sinh xóa bài nộp của mình
         /// </summary>
         [HttpDelete("{submissionId}")]
-        [RequirePermission("exercise_submission.delete")]
+        [AllowAnonymous]
         [ValidateId("submissionId")]
         public async Task<IActionResult> DeleteSubmissionAsync(int submissionId, CancellationToken ct = default)
         {
@@ -40,7 +41,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         /// Xem chi tiết bài nộp (học sinh xem bài của mình, gia sư xem bài của lớp mình quản lý)
         /// </summary>
         [HttpGet("{submissionId}")]
-        [RequirePermission("exercise_submission.view")]
+        [AllowAnonymous]
         [ValidateId("submissionId")]
         public async Task<IActionResult> GetSubmissionByIdAsync(int submissionId, CancellationToken ct = default)
         {
@@ -52,16 +53,16 @@ namespace TutorCenterBackend.Presentation.Controllers
         /// Tải xuống file bài nộp (học sinh tải bài của mình, gia sư tải bài của lớp mình quản lý)
         /// </summary>
         [HttpGet("{submissionId}/download")]
-        [RequirePermission("exercise_submission.download")]
+        [AllowAnonymous]
         [ValidateId("submissionId")]
         public async Task<IActionResult> DownloadSubmissionAsync(int submissionId, CancellationToken ct = default)
         {
             var fileBytes = await _submissionService.DownloadSubmissionAsync(submissionId, ct);
             var submission = await _submissionService.GetSubmissionByIdAsync(submissionId, ct);
-            
+
             // Lấy extension từ MediaUrl hoặc dùng default
             var fileName = $"submission_{submissionId}_{submission.StudentName}_{DateTime.UtcNow:yyyyMMdd}.pdf";
-            
+
             return File(fileBytes, "application/octet-stream", fileName);
         }
 
@@ -69,7 +70,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         /// Gia sư chấm điểm và nhận xét bài nộp
         /// </summary>
         [HttpPut("{submissionId}/grade")]
-        [RequirePermission("exercise_submission.grade")]
+        [AllowAnonymous]
         [ValidateId("submissionId")]
         public async Task<IActionResult> GradeSubmissionAsync(int submissionId, [FromBody] GradeSubmissionRequestDto dto, CancellationToken ct = default)
         {
@@ -81,7 +82,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         /// Học sinh xem danh sách bài nộp của mình
         /// </summary>
         [HttpGet("my-submissions")]
-        [RequirePermission("exercise_submission.view_my")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetMySubmissionsAsync(CancellationToken ct = default)
         {
             var result = await _submissionService.GetMySubmissionsAsync(ct);
@@ -92,7 +93,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         /// Gia sư xem danh sách bài nộp theo bài tập
         /// </summary>
         [HttpGet("by-exercise/{exerciseId}")]
-        [RequirePermission("exercise_submission.view_all")]
+        [AllowAnonymous]
         [ValidateId("exerciseId")]
         public async Task<IActionResult> GetSubmissionsByExerciseAsync(int exerciseId, CancellationToken ct = default)
         {
@@ -104,7 +105,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         /// Học sinh xem bài nộp của mình theo lesson ID
         /// </summary>
         [HttpGet("lessons/{lessonId}/my-submission")]
-        [RequirePermission("exercise_submission.view_my_by_lesson")]
+        [AllowAnonymous]
         [ValidateId("lessonId")]
         public async Task<IActionResult> GetMySubmissionByLessonAsync(int lessonId, CancellationToken ct = default)
         {

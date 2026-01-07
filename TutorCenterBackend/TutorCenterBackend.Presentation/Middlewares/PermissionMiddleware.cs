@@ -22,7 +22,7 @@ public class PermissionMiddleware
         HttpContext context,
         IPermissionService permissionService)
     {
-        // Skip public endpoints
+        // Skip public endpoints FIRST before any authentication checks
         if (IsPublicEndpoint(context))
         {
             await _next(context);
@@ -82,20 +82,22 @@ public class PermissionMiddleware
 
     private static bool IsPublicEndpoint(HttpContext context)
     {
+        // Check path FIRST - this works even before endpoint routing
+        var path = context.Request.Path.Value?.ToLower() ?? string.Empty;
+        if (path.StartsWith("/api/auth/") ||
+            path.StartsWith("/swagger") ||
+            path.StartsWith("/health") ||
+            path.StartsWith("/api/public/"))
+        {
+            return true;
+        }
+
+        // Then check endpoint metadata for [AllowAnonymous]
         var endpoint = context.GetEndpoint();
         if (endpoint == null)
             return false;
 
-        // Check if endpoint has [AllowAnonymous] attribute
         var allowAnonymous = endpoint.Metadata.GetMetadata<AllowAnonymousAttribute>() != null;
-        if (allowAnonymous)
-            return true;
-
-        // Allow certain paths without authentication
-        var path = context.Request.Path.Value?.ToLower() ?? string.Empty;
-        return path.StartsWith("/api/auth/") ||
-               path.StartsWith("/swagger") ||
-               path.StartsWith("/health") ||
-               path.StartsWith("/api/public/");
+        return allowAnonymous;
     }
 }
