@@ -20,6 +20,7 @@ namespace TutorCenterBackend.Application.ServicesImplementation
         IHttpContextAccessor httpContextAccessor,
         IStorageService storageService,
         ILessonRepository lessonRepository,
+        IQuizAttemptRepository quizAttemptRepository,
         IMapper mapper) : IQuizService
     {
         private readonly IQuizRepository _quizRepository = quizRepository;
@@ -27,6 +28,7 @@ namespace TutorCenterBackend.Application.ServicesImplementation
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
         private readonly IStorageService _storageService = storageService;
         private readonly ILessonRepository _lessonRepository = lessonRepository;
+        private readonly IQuizAttemptRepository _quizAttemptRepository = quizAttemptRepository;
 
         public async Task<QuizResponseDto> GetQuizByIdAsync(int quizId, CancellationToken ct = default)
         {
@@ -263,6 +265,9 @@ namespace TutorCenterBackend.Application.ServicesImplementation
             //     throw new InvalidOperationException("Bài kiểm tra chưa đến thời gian bắt đầu");
             // }
 
+            // Count current attempts by student
+            var currentAttemptCount = await _quizAttemptRepository.CountAttemptsByLessonAndStudentAsync(lessonId, studentId, ct);
+
             var result = new QuizDetailResponseDto
             {
                 Id = lesson.Quiz.QuizId,
@@ -270,6 +275,7 @@ namespace TutorCenterBackend.Application.ServicesImplementation
                 Description = lesson.Quiz.Description,
                 TimeLimitSec = lesson.Quiz.TimeLimitSec,
                 MaxAttempts = lesson.Quiz.MaxAttempts,
+                CurrentAttemptCount = currentAttemptCount,
                 ShuffleQuestions = lesson.Quiz.ShuffleQuestions,
                 ShuffleOptions = lesson.Quiz.ShuffleOptions,
                 GradingMethod = Enum.Parse<GradingMethodEnum>(lesson.Quiz.GradingMethod, ignoreCase: true),

@@ -12,6 +12,7 @@ namespace TutorCenterBackend.Application.DTOs.Quiz.Responses
         public string? Description { get; set; }
         public int TimeLimitSec { get; set; }
         public int MaxAttempts { get; set; }
+        public int? CurrentAttemptCount { get; set; }
         public bool ShuffleQuestions { get; set; }
         public bool ShuffleOptions { get; set; }
         public GradingMethodEnum GradingMethod { get; set; }
