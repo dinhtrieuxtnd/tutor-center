@@ -8,7 +8,7 @@ export interface PaymentResponse {
     classroomId: number;
     classroomName: string;
     amount: number;
-    status: 'pending' | 'completed' | 'failed' | 'cancelled';
+    status: 'pending' | 'paid' | 'failed' | 'cancelled';
     paymentMethod: string;
     vnpayTransactionNo?: string;
     vnpayBankCode?: string;
@@ -79,7 +79,7 @@ class PaymentService {
             if (contentType && contentType.includes('application/json')) {
                 try {
                     const errorData = await response.json();
-                    errorMessage = errorData.message || errorData.title || errorMessage;
+                    errorMessage = errorData.detail || errorData.message || errorData.title || errorMessage;
                 } catch {
                     // Ignore JSON parse error
                 }

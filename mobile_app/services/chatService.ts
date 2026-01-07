@@ -83,7 +83,7 @@ class ChatService {
             if (contentType && contentType.includes('application/json')) {
                 try {
                     const errorData = await response.json();
-                    errorMessage = errorData.message || errorData.title || errorMessage;
+                    errorMessage = errorData.detail || errorData.message || errorData.title || errorMessage;
                 } catch {
                     // Ignore JSON parse error
                 }
