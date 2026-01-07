@@ -3,6 +3,7 @@ using TutorCenterBackend.Application.DTOs.QuizAnswer.Requests;
 using TutorCenterBackend.Application.Helpers;
 using TutorCenterBackend.Application.Interfaces;
 using TutorCenterBackend.Presentation.Attributes;
+using Microsoft.AspNetCore.Authorization;
 
 namespace TutorCenterBackend.Presentation.Controllers
 {
@@ -19,7 +20,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         /// API to create/submit an answer for a quiz question
         /// </summary>
         [HttpPost]
-        [RequirePermission("quiz_attempt.create")]
+        [AllowAnonymous]
         public async Task<IActionResult> CreateQuizAnswerAsync(
             [FromBody] CreateQuizAnswerRequestDto dto, 
             CancellationToken ct)
@@ -33,7 +34,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         /// API to update an answer for a quiz question
         /// </summary>
         [HttpPut]
-        [RequirePermission("quiz_attempt.create")]
+        [AllowAnonymous]
         public async Task<IActionResult> UpdateQuizAnswerAsync(
             [FromBody] UpdateQuizAnswerRequestDto dto, 
             CancellationToken ct)
@@ -47,7 +48,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         /// API to delete an answer for a quiz question
         /// </summary>
         [HttpDelete("attempt/{attemptId}/question/{questionId}")]
-        [RequirePermission("quiz_attempt.create")]
+        [AllowAnonymous]
         [ValidateId("attemptId")]
         [ValidateId("questionId")]
         public async Task<IActionResult> DeleteQuizAnswerAsync(

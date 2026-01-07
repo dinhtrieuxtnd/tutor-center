@@ -3,6 +3,7 @@ using TutorCenterBackend.Application.DTOs.Quiz.Requests;
 using TutorCenterBackend.Application.Helpers;
 using TutorCenterBackend.Application.Interfaces;
 using TutorCenterBackend.Presentation.Attributes;
+using Microsoft.AspNetCore.Authorization;
 
 namespace TutorCenterBackend.Presentation.Controllers
 {
@@ -14,7 +15,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
 
         [HttpGet("{quizId}")]
-        [RequirePermission("quiz.view")]
+        [AllowAnonymous]
         [ValidateId("quizId")]
         public async Task<IActionResult> GetQuizByIdAsync(int quizId, CancellationToken ct)
         {
@@ -23,7 +24,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         }
 
         [HttpGet("{quizId}/detail")]
-        [RequirePermission("quiz.view")]
+        [AllowAnonymous]
         [ValidateId("quizId")]
         public async Task<IActionResult> GetQuizDetailAsync(int quizId, CancellationToken ct)
         {
@@ -48,7 +49,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         }
 
         [HttpPut("{quizId}")]
-        [RequirePermission("quiz.edit")]
+        [AllowAnonymous]
         [ValidateId("quizId")]
         public async Task<IActionResult> UpdateQuizAsync(int quizId, [FromBody] QuizRequestDto dto, CancellationToken ct)
         {
@@ -57,7 +58,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         }
 
         [HttpDelete("{quizId}")]
-        [RequirePermission("quiz.delete")]
+        [AllowAnonymous]
         [ValidateId("quizId")]
         public async Task<IActionResult> DeleteQuizAsync(int quizId, CancellationToken ct)
         {
@@ -69,7 +70,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         /// API for students to view quiz details (without correct answers)
         /// </summary>
         [HttpGet("lesson/{lessonId}/student")]
-        [RequirePermission("quiz.view_student")]
+        [AllowAnonymous]
         [ValidateId("lessonId")]
         public async Task<IActionResult> GetQuizDetailForStudentAsync(int lessonId, CancellationToken ct)
         {

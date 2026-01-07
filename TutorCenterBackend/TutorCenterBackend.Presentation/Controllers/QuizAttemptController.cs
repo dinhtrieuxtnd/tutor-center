@@ -3,6 +3,7 @@ using TutorCenterBackend.Application.DTOs.QuizAttempt.Requests;
 using TutorCenterBackend.Application.Helpers;
 using TutorCenterBackend.Application.Interfaces;
 using TutorCenterBackend.Presentation.Attributes;
+using Microsoft.AspNetCore.Authorization;
 
 namespace TutorCenterBackend.Presentation.Controllers
 {
@@ -19,7 +20,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         /// API for students to create or continue a quiz attempt
         /// </summary>
         [HttpPost]
-        [RequirePermission("quiz_attempt.create")]
+        [AllowAnonymous]
         public async Task<IActionResult> CreateQuizAttemptAsync(
             [FromBody] CreateQuizAttemptRequestDto dto, 
             CancellationToken ct)
@@ -33,7 +34,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         /// API for students to view their quiz attempt for a specific lesson
         /// </summary>
         [HttpGet("lesson/{lessonId}/student")]
-        [RequirePermission("quiz_attempt.view")]
+        [AllowAnonymous]
         [ValidateId("lessonId")]
         public async Task<IActionResult> GetQuizAttemptByLessonAndStudentAsync(
             int lessonId, 
@@ -48,7 +49,7 @@ namespace TutorCenterBackend.Presentation.Controllers
         /// API for tutors to view all quiz attempts for a specific lesson
         /// </summary>
         [HttpGet("lesson/{lessonId}")]
-        [RequirePermission("quiz_attempt.view")]
+        [AllowAnonymous]
         [ValidateId("lessonId")]
         public async Task<IActionResult> GetQuizAttemptsByLessonAsync(
             int lessonId, 
